@@ -34,7 +34,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
 
 /* ─── NAV ──────────────────────────────────────────── */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;background:var(--nav-bg);backdrop-filter:blur(18px);box-shadow:var(--nav-shadow);display:flex;align-items:center;padding:0 28px;gap:14px;transition:background .3s;position:fixed;}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;background:var(--nav-bg);backdrop-filter:blur(18px);box-shadow:var(--nav-shadow);display:flex;align-items:center;padding:0 28px;gap:14px;transition:background .3s;}
 .brand{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;font-style:italic;background:linear-gradient(130deg,#d44f7a 0%,#e8789c 40%,#f4a8c0 70%,#c93f6e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px;flex-shrink:0;white-space:nowrap;filter:drop-shadow(0 1px 8px rgba(210,70,120,.18));cursor:pointer;}
 .nav-search{flex:1;max-width:280px;position:relative;}
 .nav-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:8px 14px 8px 36px;color:var(--text);font-family:'Jost',sans-serif;font-size:13px;outline:none;transition:border-color .2s,background .3s;}
@@ -526,7 +526,8 @@ textarea.form-input{resize:none;min-height:80px;}
   .page-header{border-radius:0;border-left:none;border-right:none;margin-bottom:6px;}
 }
 /* ─── AUTH ──────────────────────────────────────── */
-#authScreen{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fff0f6,#fde8f2,#fdf3f8);}
+#authScreen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fff0f6,#fde8f2,#fdf3f8);}
+#authScreen.hidden{display:none!important;}
 #authScreen.hidden{display:none;}
 [data-theme="dark"] #authScreen{background:linear-gradient(145deg,#1a0912,#200e18,#18080f);}
 #loadingScreen{display:none;}
@@ -2168,9 +2169,16 @@ async function submitAuth(){
 async function signInGoogle(){
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    // Use redirect instead of popup — works on all browsers and mobile
-    await auth.signInWithRedirect(provider);
-  } catch(e){ showAuthErr('Google sign-in failed. Try email instead.'); }
+    await auth.signInWithPopup(provider);
+  } catch(e){
+    // If popup blocked, try redirect
+    if(e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user'){
+      const provider = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithRedirect(provider);
+    } else {
+      showAuthErr('Google sign-in failed. Please try email/password instead.');
+    }
+  }
 }
 function doSignOut(){
   if(!confirm('Sign out of Kez Media?')) return;
@@ -2311,7 +2319,7 @@ auth.getRedirectResult().then(result => {
 auth.onAuthStateChanged(async user => {
   const authScreen = document.getElementById('authScreen');
   if(user){
-    if(authScreen) authScreen.style.display='none';
+    if(authScreen) authScreen.classList.add('hidden');
     const saved = loadJSON('kez_me_' + user.uid, {});
     me = Object.assign({
       name: user.displayName || 'Kez User',
@@ -2327,7 +2335,7 @@ auth.onAuthStateChanged(async user => {
     init();
     setTimeout(applyAdminUI, 100);
   } else {
-    if(authScreen) authScreen.style.display='flex';
+    if(authScreen) authScreen.classList.remove('hidden');
   }
 });
 
