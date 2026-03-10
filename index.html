@@ -582,6 +582,10 @@ textarea.form-input{resize:none;min-height:80px;}
       <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       Explore
     </div>
+    <div class="menu-item" id="mn-search" onclick="goTo('search')">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Find People
+    </div>
     <div class="menu-item" onclick="openModal()">
       <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       Create Post
@@ -604,6 +608,10 @@ textarea.form-input{resize:none;min-height:80px;}
     <div class="menu-item" id="mn-settings" onclick="goTo('settings')">
       <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings
+    </div>
+    <div class="menu-item" id="mn-admin" onclick="goTo('admin')" style="display:none;">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2L3 7l9 5 9-5-9-5z"/><path d="M3 17l9 5 9-5"/><path d="M3 12l9 5 9-5"/></svg>
+      Admin Panel
     </div>
     <div style="height:1px;background:var(--border);margin:6px 0;"></div>
     <div class="menu-item" onclick="doSignOut()" style="color:#e05577;">
@@ -647,6 +655,28 @@ textarea.form-input{resize:none;min-height:80px;}
         <div class="page-sub">Discover posts from everyone on Kez Media</div>
       </div>
       <div id="exploreFeed"></div>
+    </div>
+
+    <!-- SEARCH VIEW -->
+    <div class="view" id="view-search">
+      <div class="page-header">
+        <div class="page-title">Search People</div>
+        <div class="page-sub">Find and connect with anyone on Kez Media</div>
+      </div>
+      <div class="search-page-bar">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchPageInput" placeholder="Search by name or @username..." oninput="searchPageUsers(this.value)">
+      </div>
+      <div id="searchPageResults"></div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div class="view" id="view-admin">
+      <div class="page-header">
+        <div class="page-title">👑 Admin Panel</div>
+        <div class="page-sub">Full control of Kez Media</div>
+      </div>
+      <div id="adminDashboard"></div>
     </div>
 
     <!-- NOTIFICATIONS VIEW -->
@@ -1178,14 +1208,93 @@ const CONVOS = [
   {id:5, user:USERS[4], unread:false, messages:[{from:'them',text:"Love the vibes here ✨",time:'Last week'}]},
 ];
 
-const NOTIFS = [
-  {id:1,type:'like',   user:USERS[1], text:'liked your post', time:'2m ago',  unread:true},
-  {id:2,type:'comment',user:USERS[0], text:'commented: "This is amazing!!"', time:'15m ago', unread:true},
-  {id:3,type:'follow', user:USERS[3], text:'started following you', time:'1h ago',  unread:true},
-  {id:4,type:'like',   user:USERS[2], text:'liked your post', time:'3h ago',  unread:false},
-  {id:5,type:'comment',user:USERS[4], text:'commented: "So beautiful 🌸"', time:'5h ago',  unread:false},
-  {id:6,type:'follow', user:USERS[1], text:'started following you', time:'1d ago',  unread:false},
-];
+// ── NOTIFICATIONS (Firestore-backed) ─────────────────
+let notifUnsubscribe = null;
+async function sendNotification(toUid, type, fromUser, extra){
+  // type: 'like'|'comment'|'follow'|'message'
+  if(!toUid || toUid===me.uid || toUid==='system') return;
+  try{
+    await db.collection('notifications').add({
+      toUid, type,
+      fromUid: me.uid,
+      fromName: me.name||me.handle,
+      fromHandle: me.handle,
+      fromColor: me.color,
+      fromInitial: me.initial,
+      fromAvatar: me.avatar||null,
+      extra: extra||'',
+      read: false,
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }catch(e){}
+}
+function watchNotifications(){
+  if(!me.uid) return;
+  if(notifUnsubscribe) notifUnsubscribe();
+  notifUnsubscribe = db.collection('notifications')
+    .where('toUid','==',me.uid)
+    .orderBy('ts','desc')
+    .onSnapshot(snap=>{
+      const count = snap.docs.filter(d=>!d.data().read).length;
+      const badge = document.getElementById('notifBadge');
+      const mnBadge = document.getElementById('mnNotifBadge');
+      if(badge){ badge.textContent=count; badge.classList.toggle('hidden',!count); }
+      if(mnBadge){ mnBadge.textContent=count; mnBadge.style.display=count?'':'none'; }
+      // if notifs view is open, refresh it
+      if(document.getElementById('view-notifs').classList.contains('active')) renderNotifs(snap.docs);
+    });
+}
+function renderNotifs(docs){
+  const list=document.getElementById('notifList');
+  if(!list) return;
+  list.innerHTML='';
+  // If called without docs, fetch them
+  if(!docs){
+    db.collection('notifications').where('toUid','==',me.uid).orderBy('ts','desc').limit(50).get().then(snap=>{
+      renderNotifs(snap.docs);
+    });
+    return;
+  }
+  if(!docs.length){
+    list.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;">No notifications yet 🌸</div>';
+    return;
+  }
+  const icons={like:'❤️',comment:'💬',follow:'👤',message:'✉️',mention:'@'};
+  const texts={like:'liked your post',comment:'commented on your post',follow:'started following you',message:'sent you a message',mention:'mentioned you'};
+  docs.forEach(d=>{
+    const n=d.data(); const nid=d.id;
+    const div=document.createElement('div');
+    div.className='notif-item'+(n.read?'':' unread');
+    div.innerHTML=
+      '<div class="notif-av" style="background:'+(n.fromColor||'var(--pink)')+';color:white;">'
+        +(n.fromAvatar?'<img src="'+n.fromAvatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(n.fromInitial||'?'))
+      +'</div>'
+      +'<div class="notif-icon">'+(icons[n.type]||'🔔')+'</div>'
+      +'<div class="notif-text"><strong>'+esc(n.fromName||n.fromHandle||'Someone')+'</strong> '+(texts[n.type]||n.type)+(n.extra?' — <em>'+esc(n.extra.slice(0,40))+'</em>':'')+'</div>'
+      +'<div class="notif-time" title="'+fullDate(n.ts)+'">'+timeAgo(n.ts)+'</div>';
+    div.addEventListener('click',function(){
+      if(!n.read) db.collection('notifications').doc(nid).update({read:true}).catch(()=>{});
+      div.classList.remove('unread');
+    });
+    list.appendChild(div);
+  });
+  // update unread count label
+  const unread=docs.filter(d=>!d.data().read).length;
+  const uc=document.getElementById('unreadCount');
+  if(uc) uc.textContent=unread?unread+' unread':'All caught up ✓';
+}
+function markAllRead(){
+  db.collection('notifications').where('toUid','==',me.uid).where('read','==',false).get().then(snap=>{
+    const batch=db.batch();
+    snap.docs.forEach(d=>batch.update(d.ref,{read:true}));
+    return batch.commit();
+  }).then(()=>{
+    toast('All notifications marked as read ✓');
+    renderNotifs([]);
+  }).catch(()=>toast('Could not mark as read'));
+}
+function updateNotifBadges(){}// now handled by watchNotifications
+
 
 const COLORS = [
   'linear-gradient(135deg,#e2688a,#f0a0b8)',
@@ -1232,7 +1341,9 @@ function goTo(view){
   if(view==='profile'){layout.classList.add('profile-mode');}
   else{layout.classList.remove('profile-mode');}
   if(view==='profile')refreshProfile();
-  if(view==='notifs')renderNotifs();
+  if(view==='notifs'){renderNotifs();}
+  if(view==='search'){searchPageUsers(document.getElementById('searchPageInput')?.value||'');}
+  if(view==='admin'){refreshAdminDashboard();}
   if(view==='messages'){loadDMConvos();}
   if(view==='settings'){refreshSettings();}
   if(view==='admin')refreshAdmin();
@@ -1254,6 +1365,7 @@ async function init(){
   updateMsgBadges();
   watchUsers();
   loadDMConvos();
+  watchNotifications();
   await seedDummyPosts();
   startPostsListener();
 }
@@ -1385,7 +1497,7 @@ function buildCard(p,i){
       +'<div class="post-avatar card-open-profile" data-uid="'+(p.uid||'')+'" style="background:'+userColor+';cursor:pointer;">'+(userAvatar?'<img src="'+userAvatar+'" alt="">':userInitial)+'</div>'
       +'<div class="post-meta">'
         +'<div class="post-username card-open-profile" data-uid="'+(p.uid||'')+'" style="cursor:pointer;">@'+userHandle+'</div>'
-        +'<div class="post-time">'+esc(p.time||'')+(p.isStatus?' &middot; <span style="color:var(--pink);font-size:11px;">status</span>':'')+'</div>'
+        +'<div class="post-time" title="'+fullDate(p.createdAt||0)+'">'+timeAgo(p.createdAt||0)+(p.isStatus?' &middot; <span style="color:var(--pink);font-size:11px;">status</span>':'')+'</div>'
       +'</div>'
       +'<button class="post-more" data-menu="pm-'+pid+'">'
         +'<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>'
@@ -1499,6 +1611,8 @@ function doLike(id){
     btn.innerHTML=`<svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="lc">${p.likes}</span>`;
   });
   updatePostField(id,{likes:p.likes});
+  // notify post owner
+  if(p.liked && p.uid && p.uid!==me.uid) sendNotification(p.uid,'like',me,'');
 }
 function doSave(id){
   id=String(id);
@@ -1537,6 +1651,8 @@ function addComment(id){
   if(cl){const d=document.createElement('div');d.innerHTML=commentHTML(c);cl.appendChild(d.firstChild);}
   document.querySelectorAll(`#pc-${id}`).forEach(card=>{const cc=card.querySelectorAll('.act')[1];if(cc)cc.querySelector('.cc').textContent=p.comments.length;});
   updatePostField(id,{comments:p.comments,showComments:true});
+  // notify post owner
+  if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'comment',me,txt.slice(0,60));
 }
 function deletePost(id){
   id=String(id);
@@ -1628,25 +1744,6 @@ function showFollowModal(type){
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────
-function renderNotifs(){
-  const list=document.getElementById('notifList');list.innerHTML='';
-  const unread=NOTIFS.filter(n=>n.unread).length;
-  document.getElementById('unreadCount').textContent=unread?`${unread} unread`:'All caught up ✓';
-  const icon={'like':'<svg width="11" height="11" fill="var(--pink)" stroke="var(--pink)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>','comment':'<svg width="11" height="11" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>','follow':'<svg width="11" height="11" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'};
-  // Group: new vs earlier
-  const newNotifs=NOTIFS.filter(n=>n.unread);
-  const oldNotifs=NOTIFS.filter(n=>!n.unread);
-  let delay=0;
-  if(newNotifs.length){
-    const lbl=document.createElement('div');lbl.className='notif-section-label';lbl.textContent='New';list.appendChild(lbl);
-    newNotifs.forEach(n=>{list.appendChild(_buildNotifItem(n,icon,delay));delay+=60;});
-  }
-  if(oldNotifs.length){
-    const lbl=document.createElement('div');lbl.className='notif-section-label';lbl.textContent='Earlier';list.appendChild(lbl);
-    oldNotifs.forEach(n=>{list.appendChild(_buildNotifItem(n,icon,delay));delay+=40;});
-  }
-  updateNotifBadges();
-}
 function _buildNotifItem(n,icon,delay){
   const d=document.createElement('div');d.className=`notif-item ${n.unread?'unread':''}`;
   d.style.animationDelay=delay+'ms';
@@ -1654,27 +1751,10 @@ function _buildNotifItem(n,icon,delay){
   d.onclick=()=>{n.unread=false;d.classList.remove('unread');updateNotifBadges();renderNotifs();};
   return d;
 }
-function markAllRead(){
-  NOTIFS.forEach(n=>n.unread=false);updateNotifBadges();renderNotifs();toast('All notifications marked as read');}
-function updateNotifBadges(){
-  const c=NOTIFS.filter(n=>n.unread).length;
-  document.getElementById('notifBadge').classList.toggle('hidden',!c);
-  document.getElementById('notifBadge').textContent=c;
-  document.getElementById('mnNotifBadge').style.display=c?'':'none';
-  document.getElementById('mnNotifBadge').textContent=c;
-}
 
 // ── MESSAGES ──────────────────────────────────────────
-function renderConvos(filter=''){
-  const list=document.getElementById('convoList');list.innerHTML='';
-  CONVOS.filter(c=>!filter||c.user.name.toLowerCase().includes(filter.toLowerCase())).forEach(c=>{
-    const last=c.messages[c.messages.length-1];
-    const d=document.createElement('div');d.className=`msg-conv ${currentConvo===c.id?'active':''}`;
-    d.innerHTML=`<div class="msg-conv-av" style="background:${c.user.color}">${c.user.initial}</div><div class="msg-conv-info"><div class="msg-conv-name">${c.user.name}</div><div class="msg-conv-last">${last.from==='me'?'You: ':''}${last.text}</div></div><div class="msg-conv-time">${last.time}</div>${c.unread?'<div class="msg-conv-dot"></div>':''}`;
-    d.onclick=()=>openConvo(c.id);
-    list.appendChild(d);
-  });
-}
+// renderConvos replaced by loadDMConvos
+
 function openConvo(id){
   currentConvo=id;
   const c=CONVOS.find(x=>x.id===id);if(!c)return;
@@ -1889,7 +1969,7 @@ async function submitPost(){
   if(postMode==='status'){
     const txt=document.getElementById('statusInput').value.trim();
     if(!txt){toast('Write something first!');return;}
-    const p={id:postId, uid, user:{...me}, images:[], image:null, caption:txt, mood:selectedMood, isStatus:true, likes:0, liked:false, comments:[], saved:false, time:'Just now', showComments:true};
+    const p={id:postId, uid, user:{...me}, images:[], image:null, caption:txt, mood:selectedMood, isStatus:true, likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:true};
     closeModal();
     toast('Posting... ✨');
     await savePostToFirestore(p);
@@ -1904,7 +1984,7 @@ async function submitPost(){
       const url = await uploadToStorage(uploadImages[i], `posts/${uid}/${Date.now()}_${i}`);
       imageUrls.push(url);
     }
-    const p={id:postId, uid, user:{...me}, images:imageUrls, image:imageUrls[0]||null, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', showComments:false};
+    const p={id:postId, uid, user:{...me}, images:imageUrls, image:imageUrls[0]||null, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
     await savePostToFirestore(p);
     toast('Post shared! 🌸');
   }
@@ -1984,7 +2064,7 @@ function openLightbox(pid){
         +'<div class="post-avatar card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="background:'+p.user.color+';width:34px;height:34px;font-size:13px;cursor:pointer;">'+(p.user.avatar?'<img src="'+p.user.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(p.user.initial))+'</div>'
         +'<div class="card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="cursor:pointer;">'
           +'<div style="font-size:13.5px;font-weight:600;">@'+esc(p.user.handle)+'</div>'
-          +'<div style="font-size:11.5px;color:var(--text3);">'+esc(p.time||'')+'</div>'
+          +'<div style="font-size:11.5px;color:var(--text3);" title="'+fullDate(p.createdAt||0)+'">'+timeAgo(p.createdAt||0)+'</div>'
         +'</div>'
         +'<button class="lb-close" onclick="closeLightbox()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
       +'</div>'
@@ -2039,6 +2119,45 @@ function updateLbLike(pid){
   const btn=document.getElementById('lbLikeBtn');const cnt=document.getElementById('lbLikeCount');
   if(btn){btn.className=`act ${p.liked?'liked':''}`;btn.querySelector('svg').setAttribute('fill',p.liked?'var(--pink)':'none');btn.querySelector('svg').setAttribute('stroke',p.liked?'var(--pink)':'currentColor');}
   if(cnt)cnt.textContent=p.likes;
+}
+
+
+// ── TIME AGO ──────────────────────────────────────────
+function timeAgo(ts){
+  if(!ts) return '';
+  const now=Date.now();
+  // ts can be Firestore Timestamp, millis number, or Date
+  let ms;
+  if(ts && typeof ts.toMillis === 'function') ms=ts.toMillis();
+  else if(ts && ts.seconds) ms=ts.seconds*1000;
+  else if(typeof ts==='number') ms=ts;
+  else ms=new Date(ts).getTime();
+  const diff=now-ms;
+  const s=Math.floor(diff/1000);
+  const m=Math.floor(s/60);
+  const h=Math.floor(m/60);
+  const d=Math.floor(h/24);
+  const wk=Math.floor(d/7);
+  const mo=Math.floor(d/30);
+  const yr=Math.floor(d/365);
+  if(s<5) return 'just now';
+  if(s<60) return s+'s ago';
+  if(m<60) return m+'m ago';
+  if(h<24) return h+'h ago';
+  if(d===1) return 'yesterday';
+  if(d<7) return d+' days ago';
+  if(wk<5) return wk+'w ago';
+  if(mo<12) return mo+'mo ago';
+  return yr+'y ago';
+}
+function fullDate(ts){
+  if(!ts) return '';
+  let ms;
+  if(ts && typeof ts.toMillis === 'function') ms=ts.toMillis();
+  else if(ts && ts.seconds) ms=ts.seconds*1000;
+  else if(typeof ts==='number') ms=ts;
+  else ms=new Date(ts).getTime();
+  return new Date(ms).toLocaleString([],{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 // ── USER SEARCH ───────────────────────────────────────
@@ -2176,14 +2295,14 @@ function toggleFollowUser(uid,name){
   if(idx>-1){
     me.following.splice(idx,1);
     if(btn){btn.textContent='Follow';btn.classList.remove('following');}
-    toast(`Unfollowed ${name}`);
-    // decrement their followers count
+    toast('Unfollowed '+name);
     db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(-1)}).catch(()=>{});
   } else {
     me.following.push(uid);
     if(btn){btn.textContent='Following';btn.classList.add('following');}
-    toast(`Following ${name}! 🌸`);
+    toast('Following '+name+'! 🌸');
     db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
+    sendNotification(uid,'follow',me,'');
   }
   saveProfileToFirestore();
 }
@@ -2279,6 +2398,8 @@ async function sendDM(convoId){
     from:me.uid,text:txt,ts:firebase.firestore.FieldValue.serverTimestamp()
   });
   db.collection('dms').doc(convoId).update({lastMsg:txt,lastTs:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+  // notify recipient
+  if(activeDMUid && activeDMUid!==me.uid) sendNotification(activeDMUid,'message',me,txt.slice(0,60));
 }
 
 // Load DM conversations list from Firestore
@@ -2363,6 +2484,18 @@ function uploadBanner(inp){
 
 // ── UTILS ─────────────────────────────────────────────
 function expandImg(src){document.getElementById('imgExpSrc').src=src;document.getElementById('imgExp').classList.add('open');}
+// refresh all post times every 60s
+setInterval(function(){
+  document.querySelectorAll('.post-time').forEach(function(el){
+    // find closest post card and re-render time
+    var card=el.closest('.post-card');
+    if(!card) return;
+    var pid=card.id.replace('pc-','');
+    var p=posts.find(function(x){return String(x.id)===pid;});
+    if(p&&p.createdAt) el.textContent=timeAgo(p.createdAt)+(p.isStatus?' · status':'');
+  });
+},60000);
+
 function toast(msg){const el=document.getElementById('toastEl');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
 // Legacy stubs (no longer used for posts — kept for any remaining calls)
 function savePosts(){}
@@ -2455,6 +2588,8 @@ auth.onAuthStateChanged(async function(user){
     if(badge) badge.style.display = admin ? 'inline-flex' : 'none';
     const adminNav = document.getElementById('sn-admin');
     if(adminNav) adminNav.style.display = admin ? 'flex' : 'none';
+    const adminSideNav = document.getElementById('mn-admin');
+    if(adminSideNav) adminSideNav.style.display = admin ? 'flex' : 'none';
     const sub = document.getElementById('settingsSubtitle');
     if(sub) sub.textContent = admin ? 'Manage your account — you have full admin access' : 'Manage your account and preferences';
   } else {
