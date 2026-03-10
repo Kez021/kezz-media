@@ -1345,83 +1345,142 @@ function renderExploreFeed(){
 }
 
 function buildCard(p,i){
-  const card=document.createElement('div');card.className='post-card';card.id=`pc-${p.id}`;card.style.animationDelay=`${i*.05}s`;
-  const own = (p.uid && p.uid===me.uid) || isAdmin();
+  const pid=String(p.id);
+  const card=document.createElement('div');
+  card.className='post-card';
+  card.id='pc-'+pid;
+  card.style.animationDelay=(i*.05)+'s';
+  const own=(p.uid&&p.uid===me.uid)||isAdmin();
   const imgs=p.images||(p.image?[p.image]:[]);
-  const pid = JSON.stringify(String(p.id)); // safely quoted for onclick
+  const userHandle=esc((p.user&&p.user.handle)||'');
+  const userColor=(p.user&&p.user.color)||'var(--pink)';
+  const userInitial=esc((p.user&&p.user.initial)||'?');
+  const userAvatar=(p.user&&p.user.avatar)||'';
 
-  // ── media section
   let mediaHTML='';
   if(p.isStatus){
-    mediaHTML=`<div class="status-body">
-      <p class="status-text">${esc(p.caption)}</p>
-      ${p.mood?`<div class="status-mood-tag">${esc(p.mood)}</div>`:''}
-    </div>`;
-  } else if(imgs.length===0){
-    mediaHTML='';
+    mediaHTML='<div class="status-body"><p class="status-text">'+esc(p.caption||'')+'</p>'+(p.mood?'<div class="status-mood-tag">'+esc(p.mood)+'</div>':'')+'</div>';
   } else if(imgs.length===1){
-    mediaHTML=`<div class="carousel-wrap"><img style="width:100%;max-height:520px;object-fit:cover;display:block;cursor:pointer;" src="${imgs[0]}" onclick="expandImg('${imgs[0]}')" alt="post"></div>`;
-  } else {
-    const slides=imgs.map(src=>`<div class="carousel-slide"><img src="${src}" onclick="expandImg('${src}')" alt="post"></div>`).join('');
-    const dots=imgs.map((_,di)=>`<span class="carousel-dot ${di===0?'active':''}" onclick="goSlide('car-${p.id}',${di})"></span>`).join('');
-    mediaHTML=`<div class="carousel-wrap" id="car-${p.id}" data-idx="0"
-      onmouseenter="stopFeedAutoSlide(${pid})" onmouseleave="startFeedAutoSlide(${pid},${imgs.length})">
-      <div class="carousel-track" id="ct-${p.id}">${slides}</div>
-      <button class="carousel-btn carousel-prev" onclick="shiftSlide('car-${p.id}',-1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <button class="carousel-btn carousel-next" onclick="shiftSlide('car-${p.id}',1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
-      <div class="carousel-dots" id="cd-${p.id}">${dots}</div>
-      <div class="multi-badge"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2H22V17"/></svg>${imgs.length}</div>
-    </div>`;
-    setTimeout(()=>startFeedAutoSlide(String(p.id),imgs.length),600+i*80);
+    mediaHTML='<div class="carousel-wrap"><img class="card-img-click" data-src="'+encodeURIComponent(imgs[0])+'" style="width:100%;max-height:520px;object-fit:cover;display:block;cursor:pointer;" src="'+imgs[0]+'" alt="post"></div>';
+  } else if(imgs.length>1){
+    let slides='',dots='';
+    imgs.forEach(function(src,si){slides+='<div class="carousel-slide"><img class="card-img-click" data-src="'+encodeURIComponent(src)+'" src="'+src+'" alt="post"></div>';});
+    imgs.forEach(function(_,di){dots+='<span class="carousel-dot '+(di===0?'active':'')+'" data-slide="'+di+'"></span>';});
+    mediaHTML='<div class="carousel-wrap" id="car-'+pid+'" data-pid="'+pid+'" data-count="'+imgs.length+'" data-idx="0">'
+      +'<div class="carousel-track" id="ct-'+pid+'">'+slides+'</div>'
+      +'<button class="carousel-btn carousel-prev" data-dir="-1" data-car="car-'+pid+'">&#8249;</button>'
+      +'<button class="carousel-btn carousel-next" data-dir="1" data-car="car-'+pid+'">&#8250;</button>'
+      +'<div class="carousel-dots" id="cd-'+pid+'">'+dots+'</div>'
+      +'<div class="multi-badge">'+imgs.length+'</div>'
+      +'</div>';
+    setTimeout(function(){startFeedAutoSlide(pid,imgs.length);},600+i*80);
   }
 
-  const captionRow = (!p.isStatus && p.caption)
-    ? `<div class="post-content"><div class="post-caption"><span class="uname">@${esc(p.user.handle)}</span>${esc(p.caption)}</div></div>` : '';
+  const captionRow=(!p.isStatus&&p.caption)?'<div class="post-content"><div class="post-caption"><span class="uname">@'+userHandle+'</span>'+esc(p.caption)+'</div></div>':'';
+  const commentList=(p.showComments?p.comments:p.comments.slice(-1)).map(commentHTML).join('');
+  const viewAll=p.comments.length>2&&!p.showComments?'<div class="view-all" data-pid="'+pid+'">View all '+p.comments.length+' comments</div>':'';
 
-  card.innerHTML=`
-    <div class="post-header">
-      <div class="post-avatar" style="background:${p.user.color};cursor:pointer;" onclick="viewProfile(${JSON.stringify(p.uid)})">${p.user.avatar?`<img src="${p.user.avatar}" alt="">`:esc(p.user.initial)}</div>
-      <div class="post-meta">
-        <div class="post-username" onclick="viewProfile(${JSON.stringify(p.uid)})" style="cursor:pointer;">@${esc(p.user.handle)}</div>
-        <div class="post-time">${esc(p.time||'')}${p.isStatus?` · <span style="color:var(--pink);font-size:11px;">status</span>`:''}</div>
-      </div>
-      <button class="post-more" onclick="toggleMenu(event,'pm-${p.id}')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-      </button>
-      <div class="post-menu" id="pm-${p.id}">
-        ${own?`<div class="pm-item danger" onclick="deletePost(${pid})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>Delete</div>`:''}
-        ${!own?`<div class="pm-item" onclick="openDMFromPost(${JSON.stringify(p.uid)},${JSON.stringify(p.user.name)});closeMenus()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Message</div>`:''}
-        <div class="pm-item" onclick="toast('Link copied!');closeMenus()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy link</div>
-        <div class="pm-item" onclick="toast('Reported');closeMenus()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Report</div>
-      </div>
-    </div>
-    ${mediaHTML}
-    <div class="post-actions">
-      <button class="act ${p.liked?'liked':''}" onclick="doLike(${pid})">
-        <svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        <span class="lc">${p.likes}</span>
-      </button>
-      <button class="act" onclick="openLightbox(${pid})">
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span class="cc">${p.comments.length}</span>
-      </button>
-      <button class="act" onclick="toast('Post shared!')">
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
-      <button class="act act-right ${p.saved?'liked':''}" onclick="doSave(${pid})">
-        <svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-      </button>
-    </div>
-    ${captionRow}
-    <div class="comments-wrap" id="cw-${p.id}">
-      ${p.comments.length>2&&!p.showComments?`<div class="view-all" onclick="toggleComments(${pid})">View all ${p.comments.length} comments</div>`:''}
-      <div id="cl-${p.id}">${(p.showComments?p.comments:p.comments.slice(-1)).map(commentHTML).join('')}</div>
-      <div class="c-input-row">
-        <div class="c-avatar" style="background:${me.color};color:white;">${me.initial}</div>
-        <input class="c-input" id="ci-${p.id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(${pid})">
-        <button class="c-send" onclick="addComment(${pid})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-      </div>
-    </div>`;
+  card.innerHTML=
+    '<div class="post-header">'
+      +'<div class="post-avatar card-open-profile" data-uid="'+(p.uid||'')+'" style="background:'+userColor+';cursor:pointer;">'+(userAvatar?'<img src="'+userAvatar+'" alt="">':userInitial)+'</div>'
+      +'<div class="post-meta">'
+        +'<div class="post-username card-open-profile" data-uid="'+(p.uid||'')+'" style="cursor:pointer;">@'+userHandle+'</div>'
+        +'<div class="post-time">'+esc(p.time||'')+(p.isStatus?' &middot; <span style="color:var(--pink);font-size:11px;">status</span>':'')+'</div>'
+      +'</div>'
+      +'<button class="post-more" data-menu="pm-'+pid+'">'
+        +'<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>'
+      +'</button>'
+      +'<div class="post-menu" id="pm-'+pid+'">'
+        +(own?'<div class="pm-item danger" data-delete="'+pid+'">🗑 Delete</div>':'')
+        +(!own?'<div class="pm-item card-dm" data-uid="'+(p.uid||'')+'" data-name="'+esc((p.user&&p.user.name)||userHandle||'User')+'">💬 Message</div>':'')
+        +'<div class="pm-item" data-action="copylink">🔗 Copy link</div>'
+        +'<div class="pm-item" data-action="report">🚩 Report</div>'
+      +'</div>'
+    +'</div>'
+    +mediaHTML
+    +'<div class="post-actions">'
+      +'<button class="act '+(p.liked?'liked':'')+'" data-like="'+pid+'">'
+        +'<svg width="17" height="17" fill="'+(p.liked?'var(--pink)':'none')+'" stroke="'+(p.liked?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+        +'<span class="lc">'+p.likes+'</span>'
+      +'</button>'
+      +'<button class="act" data-lightbox="'+pid+'">'
+        +'<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+        +'<span class="cc">'+p.comments.length+'</span>'
+      +'</button>'
+      +'<button class="act" data-action="share">'
+        +'<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+      +'</button>'
+      +'<button class="act act-right '+(p.saved?'liked':'')+'" data-save="'+pid+'">'
+        +'<svg width="17" height="17" fill="'+(p.saved?'var(--pink)':'none')+'" stroke="'+(p.saved?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
+      +'</button>'
+    +'</div>'
+    +captionRow
+    +'<div class="comments-wrap" id="cw-'+pid+'">'
+      +viewAll
+      +'<div id="cl-'+pid+'">'+commentList+'</div>'
+      +'<div class="c-input-row">'
+        +'<div class="c-avatar" style="background:'+me.color+';color:white;">'+me.initial+'</div>'
+        +'<input class="c-input" id="ci-'+pid+'" placeholder="Add a comment...">'
+        +'<button class="c-send" data-comment="'+pid+'"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
+      +'</div>'
+    +'</div>';
+
+  // Attach all event listeners via JS — no inline onclick with dynamic strings needed
+  card.querySelectorAll('.card-open-profile').forEach(function(el){
+    el.addEventListener('click',function(){viewProfile(el.dataset.uid);});
+  });
+  card.querySelectorAll('[data-like]').forEach(function(el){
+    el.addEventListener('click',function(){doLike(el.dataset.like);});
+  });
+  card.querySelectorAll('[data-save]').forEach(function(el){
+    el.addEventListener('click',function(){doSave(el.dataset.save);});
+  });
+  card.querySelectorAll('[data-lightbox]').forEach(function(el){
+    el.addEventListener('click',function(){openLightbox(el.dataset.lightbox);});
+  });
+  card.querySelectorAll('[data-comment]').forEach(function(el){
+    el.addEventListener('click',function(){addComment(el.dataset.comment);});
+  });
+  var inp=card.querySelector('.c-input');
+  if(inp) inp.addEventListener('keydown',function(e){if(e.key==='Enter')addComment(pid);});
+  card.querySelectorAll('[data-delete]').forEach(function(el){
+    el.addEventListener('click',function(){deletePost(el.dataset.delete);});
+  });
+  card.querySelectorAll('.card-dm').forEach(function(el){
+    el.addEventListener('click',function(){openDMFromPost(el.dataset.uid,el.dataset.name);closeMenus();});
+  });
+  card.querySelectorAll('[data-action]').forEach(function(el){
+    el.addEventListener('click',function(){
+      if(el.dataset.action==='copylink')toast('Link copied!');
+      else if(el.dataset.action==='report')toast('Reported');
+      else if(el.dataset.action==='share')toast('Post shared!');
+      closeMenus();
+    });
+  });
+  card.querySelectorAll('[data-menu]').forEach(function(el){
+    el.addEventListener('click',function(e){toggleMenu(e,el.dataset.menu);});
+  });
+  card.querySelectorAll('[data-delete]').forEach(function(el){
+    el.addEventListener('click',function(){deletePost(el.dataset.delete);});
+  });
+  card.querySelectorAll('.view-all').forEach(function(el){
+    el.addEventListener('click',function(){toggleComments(el.dataset.pid);});
+  });
+  card.querySelectorAll('.card-img-click').forEach(function(el){
+    el.addEventListener('click',function(){expandImg(decodeURIComponent(el.dataset.src));});
+  });
+  card.querySelectorAll('[data-slide]').forEach(function(el){
+    el.addEventListener('click',function(){goSlide('car-'+pid,parseInt(el.dataset.slide));});
+  });
+  card.querySelectorAll('[data-car]').forEach(function(el){
+    el.addEventListener('click',function(){shiftSlide(el.dataset.car,parseInt(el.dataset.dir));});
+  });
+  var wrap=card.querySelector('.carousel-wrap[data-pid]');
+  if(wrap){
+    wrap.addEventListener('mouseenter',function(){stopFeedAutoSlide(pid);});
+    wrap.addEventListener('mouseleave',function(){startFeedAutoSlide(pid,imgs.length);});
+  }
+
   return card;
 }
 
@@ -1901,17 +1960,13 @@ function openLightbox(pid){
   const p=posts.find(x=>String(x.id)===pid);if(!p)return;
   const imgs=p.images||(p.image?[p.image]:[]);
   const inner=document.getElementById('lightboxInner');
-  const ppid=JSON.stringify(pid);
+  // Use registry for all string IDs in onclick attrs
+  const iPid=_r(pid);
+  const iUid=_r(String(p.uid||''));
   let imgSide='';
   if(imgs.length===0){
     if(p.isStatus){
-      imgSide=`<div class="lightbox-img-side" style="background:var(--bg2);display:flex;align-items:center;justify-content:center;padding:40px 36px;">
-        <div>
-          <div style="width:36px;height:3px;background:var(--pink);border-radius:2px;margin-bottom:20px;"></div>
-          <div style="font-size:${(p.caption||'').length>120?'16px':(p.caption||'').length>60?'19px':'22px'};line-height:1.7;color:var(--text);word-break:break-word;">${esc(p.caption||'')}</div>
-          ${p.mood?`<div style="margin-top:16px;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);background:var(--bg3);padding:4px 12px;border-radius:20px;border:1px solid var(--border);">${esc(p.mood)}</div>`:''}
-        </div>
-      </div>`;
+      imgSide=`<div class="lightbox-img-side" style="background:var(--bg2);display:flex;align-items:center;justify-content:center;padding:40px 36px;"><div><div style="width:36px;height:3px;background:var(--pink);border-radius:2px;margin-bottom:20px;"></div><div style="font-size:${(p.caption||'').length>120?'16px':(p.caption||'').length>60?'19px':'22px'};line-height:1.7;color:var(--text);word-break:break-word;">${esc(p.caption||'')}</div>${p.mood?`<div style="margin-top:16px;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);background:var(--bg3);padding:4px 12px;border-radius:20px;border:1px solid var(--border);">${esc(p.mood)}</div>`:''}</div></div>`;
     } else {
       imgSide=`<div class="lightbox-img-side" style="background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:48px;">🖼️</div>`;
     }
@@ -1920,40 +1975,49 @@ function openLightbox(pid){
   } else {
     const slides=imgs.map(src=>`<div class="carousel-slide" style="min-width:100%;"><img src="${src}" style="width:100%;max-height:90vh;object-fit:contain;display:block;"></div>`).join('');
     const dots=imgs.map((_,di)=>`<span class="carousel-dot ${di===0?'active':''}" onclick="goSlide('lbcar',${di})"></span>`).join('');
-    imgSide=`<div class="lightbox-img-side" style="overflow:hidden;"><div id="lbcar" data-idx="0" style="position:relative;height:100%;overflow:hidden;"><div class="carousel-track" id="ctlbcar" style="display:flex;height:100%;">${slides}</div><button class="carousel-btn carousel-prev" onclick="shiftSlide('lbcar',-1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><button class="carousel-btn carousel-next" onclick="shiftSlide('lbcar',1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button><div class="carousel-dots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;">${dots}</div></div></div>`;
+    imgSide=`<div class="lightbox-img-side" style="overflow:hidden;"><div id="lbcar" data-idx="0" style="position:relative;height:100%;overflow:hidden;"><div class="carousel-track" id="ctlbcar" style="display:flex;height:100%;">${slides}</div><button class="carousel-btn carousel-prev" onclick="shiftSlide('lbcar',-1)">&#8249;</button><button class="carousel-btn carousel-next" onclick="shiftSlide('lbcar',1)">&#8250;</button><div class="carousel-dots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;">${dots}</div></div></div>`;
   }
-  inner.innerHTML=`
-    ${imgSide}
-    <div class="lightbox-info-side">
-      <div class="lb-header">
-        <div class="post-avatar" style="background:${p.user.color};width:34px;height:34px;font-size:13px;cursor:pointer;" onclick="closeLightbox();viewProfile(${JSON.stringify(p.uid)})">${p.user.avatar?`<img src="${p.user.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(p.user.initial)}</div>
-        <div style="cursor:pointer;" onclick="closeLightbox();viewProfile(${JSON.stringify(p.uid)})">
-          <div style="font-size:13.5px;font-weight:600;">@${esc(p.user.handle)}</div>
-          <div style="font-size:11.5px;color:var(--text3);">${esc(p.time||'')}</div>
-        </div>
-        <button class="lb-close" onclick="closeLightbox()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      </div>
-      ${p.caption?`<div class="lb-caption"><span style="font-weight:600;margin-right:6px;">@${esc(p.user.handle)}</span>${esc(p.caption)}</div>`:''}
-      <div class="lb-comments" id="lbComments">${(p.comments||[]).map(c=>`<div class="comment" style="margin-bottom:10px;">${commentHTML(c)}</div>`).join('')}</div>
-      <div class="lb-actions">
-        <button class="act ${p.liked?'liked':''}" id="lbLikeBtn" onclick="doLike(${ppid});updateLbLike(${ppid})">
-          <svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <span id="lbLikeCount">${p.likes}</span>
-        </button>
-        <button class="act" onclick="toast('Shared!')"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-        <button class="act act-right ${p.saved?'liked':''}" onclick="doSave(${ppid})"><svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
-      </div>
-      <div class="lb-comment-input">
-        <div class="c-avatar" style="background:${me.color};color:white;">${me.initial}</div>
-        <input class="c-input" id="lbCommentInput" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addLbComment(${ppid})">
-        <button class="c-send" onclick="addLbComment(${ppid})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-      </div>
-    </div>`;
+  inner.innerHTML=
+    imgSide
+    +'<div class="lightbox-info-side">'
+      +'<div class="lb-header">'
+        +'<div class="post-avatar card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="background:'+p.user.color+';width:34px;height:34px;font-size:13px;cursor:pointer;">'+(p.user.avatar?'<img src="'+p.user.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(p.user.initial))+'</div>'
+        +'<div class="card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="cursor:pointer;">'
+          +'<div style="font-size:13.5px;font-weight:600;">@'+esc(p.user.handle)+'</div>'
+          +'<div style="font-size:11.5px;color:var(--text3);">'+esc(p.time||'')+'</div>'
+        +'</div>'
+        +'<button class="lb-close" onclick="closeLightbox()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
+      +'</div>'
+      +(p.caption?'<div class="lb-caption"><span style="font-weight:600;margin-right:6px;">@'+esc(p.user.handle)+'</span>'+esc(p.caption)+'</div>':'')
+      +'<div class="lb-comments" id="lbComments">'+(p.comments||[]).map(function(c){return '<div class="comment" style="margin-bottom:10px;">'+commentHTML(c)+'</div>';}).join('')+'</div>'
+      +'<div class="lb-actions">'
+        +'<button class="act '+(p.liked?'liked':'')+'" id="lbLikeBtn"><svg width="17" height="17" fill="'+(p.liked?'var(--pink)':'none')+'" stroke="'+(p.liked?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span id="lbLikeCount">'+p.likes+'</span></button>'
+        +'<button class="act"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
+        +'<button class="act act-right '+(p.saved?'liked':'')+'"><svg width="17" height="17" fill="'+(p.saved?'var(--pink)':'none')+'" stroke="'+(p.saved?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>'
+      +'</div>'
+      +'<div class="lb-comment-input">'
+        +'<div class="c-avatar" style="background:'+me.color+';color:white;">'+me.initial+'</div>'
+        +'<input class="c-input" id="lbCommentInput" placeholder="Add a comment...">'
+        +'<button class="c-send"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
+      +'</div>'
+    +'</div>';
   document.getElementById('lightbox').classList.add('open');
   clearInterval(lbAutoTimer);
-  if(imgs.length>1){
-    lbAutoTimer=setInterval(()=>shiftSlide('lbcar',1),3000);
-  }
+  if(imgs.length>1){ lbAutoTimer=setInterval(()=>shiftSlide('lbcar',1),3000); }
+  // Attach lightbox event listeners safely
+  var lbLikeBtn=document.getElementById('lbLikeBtn');
+  var lbSaveBtn=inner.querySelector('.act-right');
+  var lbCommentBtn=inner.querySelector('.c-send');
+  var lbCommentInp=document.getElementById('lbCommentInput');
+  var lbShareBtn=inner.querySelectorAll('.act')[1];
+  if(lbLikeBtn) lbLikeBtn.addEventListener('click',function(){doLike(pid);updateLbLike(pid);});
+  if(lbSaveBtn) lbSaveBtn.addEventListener('click',function(){doSave(pid);});
+  if(lbShareBtn) lbShareBtn.addEventListener('click',function(){toast('Shared!');});
+  if(lbCommentBtn) lbCommentBtn.addEventListener('click',function(){addLbComment(pid);});
+  if(lbCommentInp) lbCommentInp.addEventListener('keydown',function(e){if(e.key==='Enter')addLbComment(pid);});
+  inner.querySelectorAll('.card-open-profile-lb').forEach(function(el){
+    el.addEventListener('click',function(){closeLightbox();viewProfile(el.dataset.uid);});
+  });
 }
 function closeLightbox(){document.getElementById('lightbox').classList.remove('open');clearInterval(lbAutoTimer);}
 function addLbComment(pid){
@@ -2016,8 +2080,9 @@ async function searchUsers(q){
   if(!results.length){
     drop.innerHTML=`<div class="search-empty">No users found for "@${q}"</div>`;return;
   }
-  drop.innerHTML=results.slice(0,8).map(u=>`
-    <div class="search-result" onclick="closeSearch();viewProfile(${JSON.stringify(u.uid)})">
+  drop.innerHTML=results.slice(0,8).map(u=>{
+    const iU=_r(String(u.uid||''));
+    return `<div class="search-result" onclick="closeSearch();viewProfile(_g(${iU}))">
       <div class="search-result-av" style="background:${u.color||'var(--pink)'}">
         ${u.avatar?`<img src="${u.avatar}" alt="">`:(u.initial||u.name?.[0]||'?')}
       </div>
@@ -2025,7 +2090,8 @@ async function searchUsers(q){
         <div class="search-result-name">${esc(u.name||u.handle||'User')}</div>
         <div class="search-result-handle">@${esc(u.handle||'')}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function closeSearch(){
@@ -2057,6 +2123,16 @@ async function viewProfile(uid){
   const userPosts=posts.filter(p=>p.uid===uid&&!p.isStatus);
   const isFollowing=(me.following||[]).includes(uid);
 
+  // Use registry for safe onclick
+  const iUid2=_r(String(uid));
+  const iProfName=_r(String(prof.name||prof.handle||'User'));
+  const postItems=userPosts.map(p=>{
+    const img=(p.images&&p.images[0])||p.image||null;
+    const iPstId=_r(String(p.id));
+    return img
+      ?`<div class="upm-grid-item" onclick="closeUserProfile();openLightbox(_g(${iPstId}))"><img src="${img}" alt=""></div>`
+      :`<div class="upm-grid-item" style="display:flex;align-items:center;justify-content:center;" onclick="closeUserProfile();openLightbox(_g(${iPstId}))"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+  }).join('');
   content.innerHTML=`
     <div class="upm-banner" style="background:${prof.bannerColor||'linear-gradient(135deg,#f4a8c0,#e2688a)'}">
       ${prof.bannerImage?`<img class="upm-banner-img" src="${prof.bannerImage}" alt="">`:''}
@@ -2067,11 +2143,11 @@ async function viewProfile(uid){
         ${prof.avatar?`<img src="${prof.avatar}" alt="">`:esc(prof.initial||prof.name?.[0]||'U')}
       </div>
       <div class="upm-actions">
-        <button class="upm-msg-btn" onclick="closeUserProfile();openDMFromPost(${JSON.stringify(uid)},${JSON.stringify(prof.name||prof.handle||'User')})">
+        <button class="upm-msg-btn" onclick="closeUserProfile();openDMFromPost(_g(${iUid2}),_g(${iProfName}))">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Message
         </button>
-        <button class="upm-follow-btn ${isFollowing?'following':''}" id="upmFollowBtn" onclick="toggleFollowUser(${JSON.stringify(uid)},${JSON.stringify(prof.name||'User')})">
+        <button class="upm-follow-btn ${isFollowing?'following':''}" id="upmFollowBtn" onclick="toggleFollowUser(_g(${iUid2}),_g(${iProfName}))">
           ${isFollowing?'Following':'Follow'}
         </button>
       </div>
@@ -2080,17 +2156,12 @@ async function viewProfile(uid){
       ${prof.bio?`<div class="upm-bio">${esc(prof.bio)}</div>`:''}
       <div class="upm-stats">
         <div class="upm-stat"><div class="upm-stat-n">${userPosts.length}</div><div class="upm-stat-l">Posts</div></div>
-        <div class="upm-stat"><div class="upm-stat-n">${(prof.followersCount||0)}</div><div class="upm-stat-l">Followers</div></div>
-        <div class="upm-stat"><div class="upm-stat-n">${((prof.following||[]).length)}</div><div class="upm-stat-l">Following</div></div>
+        <div class="upm-stat"><div class="upm-stat-n">${prof.followersCount||0}</div><div class="upm-stat-l">Followers</div></div>
+        <div class="upm-stat"><div class="upm-stat-n">${(prof.following||[]).length}</div><div class="upm-stat-l">Following</div></div>
       </div>
     </div>
     <div class="upm-posts-grid">
-      ${userPosts.length?userPosts.map(p=>{
-        const img=(p.images&&p.images[0])||p.image||null;
-        return img
-          ?`<div class="upm-grid-item" onclick="closeUserProfile();openLightbox(${JSON.stringify(String(p.id))})"><img src="${img}" alt=""></div>`
-          :`<div class="upm-grid-item" style="display:flex;align-items:center;justify-content:center;" onclick="closeUserProfile();openLightbox(${JSON.stringify(String(p.id))})"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
-      }).join(''):'<div class="upm-empty">No posts yet</div>'}
+      ${userPosts.length?postItems:'<div class="upm-empty">No posts yet</div>'}
     </div>`;
 }
 
@@ -2151,18 +2222,18 @@ async function openDMWith(otherUid,otherName){
   const chatArea=document.getElementById('chatArea');
   chatArea.innerHTML=`
     <div class="chat-header">
-      <div class="post-avatar" style="background:${otherProf.color||'var(--pink)'};width:36px;height:36px;font-size:13px;cursor:pointer;" onclick="viewProfile(${JSON.stringify(otherUid)})">
+      <div class="post-avatar" style="background:${otherProf.color||'var(--pink)'};width:36px;height:36px;font-size:13px;cursor:pointer;" onclick="viewProfile(_g(${_r(otherUid)}))">
         ${otherProf.avatar?`<img src="${otherProf.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(otherProf.initial||otherProf.name?.[0]||'U')}
       </div>
-      <div style="cursor:pointer;" onclick="viewProfile(${JSON.stringify(otherUid)})">
+      <div style="cursor:pointer;" onclick="viewProfile(_g(${_r(otherUid)}))">
         <div style="font-size:14px;font-weight:600;">${esc(otherProf.name||'User')}</div>
         <div style="font-size:11px;color:var(--text3);">@${esc(otherProf.handle||'user')}</div>
       </div>
     </div>
     <div class="chat-msgs" id="chatMsgs"></div>
     <div class="chat-input-row">
-      <input class="c-input" id="dmInput" placeholder="Send a message..." onkeydown="if(event.key==='Enter')sendDM(${JSON.stringify(convoId)})">
-      <button class="c-send" onclick="sendDM(${JSON.stringify(convoId)})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      <input class="c-input" id="dmInput" placeholder="Send a message..." onkeydown="if(event.key==='Enter')sendDM(_g(${_r(convoId)}))">
+      <button class="c-send" onclick="sendDM(_g(${_r(convoId)}))"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
     </div>`;
 
   // listen to messages in real time
