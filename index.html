@@ -187,7 +187,45 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;background:var(-
 .pm-item.danger{color:#e05577;}
 .pm-item.danger:hover{background:rgba(224,85,119,.08);}
 
-/* ─── RIGHT SIDEBAR ────────────────────────────────── */
+/* ─── NAV SEARCH DROPDOWN ──────────────────────────── */
+.search-dropdown{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.12);z-index:200;max-height:320px;overflow-y:auto;display:none;}
+.search-dropdown.open{display:block;}
+.search-result{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .15s;}
+.search-result:hover{background:var(--bg3);}
+.search-result-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;overflow:hidden;}
+.search-result-av img{width:100%;height:100%;object-fit:cover;}
+.search-result-name{font-size:13px;font-weight:600;}
+.search-result-handle{font-size:11px;color:var(--text3);}
+.search-empty{padding:20px;text-align:center;color:var(--text3);font-size:13px;}
+
+/* ─── USER PROFILE MODAL ───────────────────────────── */
+.user-profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;}
+.user-profile-overlay.open{display:flex;}
+.user-profile-modal{background:var(--card);border-radius:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.upm-banner{height:120px;position:relative;border-radius:20px 20px 0 0;overflow:hidden;}
+.upm-banner-img{width:100%;height:100%;object-fit:cover;}
+.upm-top{padding:0 20px 16px;position:relative;}
+.upm-av{width:72px;height:72px;border-radius:50%;border:3px solid var(--card);margin-top:-36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;color:white;overflow:hidden;position:relative;z-index:1;}
+.upm-av img{width:100%;height:100%;object-fit:cover;}
+.upm-actions{position:absolute;top:12px;right:16px;display:flex;gap:8px;}
+.upm-follow-btn{background:var(--pink);color:white;border:none;border-radius:20px;padding:7px 18px;font-size:13px;font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;transition:all .2s;}
+.upm-follow-btn:hover{background:var(--pink-soft);}
+.upm-follow-btn.following{background:transparent;border:1px solid var(--pink);color:var(--pink);}
+.upm-msg-btn{background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.upm-msg-btn:hover{border-color:var(--pink);color:var(--pink);}
+.upm-close{background:rgba(0,0,0,.35);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;position:absolute;top:10px;left:10px;}
+.upm-name{font-size:17px;font-weight:700;margin-top:10px;}
+.upm-handle{font-size:13px;color:var(--text3);margin-top:2px;}
+.upm-bio{font-size:13px;color:var(--text2);margin-top:8px;line-height:1.5;}
+.upm-stats{display:flex;gap:24px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.upm-stat{text-align:center;}
+.upm-stat-n{font-size:16px;font-weight:700;}
+.upm-stat-l{font-size:11px;color:var(--text3);}
+.upm-posts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:2px;}
+.upm-grid-item{aspect-ratio:1;overflow:hidden;cursor:pointer;position:relative;background:var(--bg3);}
+.upm-grid-item img{width:100%;height:100%;object-fit:cover;transition:transform .2s;}
+.upm-grid-item:hover img{transform:scale(1.05);}
+.upm-empty{padding:30px;text-align:center;color:var(--text3);font-size:13px;grid-column:1/-1;}
 .sidebar-right{position:sticky;top:calc(58px + 18px);display:flex;flex-direction:column;gap:16px;}
 .s-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--card-shadow);transition:background .3s,border-color .3s;}
 .s-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:14px;}
@@ -509,7 +547,8 @@ textarea.form-input{resize:none;min-height:80px;}
   <div class="brand" onclick="goTo('home')">Kez Media</div>
   <div class="nav-search">
     <span class="si"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-    <input type="text" placeholder="Search...">
+    <input type="text" placeholder="Search users..." id="navSearchInput" oninput="searchUsers(this.value)" onblur="setTimeout(()=>closeSearch(),200)" onfocus="if(this.value)searchUsers(this.value)">
+    <div class="search-dropdown" id="searchDropdown"></div>
   </div>
   <div class="nav-right">
     <button class="icon-btn" onclick="openModal()" title="New post">
@@ -991,6 +1030,13 @@ textarea.form-input{resize:none;min-height:80px;}
 <!-- IMG EXPAND -->
 <div class="img-exp" id="imgExp" onclick="this.classList.remove('open')"><img id="imgExpSrc" src="" alt=""></div>
 
+<!-- USER PROFILE MODAL -->
+<div class="user-profile-overlay" id="userProfileOverlay" onclick="if(event.target===this)closeUserProfile()">
+  <div class="user-profile-modal" id="userProfileModal">
+    <div id="userProfileContent"></div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toastEl"></div>
 
@@ -1187,7 +1233,7 @@ function goTo(view){
   else{layout.classList.remove('profile-mode');}
   if(view==='profile')refreshProfile();
   if(view==='notifs')renderNotifs();
-  if(view==='messages')renderConvos();
+  if(view==='messages'){loadDMConvos();}
   if(view==='settings'){refreshSettings();}
   if(view==='admin')refreshAdmin();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1196,7 +1242,6 @@ function goSettings(section){goTo('settings');setTimeout(()=>switchSettingsNav(s
 
 // ── INIT ──────────────────────────────────────────────
 async function init(){
-  // Load this user's profile from Firestore
   await loadProfile(me.uid);
   applyTheme();
   applyUserProfile();
@@ -1207,7 +1252,8 @@ async function init(){
   renderBannerSwatches();
   updateNotifBadges();
   updateMsgBadges();
-  // Seed dummy posts if DB is empty, then start live feed
+  watchUsers();
+  loadDMConvos();
   await seedDummyPosts();
   startPostsListener();
 }
@@ -1290,89 +1336,90 @@ function renderStories(){
 function renderFeed(){
   const feed=document.getElementById('feed');feed.innerHTML='';
   if(!posts.length){feed.innerHTML='<div class="empty"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><p>No posts yet!</p></div>';return;}
-  posts.slice().reverse().forEach((p,i)=>feed.appendChild(buildCard(p,i)));
+  // newest first — Firestore already orders desc, so no reverse needed
+  posts.forEach((p,i)=>feed.appendChild(buildCard(p,i)));
 }
 function renderExploreFeed(){
   const ef=document.getElementById('exploreFeed');ef.innerHTML='';
-  posts.slice().reverse().forEach((p,i)=>ef.appendChild(buildCard(p,i)));
+  posts.forEach((p,i)=>ef.appendChild(buildCard(p,i)));
 }
 
 function buildCard(p,i){
   const card=document.createElement('div');card.className='post-card';card.id=`pc-${p.id}`;card.style.animationDelay=`${i*.05}s`;
-  const own = (p.uid && p.uid===me.uid) || p.user?.handle===me.handle || isAdmin();
+  const own = (p.uid && p.uid===me.uid) || isAdmin();
   const imgs=p.images||(p.image?[p.image]:[]);
+  const pid = JSON.stringify(String(p.id)); // safely quoted for onclick
 
   // ── media section
   let mediaHTML='';
   if(p.isStatus){
-    // clean, simple text post — no colour background
     mediaHTML=`<div class="status-body">
       <p class="status-text">${esc(p.caption)}</p>
       ${p.mood?`<div class="status-mood-tag">${esc(p.mood)}</div>`:''}
     </div>`;
   } else if(imgs.length===0){
-    mediaHTML=''; // no placeholder for text posts without status flag
+    mediaHTML='';
   } else if(imgs.length===1){
     mediaHTML=`<div class="carousel-wrap"><img style="width:100%;max-height:520px;object-fit:cover;display:block;cursor:pointer;" src="${imgs[0]}" onclick="expandImg('${imgs[0]}')" alt="post"></div>`;
   } else {
     const slides=imgs.map(src=>`<div class="carousel-slide"><img src="${src}" onclick="expandImg('${src}')" alt="post"></div>`).join('');
     const dots=imgs.map((_,di)=>`<span class="carousel-dot ${di===0?'active':''}" onclick="goSlide('car-${p.id}',${di})"></span>`).join('');
     mediaHTML=`<div class="carousel-wrap" id="car-${p.id}" data-idx="0"
-      onmouseenter="stopFeedAutoSlide(${p.id})" onmouseleave="startFeedAutoSlide(${p.id},${imgs.length})">
+      onmouseenter="stopFeedAutoSlide(${pid})" onmouseleave="startFeedAutoSlide(${pid},${imgs.length})">
       <div class="carousel-track" id="ct-${p.id}">${slides}</div>
       <button class="carousel-btn carousel-prev" onclick="shiftSlide('car-${p.id}',-1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
       <button class="carousel-btn carousel-next" onclick="shiftSlide('car-${p.id}',1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
       <div class="carousel-dots" id="cd-${p.id}">${dots}</div>
       <div class="multi-badge"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2H22V17"/></svg>${imgs.length}</div>
     </div>`;
-    // start auto-slide after card renders
-    setTimeout(()=>startFeedAutoSlide(p.id,imgs.length),600+i*80);
+    setTimeout(()=>startFeedAutoSlide(String(p.id),imgs.length),600+i*80);
   }
 
   const captionRow = (!p.isStatus && p.caption)
-    ? `<div class="post-content"><div class="post-caption"><span class="uname">@${p.user.handle}</span>${esc(p.caption)}</div></div>` : '';
+    ? `<div class="post-content"><div class="post-caption"><span class="uname">@${esc(p.user.handle)}</span>${esc(p.caption)}</div></div>` : '';
 
   card.innerHTML=`
     <div class="post-header">
-      <div class="post-avatar" style="background:${p.user.color}">${p.user.avatar?`<img src="${p.user.avatar}" alt="">`:p.user.initial}</div>
+      <div class="post-avatar" style="background:${p.user.color};cursor:pointer;" onclick="viewProfile(${JSON.stringify(p.uid)})">${p.user.avatar?`<img src="${p.user.avatar}" alt="">`:esc(p.user.initial)}</div>
       <div class="post-meta">
-        <div class="post-username">@${p.user.handle}</div>
-        <div class="post-time">${p.time}${p.isStatus?` · <span style="color:var(--pink);font-size:11px;">status</span>`:''}</div>
+        <div class="post-username" onclick="viewProfile(${JSON.stringify(p.uid)})" style="cursor:pointer;">@${esc(p.user.handle)}</div>
+        <div class="post-time">${esc(p.time||'')}${p.isStatus?` · <span style="color:var(--pink);font-size:11px;">status</span>`:''}</div>
       </div>
       <button class="post-more" onclick="toggleMenu(event,'pm-${p.id}')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
       </button>
       <div class="post-menu" id="pm-${p.id}">
-        ${own?`<div class="pm-item danger" onclick="deletePost(${p.id})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>Delete</div>`:''}
+        ${own?`<div class="pm-item danger" onclick="deletePost(${pid})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>Delete</div>`:''}
+        ${!own?`<div class="pm-item" onclick="openDMFromPost(${JSON.stringify(p.uid)},${JSON.stringify(p.user.name)});closeMenus()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Message</div>`:''}
         <div class="pm-item" onclick="toast('Link copied!');closeMenus()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy link</div>
         <div class="pm-item" onclick="toast('Reported');closeMenus()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Report</div>
       </div>
     </div>
     ${mediaHTML}
     <div class="post-actions">
-      <button class="act ${p.liked?'liked':''}" onclick="doLike(${p.id})">
+      <button class="act ${p.liked?'liked':''}" onclick="doLike(${pid})">
         <svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span class="lc">${p.likes}</span>
       </button>
-      <button class="act" onclick="openLightbox(${p.id})">
+      <button class="act" onclick="openLightbox(${pid})">
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span class="cc">${p.comments.length}</span>
       </button>
       <button class="act" onclick="toast('Post shared!')">
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
-      <button class="act act-right ${p.saved?'liked':''}" onclick="doSave(${p.id})">
+      <button class="act act-right ${p.saved?'liked':''}" onclick="doSave(${pid})">
         <svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
       </button>
     </div>
     ${captionRow}
     <div class="comments-wrap" id="cw-${p.id}">
-      ${p.comments.length>2&&!p.showComments?`<div class="view-all" onclick="toggleComments(${p.id})">View all ${p.comments.length} comments</div>`:''}
+      ${p.comments.length>2&&!p.showComments?`<div class="view-all" onclick="toggleComments(${pid})">View all ${p.comments.length} comments</div>`:''}
       <div id="cl-${p.id}">${(p.showComments?p.comments:p.comments.slice(-1)).map(commentHTML).join('')}</div>
       <div class="c-input-row">
         <div class="c-avatar" style="background:${me.color};color:white;">${me.initial}</div>
-        <input class="c-input" id="ci-${p.id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(${p.id})">
-        <button class="c-send" onclick="addComment(${p.id})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        <input class="c-input" id="ci-${p.id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(${pid})">
+        <button class="c-send" onclick="addComment(${pid})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
       </div>
     </div>`;
   return card;
@@ -1384,30 +1431,36 @@ function commentHTML(c){
 
 // ── INTERACTIONS ──────────────────────────────────────
 function doLike(id){
-  const p=posts.find(x=>x.id===id);if(!p)return;
+  id=String(id);
+  const p=posts.find(x=>String(x.id)===id);if(!p)return;
   p.liked=!p.liked;p.likes+=p.liked?1:-1;
-  // optimistic DOM update
   document.querySelectorAll(`#pc-${id}`).forEach(card=>{
     const btn=card.querySelector('.act');
     btn.className=`act ${p.liked?'liked':''}`;
     btn.innerHTML=`<svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="lc">${p.likes}</span>`;
   });
-  updatePostField(id,{liked:p.liked,likes:p.likes});
+  updatePostField(id,{likes:p.likes});
 }
 function doSave(id){
-  const p=posts.find(x=>x.id===id);if(!p)return;
+  id=String(id);
+  const p=posts.find(x=>String(x.id)===id);if(!p)return;
   p.saved=!p.saved;
   document.querySelectorAll(`#pc-${id}`).forEach(card=>{
     const btn=card.querySelector('.act-right');
     btn.className=`act act-right ${p.saved?'liked':''}`;
     btn.innerHTML=`<svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
   });
-  updatePostField(id,{saved:p.saved});
-  toast(p.saved?'Post saved':'Post unsaved');
+  // saves are local-per-user, store in their profile
+  if(!me.savedPosts) me.savedPosts=[];
+  if(p.saved){ if(!me.savedPosts.includes(id)) me.savedPosts.push(id); }
+  else { me.savedPosts=me.savedPosts.filter(x=>x!==id); }
+  saveProfileToFirestore();
+  toast(p.saved?'Post saved 🌸':'Post unsaved');
 }
 function toggleComments(id){
-  const p=posts.find(x=>x.id===id);if(!p)return;
-  p.showComments=!p.showComments;savePosts();
+  id=String(id);
+  const p=posts.find(x=>String(x.id)===id);if(!p)return;
+  p.showComments=!p.showComments;
   document.querySelectorAll(`[id^="cl-${id}"]`).forEach(cl=>{
     cl.innerHTML=(p.showComments?p.comments:p.comments.slice(-1)).map(commentHTML).join('');
     const va=cl.parentElement.querySelector('.view-all');
@@ -1415,10 +1468,11 @@ function toggleComments(id){
   });
 }
 function addComment(id){
+  id=String(id);
   const inp=document.getElementById(`ci-${id}`);
   const txt=inp.value.trim();if(!txt)return;
-  const p=posts.find(x=>x.id===id);if(!p)return;
-  const c={user:{...me},text:txt};
+  const p=posts.find(x=>String(x.id)===id);if(!p)return;
+  const c={user:{name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt};
   p.comments.push(c);p.showComments=true;inp.value='';
   const cl=document.getElementById(`cl-${id}`);
   if(cl){const d=document.createElement('div');d.innerHTML=commentHTML(c);cl.appendChild(d.firstChild);}
@@ -1426,6 +1480,7 @@ function addComment(id){
   updatePostField(id,{comments:p.comments,showComments:true});
 }
 function deletePost(id){
+  id=String(id);
   closeMenus();
   document.querySelectorAll(`#pc-${id}`).forEach(card=>{card.style.cssText='opacity:0;transform:scale(.96);transition:all .28s ease;';});
   setTimeout(()=>deletePostFromFirestore(id),300);
@@ -1434,6 +1489,11 @@ function deletePost(id){
 function toggleMenu(e,mid){e.stopPropagation();closeMenus();document.getElementById(mid).classList.add('open');}
 function closeMenus(){document.querySelectorAll('.post-menu.open').forEach(m=>m.classList.remove('open'));}
 document.addEventListener('click',closeMenus);
+
+// fix openLightbox to use string id
+function openLightbox(pid){
+  pid=String(pid);
+  const p=posts.find(x=>String(x.id)===pid);if(!p)return;
 
 // ── PROFILE PAGE ──────────────────────────────────────
 function refreshProfile(){
@@ -1845,13 +1905,14 @@ function openLightbox(pid){
   const p=posts.find(x=>x.id===pid);if(!p)return;
   const imgs=p.images||(p.image?[p.image]:[]);
   const inner=document.getElementById('lightboxInner');
+  const ppid=JSON.stringify(pid);
   let imgSide='';
   if(imgs.length===0){
     if(p.isStatus){
       imgSide=`<div class="lightbox-img-side" style="background:var(--bg2);display:flex;align-items:center;justify-content:center;padding:40px 36px;">
         <div>
           <div style="width:36px;height:3px;background:var(--pink);border-radius:2px;margin-bottom:20px;"></div>
-          <div style="font-size:${p.caption.length>120?'16px':p.caption.length>60?'19px':'22px'};line-height:1.7;color:var(--text);word-break:break-word;">${esc(p.caption)}</div>
+          <div style="font-size:${(p.caption||'').length>120?'16px':(p.caption||'').length>60?'19px':'22px'};line-height:1.7;color:var(--text);word-break:break-word;">${esc(p.caption||'')}</div>
           ${p.mood?`<div style="margin-top:16px;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);background:var(--bg3);padding:4px 12px;border-radius:20px;border:1px solid var(--border);">${esc(p.mood)}</div>`:''}
         </div>
       </div>`;
@@ -1869,31 +1930,30 @@ function openLightbox(pid){
     ${imgSide}
     <div class="lightbox-info-side">
       <div class="lb-header">
-        <div class="post-avatar" style="background:${p.user.color};width:34px;height:34px;font-size:13px;">${p.user.initial}</div>
-        <div>
-          <div style="font-size:13.5px;font-weight:600;">@${p.user.handle}</div>
-          <div style="font-size:11.5px;color:var(--text3);">${p.time}</div>
+        <div class="post-avatar" style="background:${p.user.color};width:34px;height:34px;font-size:13px;cursor:pointer;" onclick="closeLightbox();viewProfile(${JSON.stringify(p.uid)})">${p.user.avatar?`<img src="${p.user.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(p.user.initial)}</div>
+        <div style="cursor:pointer;" onclick="closeLightbox();viewProfile(${JSON.stringify(p.uid)})">
+          <div style="font-size:13.5px;font-weight:600;">@${esc(p.user.handle)}</div>
+          <div style="font-size:11.5px;color:var(--text3);">${esc(p.time||'')}</div>
         </div>
         <button class="lb-close" onclick="closeLightbox()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      ${p.caption?`<div class="lb-caption"><span style="font-weight:600;margin-right:6px;">@${p.user.handle}</span>${esc(p.caption)}</div>`:''}
-      <div class="lb-comments" id="lbComments">${p.comments.map(c=>`<div class="comment" style="margin-bottom:10px;">${commentHTML(c)}</div>`).join('')}</div>
+      ${p.caption?`<div class="lb-caption"><span style="font-weight:600;margin-right:6px;">@${esc(p.user.handle)}</span>${esc(p.caption)}</div>`:''}
+      <div class="lb-comments" id="lbComments">${(p.comments||[]).map(c=>`<div class="comment" style="margin-bottom:10px;">${commentHTML(c)}</div>`).join('')}</div>
       <div class="lb-actions">
-        <button class="act ${p.liked?'liked':''}" id="lbLikeBtn" onclick="doLike(${p.id});updateLbLike(${p.id})">
+        <button class="act ${p.liked?'liked':''}" id="lbLikeBtn" onclick="doLike(${ppid});updateLbLike(${ppid})">
           <svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           <span id="lbLikeCount">${p.likes}</span>
         </button>
         <button class="act" onclick="toast('Shared!')"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-        <button class="act act-right ${p.saved?'liked':''}" onclick="doSave(${p.id})"><svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+        <button class="act act-right ${p.saved?'liked':''}" onclick="doSave(${ppid})"><svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
       </div>
       <div class="lb-comment-input">
         <div class="c-avatar" style="background:${me.color};color:white;">${me.initial}</div>
-        <input class="c-input" id="lbCommentInput" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addLbComment(${p.id})">
-        <button class="c-send" onclick="addLbComment(${p.id})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        <input class="c-input" id="lbCommentInput" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addLbComment(${ppid})">
+        <button class="c-send" onclick="addLbComment(${ppid})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
       </div>
     </div>`;
   document.getElementById('lightbox').classList.add('open');
-  // auto-advance if multiple images
   clearInterval(lbAutoTimer);
   if(imgs.length>1){
     lbAutoTimer=setInterval(()=>shiftSlide('lbcar',1),3000);
@@ -1901,10 +1961,12 @@ function openLightbox(pid){
 }
 function closeLightbox(){document.getElementById('lightbox').classList.remove('open');clearInterval(lbAutoTimer);}
 function addLbComment(pid){
+  pid=String(pid);
   const inp=document.getElementById('lbCommentInput');
   const txt=inp.value.trim();if(!txt)return;
-  const p=posts.find(x=>x.id===pid);if(!p)return;
-  const c={user:{...me},text:txt};p.comments.push(c);p.showComments=true;inp.value='';
+  const p=posts.find(x=>String(x.id)===pid);if(!p)return;
+  const c={user:{name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt};
+  p.comments.push(c);p.showComments=true;inp.value='';
   const lbc=document.getElementById('lbComments');
   if(lbc){const d=document.createElement('div');d.innerHTML=commentHTML(c);lbc.appendChild(d.firstChild);lbc.scrollTop=lbc.scrollHeight;}
   const cl=document.getElementById(`cl-${pid}`);
@@ -1912,13 +1974,305 @@ function addLbComment(pid){
   updatePostField(pid,{comments:p.comments,showComments:true});
 }
 function updateLbLike(pid){
-  const p=posts.find(x=>x.id===pid);if(!p)return;
+  pid=String(pid);
+  const p=posts.find(x=>String(x.id)===pid);if(!p)return;
   const btn=document.getElementById('lbLikeBtn');const cnt=document.getElementById('lbLikeCount');
   if(btn){btn.className=`act ${p.liked?'liked':''}`;btn.querySelector('svg').setAttribute('fill',p.liked?'var(--pink)':'none');btn.querySelector('svg').setAttribute('stroke',p.liked?'var(--pink)':'currentColor');}
   if(cnt)cnt.textContent=p.likes;
 }
 
-// ── BANNER UPLOAD ─────────────────────────────────────
+// ── USER SEARCH ───────────────────────────────────────
+let allUsers = {}; // uid -> profile object, populated from Firestore
+
+function watchUsers(){
+  db.collection('profiles').onSnapshot(snap=>{
+    snap.docs.forEach(d=>{ allUsers[d.id]={uid:d.id,...d.data()}; });
+  });
+}
+
+async function searchUsers(q){
+  const drop=document.getElementById('searchDropdown');
+  q=q.trim().toLowerCase();
+  if(!q){drop.classList.remove('open');return;}
+  drop.classList.add('open');
+  // Search from allUsers + post authors we know about
+  const seen=new Set();
+  const results=[];
+  // from loaded profiles
+  Object.values(allUsers).forEach(u=>{
+    if(u.uid===me.uid)return;
+    const name=(u.name||'').toLowerCase();
+    const handle=(u.handle||'').toLowerCase();
+    if((name.includes(q)||handle.includes(q)) && !seen.has(u.uid)){
+      seen.add(u.uid);results.push(u);
+    }
+  });
+  // also search post authors not yet in allUsers
+  posts.forEach(p=>{
+    if(!p.uid||p.uid===me.uid||p.uid==='system'||seen.has(p.uid))return;
+    const name=(p.user.name||'').toLowerCase();
+    const handle=(p.user.handle||'').toLowerCase();
+    if(name.includes(q)||handle.includes(q)){
+      seen.add(p.uid);
+      results.push({uid:p.uid,...p.user});
+    }
+  });
+  if(!results.length){
+    drop.innerHTML=`<div class="search-empty">No users found for "@${q}"</div>`;return;
+  }
+  drop.innerHTML=results.slice(0,8).map(u=>`
+    <div class="search-result" onclick="closeSearch();viewProfile(${JSON.stringify(u.uid)})">
+      <div class="search-result-av" style="background:${u.color||'var(--pink)'}">
+        ${u.avatar?`<img src="${u.avatar}" alt="">`:(u.initial||u.name?.[0]||'?')}
+      </div>
+      <div>
+        <div class="search-result-name">${esc(u.name||u.handle||'User')}</div>
+        <div class="search-result-handle">@${esc(u.handle||'')}</div>
+      </div>
+    </div>`).join('');
+}
+
+function closeSearch(){
+  document.getElementById('searchDropdown').classList.remove('open');
+}
+
+// ── VIEW OTHER USER PROFILE ───────────────────────────
+async function viewProfile(uid){
+  if(!uid||uid==='system')return;
+  if(uid===me.uid){goTo('profile');return;}
+  const overlay=document.getElementById('userProfileOverlay');
+  const content=document.getElementById('userProfileContent');
+  content.innerHTML='<div style="padding:60px;text-align:center;color:var(--text3);">Loading profile...</div>';
+  overlay.classList.add('open');
+
+  // get profile doc
+  let prof={uid,name:'User',handle:'user',color:'linear-gradient(135deg,#e2688a,#f0a0b8)',initial:'U'};
+  try{
+    const doc=await db.collection('profiles').doc(uid).get();
+    if(doc.exists) prof={uid,...doc.data()};
+  }catch(e){}
+
+  // fallback: get from posts if no profile doc
+  if(!prof.handle||prof.handle==='user'){
+    const postByUser=posts.find(p=>p.uid===uid);
+    if(postByUser&&postByUser.user) Object.assign(prof,postByUser.user,{uid});
+  }
+
+  const userPosts=posts.filter(p=>p.uid===uid&&!p.isStatus);
+  const isFollowing=(me.following||[]).includes(uid);
+
+  content.innerHTML=`
+    <div class="upm-banner" style="background:${prof.bannerColor||'linear-gradient(135deg,#f4a8c0,#e2688a)'}">
+      ${prof.bannerImage?`<img class="upm-banner-img" src="${prof.bannerImage}" alt="">`:''}
+      <button class="upm-close" onclick="closeUserProfile()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="upm-top">
+      <div class="upm-av" style="background:${prof.color||'var(--pink)'}">
+        ${prof.avatar?`<img src="${prof.avatar}" alt="">`:esc(prof.initial||prof.name?.[0]||'U')}
+      </div>
+      <div class="upm-actions">
+        <button class="upm-msg-btn" onclick="closeUserProfile();openDMFromPost(${JSON.stringify(uid)},${JSON.stringify(prof.name||prof.handle||'User')})">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Message
+        </button>
+        <button class="upm-follow-btn ${isFollowing?'following':''}" id="upmFollowBtn" onclick="toggleFollowUser(${JSON.stringify(uid)},${JSON.stringify(prof.name||'User')})">
+          ${isFollowing?'Following':'Follow'}
+        </button>
+      </div>
+      <div class="upm-name">${esc(prof.name||'User')}</div>
+      <div class="upm-handle">@${esc(prof.handle||'user')}</div>
+      ${prof.bio?`<div class="upm-bio">${esc(prof.bio)}</div>`:''}
+      <div class="upm-stats">
+        <div class="upm-stat"><div class="upm-stat-n">${userPosts.length}</div><div class="upm-stat-l">Posts</div></div>
+        <div class="upm-stat"><div class="upm-stat-n">${(prof.followersCount||0)}</div><div class="upm-stat-l">Followers</div></div>
+        <div class="upm-stat"><div class="upm-stat-n">${((prof.following||[]).length)}</div><div class="upm-stat-l">Following</div></div>
+      </div>
+    </div>
+    <div class="upm-posts-grid">
+      ${userPosts.length?userPosts.map(p=>{
+        const img=(p.images&&p.images[0])||p.image||null;
+        return img
+          ?`<div class="upm-grid-item" onclick="closeUserProfile();openLightbox(${JSON.stringify(String(p.id))})"><img src="${img}" alt=""></div>`
+          :`<div class="upm-grid-item" style="display:flex;align-items:center;justify-content:center;" onclick="closeUserProfile();openLightbox(${JSON.stringify(String(p.id))})"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+      }).join(''):'<div class="upm-empty">No posts yet</div>'}
+    </div>`;
+}
+
+function closeUserProfile(){
+  document.getElementById('userProfileOverlay').classList.remove('open');
+}
+
+function toggleFollowUser(uid,name){
+  if(!me.following) me.following=[];
+  const btn=document.getElementById('upmFollowBtn');
+  const idx=me.following.indexOf(uid);
+  if(idx>-1){
+    me.following.splice(idx,1);
+    if(btn){btn.textContent='Follow';btn.classList.remove('following');}
+    toast(`Unfollowed ${name}`);
+    // decrement their followers count
+    db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(-1)}).catch(()=>{});
+  } else {
+    me.following.push(uid);
+    if(btn){btn.textContent='Following';btn.classList.add('following');}
+    toast(`Following ${name}! 🌸`);
+    db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
+  }
+  saveProfileToFirestore();
+}
+
+// ── REAL DM SYSTEM (Firestore) ────────────────────────
+let activeDMUid=null;
+let dmUnsubscribe=null;
+
+function getDMConvoId(uid1,uid2){
+  return [uid1,uid2].sort().join('_');
+}
+
+async function openDMFromPost(otherUid,otherName){
+  if(!otherUid||otherUid==='system'){toast('Cannot message this user');return;}
+  if(otherUid===me.uid){toast('You cannot message yourself');return;}
+  goTo('messages');
+  setTimeout(()=>openDMWith(otherUid,otherName),150);
+}
+
+async function openDMWith(otherUid,otherName){
+  activeDMUid=otherUid;
+  if(dmUnsubscribe) dmUnsubscribe();
+
+  // get other user profile
+  let otherProf={uid:otherUid,name:otherName||'User',handle:'user',color:'var(--pink)',initial:'U'};
+  try{
+    const d=await db.collection('profiles').doc(otherUid).get();
+    if(d.exists) otherProf={uid:otherUid,...d.data()};
+  }catch(e){}
+  // fallback from posts
+  const postByThem=posts.find(p=>p.uid===otherUid);
+  if(postByThem&&postByThem.user&&(!otherProf.handle||otherProf.handle==='user'))
+    Object.assign(otherProf,postByThem.user,{uid:otherUid});
+
+  const convoId=getDMConvoId(me.uid,otherUid);
+  const chatArea=document.getElementById('chatArea');
+  chatArea.innerHTML=`
+    <div class="chat-header">
+      <div class="post-avatar" style="background:${otherProf.color||'var(--pink)'};width:36px;height:36px;font-size:13px;cursor:pointer;" onclick="viewProfile(${JSON.stringify(otherUid)})">
+        ${otherProf.avatar?`<img src="${otherProf.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(otherProf.initial||otherProf.name?.[0]||'U')}
+      </div>
+      <div style="cursor:pointer;" onclick="viewProfile(${JSON.stringify(otherUid)})">
+        <div style="font-size:14px;font-weight:600;">${esc(otherProf.name||'User')}</div>
+        <div style="font-size:11px;color:var(--text3);">@${esc(otherProf.handle||'user')}</div>
+      </div>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-input-row">
+      <input class="c-input" id="dmInput" placeholder="Send a message..." onkeydown="if(event.key==='Enter')sendDM(${JSON.stringify(convoId)})">
+      <button class="c-send" onclick="sendDM(${JSON.stringify(convoId)})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    </div>`;
+
+  // listen to messages in real time
+  dmUnsubscribe=db.collection('dms').doc(convoId).collection('messages')
+    .orderBy('ts','asc').onSnapshot(snap=>{
+      const msgs=document.getElementById('chatMsgs');
+      if(!msgs)return;
+      msgs.innerHTML='';
+      snap.docs.forEach(d=>{
+        const m=d.data();
+        const mine=m.from===me.uid;
+        const div=document.createElement('div');
+        div.className=`chat-msg ${mine?'mine':'theirs'}`;
+        div.innerHTML=`<div class="chat-bubble">${esc(m.text)}</div>`;
+        msgs.appendChild(div);
+      });
+      msgs.scrollTop=msgs.scrollHeight;
+    });
+
+  // mark convo as active in sidebar
+  renderDMConvoList(otherUid);
+  // save convo metadata so it shows in sidebar
+  const meta={participants:[me.uid,otherUid],lastMsg:'',lastTs:firebase.firestore.FieldValue.serverTimestamp(),
+    [`name_${me.uid}`]:otherProf.name||'User',
+    [`avatar_${me.uid}`]:otherProf.avatar||null,
+    [`color_${me.uid}`]:otherProf.color||'var(--pink)',
+    [`initial_${me.uid}`]:otherProf.initial||otherProf.name?.[0]||'U',
+    [`handle_${me.uid}`]:otherProf.handle||'user',
+    [`name_${otherUid}`]:me.name,
+    [`avatar_${otherUid}`]:me.avatar||null,
+    [`color_${otherUid}`]:me.color,
+    [`initial_${otherUid}`]:me.initial,
+    [`handle_${otherUid}`]:me.handle
+  };
+  db.collection('dms').doc(convoId).set(meta,{merge:true}).catch(()=>{});
+}
+
+async function sendDM(convoId){
+  const inp=document.getElementById('dmInput');
+  const txt=inp.value.trim();if(!txt)return;
+  inp.value='';
+  await db.collection('dms').doc(convoId).collection('messages').add({
+    from:me.uid,text:txt,ts:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  db.collection('dms').doc(convoId).update({lastMsg:txt,lastTs:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+}
+
+// Load DM conversations list from Firestore
+function loadDMConvos(){
+  db.collection('dms').where('participants','array-contains',me.uid)
+    .orderBy('lastTs','desc').onSnapshot(snap=>{
+      const list=document.getElementById('convoList');if(!list)return;
+      list.innerHTML='';
+      if(snap.empty){
+        list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No conversations yet.<br>Find someone to message!</div>';
+        return;
+      }
+      snap.docs.forEach(d=>{
+        const c=d.data();
+        const otherUid=c.participants.find(u=>u!==me.uid);
+        const name=c[`name_${me.uid}`]||'User';
+        const handle=c[`handle_${me.uid}`]||'user';
+        const color=c[`color_${me.uid}`]||'var(--pink)';
+        const initial=c[`initial_${me.uid}`]||name[0]||'U';
+        const avatar=c[`avatar_${me.uid}`];
+        const div=document.createElement('div');
+        div.className=`convo-item${activeDMUid===otherUid?' active':''}`;
+        div.innerHTML=`
+          <div class="convo-av" style="background:${color};color:white;">
+            ${avatar?`<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(initial)}
+          </div>
+          <div class="convo-info">
+            <div class="convo-name">${esc(name)}</div>
+            <div class="convo-last">${esc(c.lastMsg||'Say hello!')}</div>
+          </div>`;
+        div.onclick=()=>openDMWith(otherUid,name);
+        list.appendChild(div);
+      });
+    });
+}
+
+function renderDMConvoList(activeUid){
+  document.querySelectorAll('.convo-item').forEach(el=>{
+    el.classList.remove('active');
+  });
+}
+
+// Add chat CSS styles dynamically
+(function addChatCSS(){
+  const s=document.createElement('style');
+  s.textContent=`
+.chat-header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:0;}
+.chat-input-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);align-items:center;}
+.chat-msg{display:flex;}
+.chat-msg.mine{justify-content:flex-end;}
+.chat-msg.theirs{justify-content:flex-start;}
+.chat-bubble{max-width:75%;padding:9px 13px;border-radius:16px;font-size:13.5px;line-height:1.45;word-break:break-word;}
+.chat-msg.mine .chat-bubble{background:var(--pink);color:white;border-radius:16px 16px 4px 16px;}
+.chat-msg.theirs .chat-bubble{background:var(--bg3);color:var(--text);border-radius:16px 16px 16px 4px;}
+.convo-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;overflow:hidden;}
+  `;
+  document.head.appendChild(s);
+})();
+
+
 function uploadBanner(inp){
   const f=inp.files[0];if(!f)return;
   toast('Uploading cover...');
