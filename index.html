@@ -2368,55 +2368,64 @@ async function loadOtherProfile(uid){
   if(!uid) return;
   const container = document.getElementById('otherProfileContent');
   if(!container) return;
-  container.innerHTML = '<div style="padding:80px;text-align:center;color:var(--text3);">Loading profile...</div>';
 
-  // Load profile
-  let prof = {uid, name:'User', handle:'user', color:'var(--pink)', initial:'U'};
-  try{
-    const doc = await db.collection('profiles').doc(uid).get();
-    if(doc.exists) prof = {uid, ...doc.data()};
-  } catch(e){}
-  // Fallback from post author data
-  if(!prof.handle || prof.handle==='user'){
-    const postByUser = posts.find(p=>p.uid===uid);
-    if(postByUser && postByUser.user) Object.assign(prof, postByUser.user, {uid});
+  // Step 1 — assemble profile from local caches (instant, no network needed)
+  let prof = {uid, name:'User', handle:'user', color:'var(--pink)', initial:'U', followersCount:0, following:[]};
+  if(allUsers[uid]) Object.assign(prof, allUsers[uid]);
+  const postByUser = posts.find(function(p){ return p.uid===uid && p.user; });
+  if(postByUser && postByUser.user && (!prof.handle || prof.handle==='user')){
+    Object.assign(prof, postByUser.user, {uid});
   }
 
-  const isFollowing = (me.following||[]).includes(uid);
-  const presStatus = getPresenceStatus(uid);
-  const isOnline = presStatus === 'online';
+  // Step 2 — render right away with local data (never shows "loading" stuck)
+  _drawOtherProfile(uid, prof);
 
-  // Posts by this user
-  const userPosts = posts.filter(p=>p.uid===uid);
-  const userFeedPosts = userPosts.filter(p=>!p.isStatus);
+  // Step 3 — fetch Firestore profile in background and refresh if richer data found
+  try{
+    const doc = await db.collection('profiles').doc(uid).get();
+    if(doc.exists){
+      Object.assign(prof, {uid}, doc.data());
+      _drawOtherProfile(uid, prof);
+    }
+  } catch(e){}
+}
 
-  const iUid = _r(uid);
-  const iName = _r(prof.name||prof.handle||'User');
+function _drawOtherProfile(uid, prof){
+  const container = document.getElementById('otherProfileContent');
+  if(!container) return;
 
-  // Build header HTML
+  const isFollowing = Array.isArray(me.following) && me.following.includes(uid);
+  const presStatus  = getPresenceStatus(uid);
+  const isOnline    = presStatus === 'online';
+  const userPosts   = posts.filter(function(p){ return p.uid===uid; });
+  const feedPosts   = userPosts.filter(function(p){ return !p.isStatus; });
+  const iUid        = _r(uid);
+  const iName       = _r(String(prof.name||prof.handle||'User'));
+
   container.innerHTML =
     '<div class="profile-card">'
       +'<div class="opu-banner" style="background:'+(prof.bannerColor||'linear-gradient(135deg,#f4a8c0,#e2688a)')+';">'
-        +(prof.bannerImage ? '<img src="'+prof.bannerImage+'" alt="">' : '')
-        +'<button class="opu-back" id="opuBackBtn"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>'
+        +(prof.bannerImage?'<img src="'+prof.bannerImage+'" alt="">':'')
+        +'<button class="opu-back" id="opuBackBtn">'
+          +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>'
+        +'</button>'
       +'</div>'
       +'<div class="opu-top">'
         +'<div class="opu-av" style="background:'+(prof.color||'var(--pink)')+'">'
-          +(prof.avatar ? '<img src="'+prof.avatar+'" alt="">' : esc(prof.initial||'?'))
-          +(isOnline ? '<div class="opu-online-dot"></div>' : '')
+          +(prof.avatar?'<img src="'+prof.avatar+'" alt="">':esc(prof.initial||prof.name?.[0]||'?'))
+          +(isOnline?'<div class="opu-online-dot"></div>':'')
         +'</div>'
-        +'<div class="opu-name">'
-          +esc(prof.name||'User')
-          +(isOnline ? '<span class="opu-online-badge">● Active now</span>' : '')
-        +'</div>'
+        +'<div class="opu-name">'+esc(prof.name||'User')+(isOnline?'<span class="opu-online-badge">● Active now</span>':'')+'</div>'
         +'<div class="opu-handle">@'+esc(prof.handle||'user')+'</div>'
-        +(prof.bio ? '<div class="opu-bio">'+esc(prof.bio)+'</div>' : '')
+        +(prof.bio?'<div class="opu-bio">'+esc(prof.bio)+'</div>':'')
         +'<div class="opu-actions">'
           +'<button class="opu-follow-btn'+(isFollowing?' following':'')+'" id="opuFollowBtn">'+(isFollowing?'Following':'Follow')+'</button>'
-          +'<button class="opu-msg-btn" id="opuMsgBtn"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Message</button>'
+          +'<button class="opu-msg-btn" id="opuMsgBtn">'
+            +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Message'
+          +'</button>'
         +'</div>'
         +'<div class="opu-stats">'
-          +'<div class="opu-stat"><div class="opu-stat-n">'+userFeedPosts.length+'</div><div class="opu-stat-l">Posts</div></div>'
+          +'<div class="opu-stat"><div class="opu-stat-n">'+feedPosts.length+'</div><div class="opu-stat-l">Posts</div></div>'
           +'<div class="opu-stat"><div class="opu-stat-n">'+(prof.followersCount||0)+'</div><div class="opu-stat-l">Followers</div></div>'
           +'<div class="opu-stat"><div class="opu-stat-n">'+((prof.following||[]).length)+'</div><div class="opu-stat-l">Following</div></div>'
         +'</div>'
@@ -2428,49 +2437,43 @@ async function loadOtherProfile(uid){
     +'</div>'
     +'<div id="opuFeedContent"></div>';
 
-  // Wire back button
-  document.getElementById('opuBackBtn').addEventListener('click', function(){
-    history.back ? window.history.back() : goTo('home');
-    // fallback: go to previous view
-    goTo(previousView||'home');
-  });
+  // back button
+  document.getElementById('opuBackBtn').addEventListener('click', function(){ goTo(previousView||'home'); });
 
-  // Wire follow button
-  document.getElementById('opuFollowBtn').addEventListener('click', function(){
-    toggleFollowUserOpu(uid, prof.name||prof.handle||'User');
-  });
+  // follow button
+  document.getElementById('opuFollowBtn').addEventListener('click', function(){ toggleFollowUserOpu(uid, prof.name||prof.handle||'User'); });
 
-  // Wire message button
-  document.getElementById('opuMsgBtn').addEventListener('click', function(){
-    openDMFromPost(_g(iUid), _g(iName));
-  });
+  // message button
+  document.getElementById('opuMsgBtn').addEventListener('click', function(){ openDMFromPost(_g(iUid), _g(iName)); });
 
-  // Wire tab buttons
+  // tab: posts
   document.getElementById('opuTabPosts').addEventListener('click', function(){
     otherProfilePostsTab='posts';
-    document.querySelectorAll('.opu-feed-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.opu-feed-tab').forEach(function(t){ t.classList.remove('active'); });
     this.classList.add('active');
-    renderOtherProfileFeed(uid, userPosts, prof);
-  });
-  document.getElementById('opuTabGrid').addEventListener('click', function(){
-    otherProfilePostsTab='grid';
-    document.querySelectorAll('.opu-feed-tab').forEach(t=>t.classList.remove('active'));
-    this.classList.add('active');
-    renderOtherProfileGrid(uid, userFeedPosts);
+    renderOtherProfileFeed(userPosts);
   });
 
-  // Render initial tab
-  if(otherProfilePostsTab==='posts'){
-    renderOtherProfileFeed(uid, userPosts, prof);
+  // tab: grid
+  document.getElementById('opuTabGrid').addEventListener('click', function(){
+    otherProfilePostsTab='grid';
+    document.querySelectorAll('.opu-feed-tab').forEach(function(t){ t.classList.remove('active'); });
+    this.classList.add('active');
+    renderOtherProfileGrid(feedPosts);
+  });
+
+  // render initial tab
+  if(otherProfilePostsTab==='grid'){
+    renderOtherProfileGrid(feedPosts);
   } else {
-    renderOtherProfileGrid(uid, userFeedPosts);
+    renderOtherProfileFeed(userPosts);
   }
 }
 
-function renderOtherProfileFeed(uid, userPosts, prof){
+function renderOtherProfileFeed(userPosts){
   const fc = document.getElementById('opuFeedContent');
   if(!fc) return;
-  if(!userPosts.length){
+  if(!userPosts || !userPosts.length){
     fc.innerHTML = '<div class="opu-empty">No posts yet 🌸</div>';
     return;
   }
@@ -2481,10 +2484,10 @@ function renderOtherProfileFeed(uid, userPosts, prof){
   });
 }
 
-function renderOtherProfileGrid(uid, feedPosts){
+function renderOtherProfileGrid(feedPosts){
   const fc = document.getElementById('opuFeedContent');
   if(!fc) return;
-  if(!feedPosts.length){
+  if(!feedPosts || !feedPosts.length){
     fc.innerHTML = '<div class="opu-empty">No posts yet 🌸</div>';
     return;
   }
