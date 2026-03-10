@@ -733,7 +733,7 @@ textarea.form-input{resize:none;min-height:80px;}
     <div class="view" id="view-settings">
       <div class="page-header">
         <div class="page-title">Settings</div>
-        <div class="page-sub">Manage your account — you have full admin access</div>
+        <div class="page-sub" id="settingsSubtitle">Manage your account and preferences</div>
       </div>
       <div class="settings-grid">
         <div class="settings-nav">
@@ -753,7 +753,7 @@ textarea.form-input{resize:none;min-height:80px;}
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Privacy
           </div>
-          <div class="settings-nav-item" id="sn-admin" onclick="switchSettingsNav('admin')">
+          <div class="settings-nav-item" id="sn-admin" onclick="switchSettingsNav('admin')" style="display:none;">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             Admin Panel
           </div>
@@ -1016,35 +1016,31 @@ async function uploadToStorage(base64, path) {
   return await snap.ref.getDownloadURL();
 }
 const postsCol   = () => db.collection('posts');
-const profileDoc = () => db.collection('profiles').doc('me');
-
-let _seeded = false;
+const profileDoc = (uid) => db.collection('profiles').doc(uid || (auth.currentUser && auth.currentUser.uid) || 'anon');
 
 function startPostsListener() {
-  postsCol().orderBy('createdAt','desc').onSnapshot(async snap => {
-    // First run & empty → seed sample posts
-    if(snap.empty && !_seeded) {
-      _seeded = true;
+  // Ensure dummy posts always exist with fixed IDs
+  const DUMMY_IDS = ['dummy_1','dummy_2','dummy_3'];
+  db.collection('posts').doc('dummy_1').get().then(doc => {
+    if(!doc.exists) {
       const batch = db.batch();
-      SAMPLE_POSTS.forEach(p => {
-        batch.set(postsCol().doc(String(p.id)), {
+      SAMPLE_POSTS.forEach((p, i) => {
+        batch.set(postsCol().doc(DUMMY_IDS[i]), {
           ...p,
-          createdAt: firebase.firestore.Timestamp.fromMillis(p.id)
+          id: DUMMY_IDS[i],
+          createdAt: firebase.firestore.Timestamp.fromMillis(Date.now() - (i+1)*90000)
         });
       });
-      await batch.commit();
-      return;
+      batch.commit();
     }
-    _seeded = true;
-    const prev = posts.length;
+  }).catch(()=>{});
+
+  postsCol().orderBy('createdAt','desc').onSnapshot(async snap => {
     posts = snap.docs.map(d => ({...d.data()}));
-    // Full re-render only when count changes (new post / delete)
-    if(prev !== posts.length) {
-      renderFeed();
-      renderExploreFeed();
-      if(currentView==='profile')  refreshProfile();
-      if(currentView==='settings') refreshAdmin();
-    }
+    renderFeed();
+    renderExploreFeed();
+    if(currentView==='profile')  refreshProfile();
+    if(currentView==='settings') refreshAdmin();
   }, err => {
     console.warn('Firestore error:', err.message);
     toast('⚠️ Could not reach database');
@@ -1052,7 +1048,8 @@ function startPostsListener() {
 }
 
 async function savePostToFirestore(p) {
-  await postsCol().doc(String(p.id)).set({
+  const docId = String(p.id);
+  await postsCol().doc(docId).set({
     ...p,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
@@ -1063,14 +1060,14 @@ async function updatePostField(id, updates) {
 async function deletePostFromFirestore(id) {
   await postsCol().doc(String(id)).delete();
 }
-async function loadProfile() {
+async function loadProfile(uid) {
   try {
-    const doc = await profileDoc().get();
+    const doc = await profileDoc(uid).get();
     if(doc.exists) Object.assign(me, doc.data());
   } catch(e) { /* offline, use defaults */ }
 }
 async function saveProfileToFirestore() {
-  try { await profileDoc().set(me); } catch(e) {}
+  try { await profileDoc(me.uid).set(me); } catch(e) {}
 }
 
 // ── STATE ────────────────────────────────────────────
@@ -1085,9 +1082,9 @@ const USERS = [
 let me = {};
 
 const SAMPLE_POSTS = [
-  {id:Date.now()-90000,  user:USERS[1], images:['https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'], image:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80', caption:'Sunday mornings are made for slow coffee and slower scrolling ✨', likes:142, liked:false, comments:[{user:USERS[0],text:"Honestly same ☕"},{user:USERS[3],text:"Can I join? 🙋‍♀️"}], saved:false, time:'2h ago', showComments:true},
-  {id:Date.now()-180000, user:USERS[3], images:['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80','https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80'], image:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80', caption:'Golden hour never misses 🌅 #sunset #photography', likes:389, liked:false, comments:[{user:USERS[2],text:"This is stunning!"}], saved:false, time:'5h ago', showComments:false},
-  {id:Date.now()-360000, user:USERS[0], images:['https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&q=80'], image:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&q=80', caption:'New project just dropped — been working on this for months!', likes:54, liked:false, comments:[], saved:false, time:'11h ago', showComments:false},
+  {id:'dummy_1', uid:'system', user:USERS[1], images:['https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'], image:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80', caption:'Sunday mornings are made for slow coffee and slower scrolling ✨', likes:142, liked:false, comments:[{user:USERS[0],text:"Honestly same ☕"},{user:USERS[3],text:"Can I join? 🙋‍♀️"}], saved:false, time:'2h ago', showComments:true},
+  {id:'dummy_2', uid:'system', user:USERS[3], images:['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80','https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80'], image:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80', caption:'Golden hour never misses 🌅 #sunset #photography', likes:389, liked:false, comments:[{user:USERS[2],text:"This is stunning!"}], saved:false, time:'5h ago', showComments:false},
+  {id:'dummy_3', uid:'system', user:USERS[0], images:['https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&q=80'], image:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&q=80', caption:'New project just dropped — been working on this for months!', likes:54, liked:false, comments:[], saved:false, time:'11h ago', showComments:false},
 ];
 
 let posts = []; // filled by Firestore onSnapshot listener
@@ -1407,15 +1404,14 @@ document.addEventListener('click',closeMenus);
 // ── PROFILE PAGE ──────────────────────────────────────
 function refreshProfile(){
   applyUserProfile();
-  const myPosts=posts.filter(p=>p.user.handle===me.handle);
-  const totalSaved=posts.filter(p=>p.saved).length;
+  const myPosts=posts.filter(p=>p.uid===me.uid);
   document.getElementById('statPosts').textContent=myPosts.length;
   renderPostGrid();renderSavedGrid();renderStatusList();
 }
 function renderPostGrid(){
   const grid=document.getElementById('grid');grid.innerHTML='';
   // only photo posts (not status) in the grid
-  const myPosts=posts.filter(p=>p.user.handle===me.handle && !p.isStatus);
+  const myPosts=posts.filter(p=>p.uid===me.uid && !p.isStatus);
   if(!myPosts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No photo posts yet. Share your first photo!</div>';return;}
   myPosts.slice().reverse().forEach(p=>{
     const imgs=p.images||(p.image?[p.image]:[]);
@@ -1432,7 +1428,7 @@ function renderPostGrid(){
 function renderStatusList(){
   const list=document.getElementById('statusList');if(!list)return;
   list.innerHTML='';
-  const myStatus=posts.filter(p=>p.user.handle===me.handle && p.isStatus);
+  const myStatus=posts.filter(p=>p.uid===me.uid && p.isStatus);
   if(!myStatus.length){list.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;">No status posts yet. Share what\'s on your mind!</div>';return;}
   myStatus.slice().reverse().forEach((p,i)=>{
     const d=document.createElement('div');d.className='status-list-item';d.style.animationDelay=`${i*.04}s`;
@@ -1622,7 +1618,7 @@ function refreshAdmin(){
 }
 function clearAllPosts(){
   if(!confirm('Delete ALL your posts? This cannot be undone.'))return;
-  const mine=posts.filter(p=>p.user.handle===me.handle);
+  const mine=posts.filter(p=>p.uid===me.uid);
   mine.forEach(p=>deletePostFromFirestore(p.id));
   toast('All your posts deleted');
 }
@@ -1742,10 +1738,11 @@ function handleDrop(e){
 
 async function submitPost(){
   const uid = auth.currentUser ? auth.currentUser.uid : 'anon';
+  const postId = 'post_' + Date.now();
   if(postMode==='status'){
     const txt=document.getElementById('statusInput').value.trim();
     if(!txt){toast('Write something first!');return;}
-    const p={id:Date.now(),uid,user:{...me},images:[],image:null,caption:txt,mood:selectedMood,isStatus:true,likes:0,liked:false,comments:[],saved:false,time:'Just now',showComments:true};
+    const p={id:postId,uid,user:{...me},images:[],image:null,caption:txt,mood:selectedMood,isStatus:true,likes:0,liked:false,comments:[],saved:false,time:'Just now',showComments:true};
     closeModal();
     toast('Posting... ✨');
     await savePostToFirestore(p);
@@ -1757,10 +1754,15 @@ async function submitPost(){
     toast('Uploading photo... 🌸');
     let imageUrls=[];
     for(let i=0;i<uploadImages.length;i++){
-      const url=await uploadToStorage(uploadImages[i],`posts/${uid}/${Date.now()}_${i}`);
-      imageUrls.push(url);
+      try{
+        const url=await uploadToStorage(uploadImages[i],`posts/${uid}/${Date.now()}_${i}`);
+        imageUrls.push(url);
+      }catch(e){
+        // fallback: store base64 directly
+        imageUrls.push(uploadImages[i]);
+      }
     }
-    const p={id:Date.now(),uid,user:{...me},images:imageUrls,image:imageUrls[0]||null,caption:cap||'',likes:0,liked:false,comments:[],saved:false,time:'Just now',showComments:false};
+    const p={id:postId,uid,user:{...me},images:imageUrls,image:imageUrls[0]||null,caption:cap||'',likes:0,liked:false,comments:[],saved:false,time:'Just now',showComments:false};
     await savePostToFirestore(p);
     toast('Post shared! 🌸');
   }
@@ -2027,13 +2029,23 @@ auth.onAuthStateChanged(async function(user){
       uid:         user.uid,
       email:       user.email
     }, saved);
+    // Load Firestore profile for this user
+    await loadProfile(user.uid);
     // Start the app
     init();
-    // Show admin badge only for admin
+    // Show/hide admin UI
     setTimeout(function(){
+      const admin = isAdmin();
+      // Admin badge on profile
       const badge = document.querySelector('.admin-badge');
-      if(badge) badge.style.display = isAdmin() ? 'inline-flex' : 'none';
-    }, 200);
+      if(badge) badge.style.display = admin ? 'inline-flex' : 'none';
+      // Admin nav item in settings
+      const adminNav = document.getElementById('sn-admin');
+      if(adminNav) adminNav.style.display = admin ? 'flex' : 'none';
+      // Settings subtitle
+      const sub = document.getElementById('settingsSubtitle');
+      if(sub) sub.textContent = admin ? 'Manage your account — you have full admin access' : 'Manage your account and preferences';
+    }, 300);
   } else {
     // Show login screen
     overlay.style.display = 'flex';
