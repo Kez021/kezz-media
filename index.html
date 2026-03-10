@@ -492,8 +492,36 @@ textarea.form-input{resize:none;min-height:80px;}
 .empty p{font-size:14.5px;font-weight:500;}
 
 /* ─── RESPONSIVE ───────────────────────────────────── */
-@media(max-width:1000px){.layout{grid-template-columns:200px 1fr;}.sidebar-right{display:none;}}
-@media(max-width:700px){.layout{grid-template-columns:1fr;padding:calc(58px+12px) 0 40px;}.sidebar-left{display:none;}.post-card,.create-bar,.stories-wrap{border-radius:0;border-left:none;border-right:none;margin-bottom:8px;}nav{padding:0 14px;}.dash-grid{grid-template-columns:repeat(2,1fr);}.settings-grid{grid-template-columns:1fr;}.msg-layout{grid-template-columns:1fr;}.msg-sidebar{display:none;}}
+@media(max-width:1000px){
+  .layout{grid-template-columns:200px 1fr;}
+  .sidebar-right{display:none;}
+}
+@media(max-width:700px){
+  .layout{grid-template-columns:1fr;padding:calc(58px + 8px) 0 70px;}
+  .sidebar-left{display:none;}
+  .sidebar-right{display:none;}
+  nav{padding:0 12px;}
+  .post-card,.create-bar,.stories-wrap{border-radius:0;border-left:none;border-right:none;margin-bottom:6px;}
+  .dash-grid{grid-template-columns:repeat(2,1fr);}
+  .settings-grid{grid-template-columns:1fr;}
+  /* Messages: full screen, sidebar hidden, chat full width */
+  .msg-layout{grid-template-columns:1fr;border-radius:0;min-height:calc(100vh - 130px);}
+  .msg-sidebar{display:none;}
+  .msg-sidebar.show{display:flex;position:fixed;inset:0;z-index:200;background:var(--card);border-radius:0;}
+  .chat-area{border-radius:0;}
+  /* Profile mobile */
+  .profile-card{border-radius:0;border-left:none;border-right:none;}
+  .opu-banner{height:130px;}
+  .profile-stats{gap:0;}
+  .stat-item{flex:1;}
+  /* Admin/search grids */
+  .admin-stat-grid{grid-template-columns:repeat(2,1fr);}
+  .people-grid{grid-template-columns:repeat(2,1fr);}
+}
+/* Mobile bottom nav */
+@media(max-width:700px){
+  .mobile-bottom-nav{display:flex;}
+}
 /* AUTH */
 #authOverlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#fff0f6,#fde8f2);display:flex;align-items:center;justify-content:center;padding:16px;}
 .ac{background:#fff;border-radius:22px;padding:32px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(180,100,140,.15);}
@@ -609,6 +637,41 @@ textarea.form-input{resize:none;min-height:80px;}
 .opu-grid-overlay{position:absolute;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;gap:10px;color:white;font-size:13px;font-weight:600;opacity:0;transition:opacity .18s;}
 .opu-grid-item:hover .opu-grid-overlay{opacity:1;}
 .opu-empty{text-align:center;padding:50px 20px;color:var(--text3);font-size:14px;}
+
+/* ─── MOBILE BOTTOM NAV ─────────────────────────────── */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:100;padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-around;align-items:center;}
+.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 10px;cursor:pointer;color:var(--text3);position:relative;transition:color .2s;}
+.mob-nav-item.active{color:var(--pink);}
+.mob-nav-item svg{width:22px;height:22px;}
+.mob-nav-item span{font-size:9.5px;font-weight:600;}
+.mob-nav-badge{position:absolute;top:0;right:6px;background:var(--pink);color:white;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
+
+/* ─── MESSAGES MOBILE FIX ───────────────────────────── */
+.msg-back-btn{display:none;background:none;border:none;cursor:pointer;color:var(--text2);padding:4px;margin-right:4px;}
+@media(max-width:700px){
+  .msg-back-btn{display:flex;align-items:center;}
+  .chat-area{display:none;position:fixed;inset:0;z-index:150;background:var(--card);flex-direction:column;border-radius:0;}
+  .chat-area.open{display:flex;}
+  .chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;}
+  .chat-input-row{padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));}
+  .chat-header{padding:10px 14px;}
+}
+
+/* ─── OWN PROFILE MOBILE ────────────────────────────── */
+@media(max-width:700px){
+  .profile-banner{height:130px;}
+  .profile-av{width:70px;height:70px;font-size:22px;}
+  .profile-name{font-size:17px;}
+  .profile-stats{padding:12px 0;}
+  .profile-grid{grid-template-columns:repeat(3,1fr);}
+}
+
+/* ─── OTHER PROFILE MOBILE ───────────────────────────── */
+@media(max-width:700px){
+  .opu-av{width:68px !important;height:68px !important;font-size:22px !important;margin-top:-34px !important;}
+  .opu-top{padding:0 14px 16px !important;}
+  .opu-stats>div{padding:4px !important;}
+}
 </style>
 </head>
 <body>
@@ -1344,18 +1407,40 @@ async function sendNotification(toUid, type, fromUser, extra){
 function watchNotifications(){
   if(!me.uid) return;
   if(notifUnsubscribe) notifUnsubscribe();
+  // Try with orderBy first (requires Firestore composite index)
+  // Fall back to just where() if index not yet built
+  function handleSnap(snap){
+    const count = snap.docs.filter(function(d){ return !d.data().read; }).length;
+    const badge = document.getElementById('notifBadge');
+    const mnBadge = document.getElementById('mnNotifBadge');
+    const mobBadge = document.getElementById('mobNotifBadge');
+    if(badge){ badge.textContent=count; badge.classList.toggle('hidden',!count); }
+    if(mnBadge){ mnBadge.textContent=count; mnBadge.style.display=count?'':'none'; }
+    if(mobBadge){ mobBadge.textContent=count; mobBadge.style.display=count?'':'none'; }
+    if(document.getElementById('view-notifs') && document.getElementById('view-notifs').classList.contains('active')){
+      renderNotifs(snap.docs);
+    }
+  }
+  function handleErr(err){
+    if(err.code==='failed-precondition'){
+      // Index not ready — try without orderBy
+      notifUnsubscribe = db.collection('notifications')
+        .where('toUid','==',me.uid)
+        .onSnapshot(function(snap){
+          // Sort client-side
+          const sorted = snap.docs.slice().sort(function(a,b){
+            const ta = a.data().ts ? (a.data().ts.toMillis ? a.data().ts.toMillis() : 0) : 0;
+            const tb = b.data().ts ? (b.data().ts.toMillis ? b.data().ts.toMillis() : 0) : 0;
+            return tb - ta;
+          });
+          handleSnap({docs:sorted});
+        }, function(){});
+    }
+  }
   notifUnsubscribe = db.collection('notifications')
     .where('toUid','==',me.uid)
     .orderBy('ts','desc')
-    .onSnapshot(snap=>{
-      const count = snap.docs.filter(d=>!d.data().read).length;
-      const badge = document.getElementById('notifBadge');
-      const mnBadge = document.getElementById('mnNotifBadge');
-      if(badge){ badge.textContent=count; badge.classList.toggle('hidden',!count); }
-      if(mnBadge){ mnBadge.textContent=count; mnBadge.style.display=count?'':'none'; }
-      // if notifs view is open, refresh it
-      if(document.getElementById('view-notifs').classList.contains('active')) renderNotifs(snap.docs);
-    });
+    .onSnapshot(handleSnap, handleErr);
 }
 function renderNotifs(docs){
   const list=document.getElementById('notifList');
@@ -1532,9 +1617,48 @@ function saveProfile(){
   const h=document.getElementById('editHandle').value.trim().replace('@','');
   const b=document.getElementById('editBio').value.trim();
   if(!n){toast('Name cannot be empty');return;}
-  me.name=n;me.handle=h||'you';me.bio=b;
-  saveProfileToFirestore();applyUserProfile();refreshProfile();
+  me.name=n; me.handle=h||'you'; me.bio=b;
+  me.initial = n.charAt(0).toUpperCase();
+  saveProfileToFirestore();
+  applyUserProfile();
+  refreshProfile();
+  // Update all past posts in Firestore with new name/handle/initial/avatar
+  updateMyPostsAuthorInfo();
   toast('Profile saved! ✓');
+}
+
+async function updateMyPostsAuthorInfo(){
+  // Update the user object inside every post owned by me in Firestore
+  const updatedUser = {
+    name: me.name,
+    handle: me.handle,
+    initial: me.initial,
+    color: me.color,
+    avatar: me.avatar || null
+  };
+  // Update local posts array immediately so feed re-renders correctly
+  posts.forEach(function(p){
+    if(p.uid === me.uid && p.user){
+      Object.assign(p.user, updatedUser);
+    }
+  });
+  renderFeed();
+  renderExploreFeed();
+  // Batch update in Firestore (max 500 per batch but users won't have that many)
+  try{
+    const snap = await postsCol().where('uid','==',me.uid).get();
+    if(snap.empty) return;
+    // Split into batches of 400
+    const docs = snap.docs;
+    for(let i=0; i<docs.length; i+=400){
+      const batch = db.batch();
+      docs.slice(i, i+400).forEach(function(d){
+        batch.update(d.ref, {user: updatedUser});
+      });
+      await batch.commit();
+    }
+    toast('Profile + posts updated ✓');
+  } catch(e){ /* silent */ }
 }
 
 function uploadAvatar(inp){
@@ -1548,7 +1672,9 @@ function uploadAvatar(inp){
     }catch(err){
       me.avatar=e.target.result; // fallback to base64
     }
-    saveProfileToFirestore();applyUserProfile();toast('Profile photo updated! ✓');
+    saveProfileToFirestore();applyUserProfile();
+    updateMyPostsAuthorInfo();
+    toast('Profile photo updated! ✓');
   };
   r.readAsDataURL(f);
 }
@@ -2622,6 +2748,9 @@ async function openDMWith(otherUid,otherName){
   const chatArea=document.getElementById('chatArea');
   chatArea.innerHTML=`
     <div class="chat-header">
+      <button class="msg-back-btn" onclick="closeChatMobile()" title="Back">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <div class="post-avatar" style="background:${otherProf.color||'var(--pink)'};width:36px;height:36px;font-size:13px;cursor:pointer;" onclick="viewProfile(_g(${_r(otherUid)}))">
         ${otherProf.avatar?`<img src="${otherProf.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(otherProf.initial||(otherProf.name?otherProf.name.charAt(0):'')||'U')}
       </div>
@@ -2684,37 +2813,67 @@ async function sendDM(convoId){
 }
 
 // Load DM conversations list from Firestore
+let dmConvoUnsubscribe = null;
 function loadDMConvos(){
-  db.collection('dms').where('participants','array-contains',me.uid)
-    .orderBy('lastTs','desc').onSnapshot(snap=>{
-      const list=document.getElementById('convoList');if(!list)return;
-      list.innerHTML='';
-      if(snap.empty){
-        list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No conversations yet.<br>Find someone to message!</div>';
-        return;
-      }
-      snap.docs.forEach(d=>{
-        const c=d.data();
-        const otherUid=c.participants.find(u=>u!==me.uid);
-        const name=c[`name_${me.uid}`]||'User';
-        const handle=c[`handle_${me.uid}`]||'user';
-        const color=c[`color_${me.uid}`]||'var(--pink)';
-        const initial=c[`initial_${me.uid}`]||name[0]||'U';
-        const avatar=c[`avatar_${me.uid}`];
-        const div=document.createElement('div');
-        div.className=`convo-item${activeDMUid===otherUid?' active':''}`;
-        div.innerHTML=`
-          <div class="convo-av" style="background:${color};color:white;">
-            ${avatar?`<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(initial)}
-          </div>
-          <div class="convo-info">
-            <div class="convo-name">${esc(name)}</div>
-            <div class="convo-last">${esc(c.lastMsg||'Say hello!')}</div>
-          </div>`;
-        div.onclick=()=>openDMWith(otherUid,name);
-        list.appendChild(div);
+  if(dmConvoUnsubscribe){ dmConvoUnsubscribe(); dmConvoUnsubscribe=null; }
+  function renderConvos(snap){
+    const list=document.getElementById('convoList'); if(!list)return;
+    list.innerHTML='';
+    if(!snap.docs || !snap.docs.length){
+      list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No conversations yet.<br>Find someone to message! 💬</div>';
+      return;
+    }
+    snap.docs.forEach(function(d){
+      const c=d.data();
+      if(!c.participants || !Array.isArray(c.participants)) return;
+      const otherUid=c.participants.find(function(u){return u!==me.uid;});
+      if(!otherUid) return;
+      // Use OTHER person's display info (what THEY see of you vs what you see of them)
+      // name_X means "the name of the OTHER person as seen by user X"
+      const name=c['name_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].name||'User';
+      const color=c['color_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].color||'var(--pink)';
+      const initial=c['initial_'+me.uid]||(name?name.charAt(0):'U');
+      const avatar=c['avatar_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].avatar||null;
+      const lastMsg=c.lastMsg||'Say hello! 👋';
+      const iU=_r(otherUid); const iN=_r(name);
+      const div=document.createElement('div');
+      div.className='convo-item'+(activeDMUid===otherUid?' active':'');
+      div.innerHTML=
+        '<div class="convo-av" style="background:'+color+';color:white;">'
+          +(avatar?'<img src="'+avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(initial))
+        +'</div>'
+        +'<div class="convo-info">'
+          +'<div class="convo-name">'+esc(name)+'</div>'
+          +'<div class="convo-last">'+esc(lastMsg.slice(0,40))+'</div>'
+        +'</div>';
+      div.addEventListener('click', function(){
+        openDMWith(_g(iU), _g(iN));
+        // Mobile: open chat panel
+        const ca=document.getElementById('chatArea');
+        if(ca && window.innerWidth<=700){ ca.classList.add('open'); }
       });
+      list.appendChild(div);
     });
+  }
+  function onErr(err){
+    if(err.code==='failed-precondition'){
+      // No index — fallback without orderBy
+      dmConvoUnsubscribe = db.collection('dms')
+        .where('participants','array-contains',me.uid)
+        .onSnapshot(function(snap){
+          const sorted={docs:snap.docs.slice().sort(function(a,b){
+            const ta=a.data().lastTs?a.data().lastTs.toMillis?a.data().lastTs.toMillis():0:0;
+            const tb=b.data().lastTs?b.data().lastTs.toMillis?b.data().lastTs.toMillis():0:0;
+            return tb-ta;
+          })};
+          renderConvos(sorted);
+        },function(){});
+    }
+  }
+  dmConvoUnsubscribe = db.collection('dms')
+    .where('participants','array-contains',me.uid)
+    .orderBy('lastTs','desc')
+    .onSnapshot(renderConvos, onErr);
 }
 
 function renderDMConvoList(activeUid){
@@ -2744,21 +2903,22 @@ function renderDMConvoList(activeUid){
 
 function uploadBanner(inp){
   const f=inp.files[0];if(!f)return;
-  toast('Uploading cover...');
+  toast('Uploading cover photo...');
   const r=new FileReader();
-  r.onload=async e=>{
+  r.onload=async function(e){
+    let url = e.target.result; // base64 fallback
     try{
-      const url=await uploadToStorage(e.target.result,`banners/me_${Date.now()}`);
-      me.bannerImage=url;
-    }catch(err){
-      me.bannerImage=e.target.result;
-    }
-    me.bannerColor='';
+      url = await uploadToStorage(e.target.result, 'banners/me_'+Date.now());
+    }catch(err){}
+    me.bannerImage = url;
+    me.bannerColor = '';
     saveProfileToFirestore();
+    // Update UI
     const bi=document.getElementById('bannerImg');
-    bi.src=me.bannerImage;bi.style.display='block';
-    document.getElementById('profileBanner').style.background='none';
-    toast('Cover photo updated! ✓');
+    if(bi){ bi.src=url; bi.style.display='block'; }
+    const pb=document.getElementById('profileBanner');
+    if(pb){ pb.style.background='none'; pb.style.backgroundImage='url('+url+')'; pb.style.backgroundSize='cover'; pb.style.backgroundPosition='center'; }
+    toast('Cover photo updated ✓');
   };
   r.readAsDataURL(f);
 }
@@ -3166,6 +3326,53 @@ async function refreshAdminDashboard(){
   }
 }
 
+
+// ── MOBILE NAV ──────────────────────────────────────
+function updateMobNav(view){
+  document.querySelectorAll('.mob-nav-item').forEach(function(el){
+    el.classList.remove('active');
+  });
+  var el = document.getElementById('mob-'+view);
+  if(el) el.classList.add('active');
+}
+function closeChatMobile(){
+  var ca = document.getElementById('chatArea');
+  if(ca) ca.classList.remove('open');
+  activeDMUid = null;
+  if(dmUnsubscribe){ dmUnsubscribe(); dmUnsubscribe=null; }
+}
+
 </script>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-bottom-nav" id="mobileBottomNav">
+  <div class="mob-nav-item active" id="mob-home" onclick="goTo('home');updateMobNav('home')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Home</span>
+  </div>
+  <div class="mob-nav-item" id="mob-explore" onclick="goTo('explore');updateMobNav('explore')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>Explore</span>
+  </div>
+  <div class="mob-nav-item" id="mob-create" onclick="openModal()">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <span>Post</span>
+  </div>
+  <div class="mob-nav-item" id="mob-notifs" onclick="goTo('notifs');updateMobNav('notifs')" style="position:relative;">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    <span>Alerts</span>
+    <span class="mob-nav-badge" id="mobNotifBadge" style="display:none">0</span>
+  </div>
+  <div class="mob-nav-item" id="mob-messages" onclick="goTo('messages');updateMobNav('messages')" style="position:relative;">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>DMs</span>
+    <span class="mob-nav-badge" id="mobDmBadge" style="display:none">0</span>
+  </div>
+  <div class="mob-nav-item" id="mob-profile" onclick="goTo('profile');updateMobNav('profile')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Me</span>
+  </div>
+</nav>
+
 </body>
 </html>
