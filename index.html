@@ -1490,11 +1490,6 @@ function toggleMenu(e,mid){e.stopPropagation();closeMenus();document.getElementB
 function closeMenus(){document.querySelectorAll('.post-menu.open').forEach(m=>m.classList.remove('open'));}
 document.addEventListener('click',closeMenus);
 
-// fix openLightbox to use string id
-function openLightbox(pid){
-  pid=String(pid);
-  const p=posts.find(x=>String(x.id)===pid);if(!p)return;
-
 // ── PROFILE PAGE ──────────────────────────────────────
 function refreshProfile(){
   applyUserProfile();
@@ -1902,7 +1897,8 @@ function goSlide(wrapId,idx){
 let lbAutoTimer = null;
 
 function openLightbox(pid){
-  const p=posts.find(x=>x.id===pid);if(!p)return;
+  pid=String(pid);
+  const p=posts.find(x=>String(x.id)===pid);if(!p)return;
   const imgs=p.images||(p.image?[p.image]:[]);
   const inner=document.getElementById('lightboxInner');
   const ppid=JSON.stringify(pid);
