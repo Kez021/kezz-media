@@ -1009,64 +1009,97 @@ const db      = firebase.firestore();
 const storage = firebase.storage();
 const auth    = firebase.auth();
 
-// ── FIREBASE HELPERS ──────────────────────────────────
-async function uploadToStorage(base64, path) {
-  const ref  = storage.ref(path);
-  const snap = await ref.putString(base64, 'data_url');
-  return await snap.ref.getDownloadURL();
-}
-const postsCol   = () => db.collection('posts');
-const profileDoc = (uid) => db.collection('profiles').doc(uid || (auth.currentUser && auth.currentUser.uid) || 'anon');
+// Enable Firestore offline persistence so posts survive page refreshes
+db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
 
-function startPostsListener() {
-  // Ensure dummy posts always exist with fixed IDs
-  const DUMMY_IDS = ['dummy_1','dummy_2','dummy_3'];
-  db.collection('posts').doc('dummy_1').get().then(doc => {
+// ── FIREBASE HELPERS ──────────────────────────────────
+const postsCol   = () => db.collection('posts');
+const profileDoc = (uid) => db.collection('profiles').doc(uid);
+
+// Upload image: try Cloudinary first, fall back to Firebase Storage, fall back to base64
+async function uploadToStorage(base64, path) {
+  // Try Cloudinary
+  try {
+    const blob = await fetch(base64).then(r => r.blob());
+    const form = new FormData();
+    form.append('file', blob);
+    form.append('upload_preset', 'kezz_media');
+    const res  = await fetch('https://api.cloudinary.com/v1_1/dyspuqa0s/image/upload', {method:'POST', body:form});
+    const data = await res.json();
+    if(data.secure_url) return data.secure_url;
+  } catch(e) {}
+  // Try Firebase Storage
+  try {
+    const ref  = storage.ref(path);
+    const snap = await ref.putString(base64, 'data_url');
+    return await snap.ref.getDownloadURL();
+  } catch(e) {}
+  // Final fallback: return base64 directly (works offline)
+  return base64;
+}
+
+// ── DUMMY SEED POSTS (fixed IDs so they never duplicate) ──
+const DUMMY_POST_IDS = ['dummy_1','dummy_2','dummy_3'];
+
+async function seedDummyPosts() {
+  try {
+    const doc = await postsCol().doc('dummy_1').get();
     if(!doc.exists) {
       const batch = db.batch();
       SAMPLE_POSTS.forEach((p, i) => {
-        batch.set(postsCol().doc(DUMMY_IDS[i]), {
+        const ts = firebase.firestore.Timestamp.fromMillis(Date.now() - (i+1)*3600000);
+        batch.set(postsCol().doc(DUMMY_POST_IDS[i]), {
           ...p,
-          id: DUMMY_IDS[i],
-          createdAt: firebase.firestore.Timestamp.fromMillis(Date.now() - (i+1)*90000)
+          id: DUMMY_POST_IDS[i],
+          uid: 'system',
+          createdAt: ts
         });
       });
-      batch.commit();
+      await batch.commit();
     }
-  }).catch(()=>{});
+  } catch(e) {
+    console.warn('Could not seed dummy posts:', e.message);
+  }
+}
 
-  postsCol().orderBy('createdAt','desc').onSnapshot(async snap => {
-    posts = snap.docs.map(d => ({...d.data()}));
+function startPostsListener() {
+  postsCol().orderBy('createdAt','desc').onSnapshot(snap => {
+    posts = snap.docs.map(d => d.data());
     renderFeed();
     renderExploreFeed();
     if(currentView==='profile')  refreshProfile();
     if(currentView==='settings') refreshAdmin();
   }, err => {
-    console.warn('Firestore error:', err.message);
-    toast('⚠️ Could not reach database');
+    console.warn('Firestore listener error:', err.code, err.message);
+    if(err.code === 'permission-denied') {
+      toast('⚠️ Firebase rules blocking access — see instructions below');
+    } else {
+      toast('⚠️ Could not reach database: ' + err.message);
+    }
   });
 }
 
 async function savePostToFirestore(p) {
-  const docId = String(p.id);
-  await postsCol().doc(docId).set({
+  await postsCol().doc(String(p.id)).set({
     ...p,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 }
 async function updatePostField(id, updates) {
-  await postsCol().doc(String(id)).update(updates);
+  try { await postsCol().doc(String(id)).update(updates); } catch(e) {}
 }
 async function deletePostFromFirestore(id) {
   await postsCol().doc(String(id)).delete();
 }
 async function loadProfile(uid) {
+  if(!uid) return;
   try {
     const doc = await profileDoc(uid).get();
     if(doc.exists) Object.assign(me, doc.data());
   } catch(e) { /* offline, use defaults */ }
 }
 async function saveProfileToFirestore() {
+  if(!me.uid) return;
   try { await profileDoc(me.uid).set(me); } catch(e) {}
 }
 
@@ -1163,8 +1196,8 @@ function goSettings(section){goTo('settings');setTimeout(()=>switchSettingsNav(s
 
 // ── INIT ──────────────────────────────────────────────
 async function init(){
-  // Load profile from Firestore first
-  await loadProfile();
+  // Load this user's profile from Firestore
+  await loadProfile(me.uid);
   applyTheme();
   applyUserProfile();
   renderStories();
@@ -1174,7 +1207,8 @@ async function init(){
   renderBannerSwatches();
   updateNotifBadges();
   updateMsgBadges();
-  // Start real-time posts listener — fills feed automatically
+  // Seed dummy posts if DB is empty, then start live feed
+  await seedDummyPosts();
   startPostsListener();
 }
 
@@ -1410,7 +1444,6 @@ function refreshProfile(){
 }
 function renderPostGrid(){
   const grid=document.getElementById('grid');grid.innerHTML='';
-  // only photo posts (not status) in the grid
   const myPosts=posts.filter(p=>p.uid===me.uid && !p.isStatus);
   if(!myPosts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No photo posts yet. Share your first photo!</div>';return;}
   myPosts.slice().reverse().forEach(p=>{
@@ -1737,32 +1770,27 @@ function handleDrop(e){
 }
 
 async function submitPost(){
-  const uid = auth.currentUser ? auth.currentUser.uid : 'anon';
-  const postId = 'post_' + Date.now();
+  const uid = me.uid || 'anon';
+  const postId = 'post_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
   if(postMode==='status'){
     const txt=document.getElementById('statusInput').value.trim();
     if(!txt){toast('Write something first!');return;}
-    const p={id:postId,uid,user:{...me},images:[],image:null,caption:txt,mood:selectedMood,isStatus:true,likes:0,liked:false,comments:[],saved:false,time:'Just now',showComments:true};
+    const p={id:postId, uid, user:{...me}, images:[], image:null, caption:txt, mood:selectedMood, isStatus:true, likes:0, liked:false, comments:[], saved:false, time:'Just now', showComments:true};
     closeModal();
     toast('Posting... ✨');
     await savePostToFirestore(p);
     toast('Status shared! ✨');
   } else {
     const cap=document.getElementById('captionInput').value.trim();
-    if(!uploadImages.length && !cap){toast('Add a photo or caption first');return;}
+    if(!uploadImages.length){toast('Add a photo first');return;}
     closeModal();
     toast('Uploading photo... 🌸');
     let imageUrls=[];
     for(let i=0;i<uploadImages.length;i++){
-      try{
-        const url=await uploadToStorage(uploadImages[i],`posts/${uid}/${Date.now()}_${i}`);
-        imageUrls.push(url);
-      }catch(e){
-        // fallback: store base64 directly
-        imageUrls.push(uploadImages[i]);
-      }
+      const url = await uploadToStorage(uploadImages[i], `posts/${uid}/${Date.now()}_${i}`);
+      imageUrls.push(url);
     }
-    const p={id:postId,uid,user:{...me},images:imageUrls,image:imageUrls[0]||null,caption:cap||'',likes:0,liked:false,comments:[],saved:false,time:'Just now',showComments:false};
+    const p={id:postId, uid, user:{...me}, images:imageUrls, image:imageUrls[0]||null, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', showComments:false};
     await savePostToFirestore(p);
     toast('Post shared! 🌸');
   }
@@ -1921,37 +1949,8 @@ function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}
 function loadJSON(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-// ── CLOUDINARY UPLOAD ────────────────────────────────
-async function uploadToStorage(base64, path){
-  try{
-    const blob = await fetch(base64).then(r=>r.blob());
-    const form = new FormData();
-    form.append('file', blob);
-    form.append('upload_preset', 'kezz_media');
-    const res  = await fetch('https://api.cloudinary.com/v1_1/dyspuqa0s/image/upload',{method:'POST',body:form});
-    const data = await res.json();
-    if(data.secure_url) return data.secure_url;
-    throw new Error('no url');
-  }catch(e){
-    // fallback: compress locally
-    return new Promise(resolve=>{
-      const img=new Image();
-      img.onload=()=>{
-        const c=document.createElement('canvas');
-        let w=img.width,h=img.height;
-        if(w>800){h=Math.round(h*800/w);w=800;}
-        c.width=w;c.height=h;
-        c.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(c.toDataURL('image/jpeg',.65));
-      };
-      img.onerror=()=>resolve(base64);
-      img.src=base64;
-    });
-  }
-}
-
 // ── ADMIN ─────────────────────────────────────────────
-const ADMIN_EMAILS = ['keshamaebangcoyo9@gmail.com']; // ← CHANGE TO YOUR EMAIL
+const ADMIN_EMAILS = ['keshamaebangcoyo9@gmail.com'];
 function isAdmin(){ return !!(auth.currentUser && ADMIN_EMAILS.includes(auth.currentUser.email)); }
 
 // ── AUTH FUNCTIONS ────────────────────────────────────
@@ -2015,11 +2014,9 @@ function doSignOut(){ if(confirm('Sign out of Kez Media?')) auth.signOut(); }
 auth.onAuthStateChanged(async function(user){
   const overlay = document.getElementById('authOverlay');
   if(user){
-    // Hide login screen
     overlay.style.display = 'none';
-    // Build me object from Firebase user + any saved profile
-    const saved = loadJSON('kez_me_'+user.uid, {});
-    me = Object.assign({
+    // Build me object from Firebase user
+    me = {
       name:        user.displayName || 'Kez User',
       handle:      (user.displayName||'user').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
       color:       'linear-gradient(135deg,#e2688a,#f0a0b8)',
@@ -2028,26 +2025,18 @@ auth.onAuthStateChanged(async function(user){
       bannerColor: 'linear-gradient(135deg,#f4a8c0,#e2688a,#c93f6e)',
       uid:         user.uid,
       email:       user.email
-    }, saved);
-    // Load Firestore profile for this user
-    await loadProfile(user.uid);
-    // Start the app
-    init();
-    // Show/hide admin UI
-    setTimeout(function(){
-      const admin = isAdmin();
-      // Admin badge on profile
-      const badge = document.querySelector('.admin-badge');
-      if(badge) badge.style.display = admin ? 'inline-flex' : 'none';
-      // Admin nav item in settings
-      const adminNav = document.getElementById('sn-admin');
-      if(adminNav) adminNav.style.display = admin ? 'flex' : 'none';
-      // Settings subtitle
-      const sub = document.getElementById('settingsSubtitle');
-      if(sub) sub.textContent = admin ? 'Manage your account — you have full admin access' : 'Manage your account and preferences';
-    }, 300);
+    };
+    // Start the app (init loads Firestore profile internally)
+    await init();
+    // Show/hide admin UI based on email
+    const admin = isAdmin();
+    const badge = document.querySelector('.admin-badge');
+    if(badge) badge.style.display = admin ? 'inline-flex' : 'none';
+    const adminNav = document.getElementById('sn-admin');
+    if(adminNav) adminNav.style.display = admin ? 'flex' : 'none';
+    const sub = document.getElementById('settingsSubtitle');
+    if(sub) sub.textContent = admin ? 'Manage your account — you have full admin access' : 'Manage your account and preferences';
   } else {
-    // Show login screen
     overlay.style.display = 'flex';
   }
 });
