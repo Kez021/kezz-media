@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kez Media</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,900;1,900&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<style>
+/* ─── TOKENS ────────────────────────────────────────── */
+:root{
+  --pink:#e2688a; --pink-soft:#f0a0b8; --pink-pale:#fceef3; --pink-glow:rgba(226,104,138,.18);
+  --bg:#ffffff; --bg2:#fdf6f8; --bg3:#f5edf1; --card:#ffffff;
+  --border:rgba(180,120,145,.14); --text:#1a0d12; --text2:#7a5263; --text3:#b8909e;
+  --nav-shadow:0 1px 0 var(--border); --card-shadow:0 2px 14px rgba(180,100,140,.08);
+  --nav-bg:rgba(255,255,255,.88);
+}
+[data-theme="dark"]{
+  --bg:#150d10; --bg2:#1e131a; --bg3:#271820; --card:#1c1118;
+  --border:rgba(226,104,138,.12); --text:#faeef2; --text2:#c49aaa; --text3:#7a5060;
+  --nav-shadow:0 1px 0 var(--border); --card-shadow:0 2px 20px rgba(0,0,0,.3);
+  --nav-bg:rgba(21,13,16,.9);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Jost',sans-serif;background:linear-gradient(145deg,#fff0f6 0%,#fde8f2 30%,#fdf3f8 60%,#fce8f0 100%);background-attachment:fixed;color:var(--text);min-height:100vh;transition:background .3s,color .3s;overflow-x:hidden;position:relative;}
+[data-theme="dark"] body{background:linear-gradient(145deg,#1a0912 0%,#200e18 35%,#18080f 65%,#1e0d16 100%);background-attachment:fixed;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 0% 0%,rgba(255,150,200,.35) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 100% 0%,rgba(240,100,170,.28) 0%,transparent 60%),radial-gradient(ellipse 45% 55% at 100% 100%,rgba(255,170,210,.3) 0%,transparent 65%),radial-gradient(ellipse 55% 35% at 0% 100%,rgba(230,110,170,.25) 0%,transparent 60%),radial-gradient(ellipse 35% 40% at 50% 50%,rgba(255,190,220,.15) 0%,transparent 65%);transition:opacity .3s;}
+[data-theme="dark"] body::before{background:radial-gradient(ellipse 60% 50% at 0% 0%,rgba(180,30,90,.22) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 100% 0%,rgba(160,20,80,.18) 0%,transparent 60%),radial-gradient(ellipse 45% 55% at 100% 100%,rgba(190,40,100,.2) 0%,transparent 65%),radial-gradient(ellipse 55% 35% at 0% 100%,rgba(170,25,85,.16) 0%,transparent 60%),radial-gradient(ellipse 35% 40% at 50% 50%,rgba(200,50,110,.1) 0%,transparent 65%);}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+/* ─── NAV ──────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;background:var(--nav-bg);backdrop-filter:blur(18px);box-shadow:var(--nav-shadow);display:flex;align-items:center;padding:0 28px;gap:14px;transition:background .3s;position:fixed;}
+.brand{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;font-style:italic;background:linear-gradient(130deg,#d44f7a 0%,#e8789c 40%,#f4a8c0 70%,#c93f6e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px;flex-shrink:0;white-space:nowrap;filter:drop-shadow(0 1px 8px rgba(210,70,120,.18));cursor:pointer;}
+.nav-search{flex:1;max-width:280px;position:relative;}
+.nav-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:8px 14px 8px 36px;color:var(--text);font-family:'Jost',sans-serif;font-size:13px;outline:none;transition:border-color .2s,background .3s;}
+.nav-search input:focus{border-color:var(--pink);}
+.nav-search input::placeholder{color:var(--text3);}
+.nav-search .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:6px;}
+.icon-btn{width:36px;height:36px;border-radius:50%;background:transparent;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:all .2s;position:relative;}
+.icon-btn:hover{background:var(--pink-pale);border-color:var(--pink);color:var(--pink);}
+[data-theme="dark"] .icon-btn:hover{background:var(--bg3);}
+.badge{position:absolute;top:-3px;right:-3px;width:16px;height:16px;background:var(--pink);border-radius:50%;font-size:9px;font-weight:700;color:white;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);}
+.badge.hidden{display:none;}
+.theme-btn{width:36px;height:36px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:all .2s;}
+.theme-btn:hover{border-color:var(--pink);color:var(--pink);}
+.nav-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-soft));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:white;cursor:pointer;border:2px solid transparent;transition:border-color .2s;overflow:hidden;}
+.nav-avatar:hover{border-color:var(--pink);}
+.nav-avatar img{width:100%;height:100%;object-fit:cover;}
+
+/* ─── LAYOUT ───────────────────────────────────────── */
+.layout{display:grid;grid-template-columns:220px 1fr 290px;gap:24px;max-width:1100px;margin:0 auto;padding:calc(58px + 26px) 16px 48px;align-items:start;position:relative;z-index:1;transition:grid-template-columns .35s ease;}
+/* when profile is active, collapse right sidebar and expand center */
+.layout.profile-mode{grid-template-columns:220px 1fr;}
+.layout.profile-mode .sidebar-right{display:none;}
+
+/* ─── SIDEBAR LEFT ─────────────────────────────────── */
+.sidebar-left{position:sticky;top:calc(58px + 18px);display:flex;flex-direction:column;gap:2px;}
+.menu-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:all .2s;color:var(--text2);font-size:14px;font-weight:500;border:1px solid transparent;user-select:none;position:relative;}
+.menu-item:hover{background:var(--pink-pale);color:var(--pink);}
+[data-theme="dark"] .menu-item:hover{background:var(--bg3);color:var(--pink);}
+.menu-item.active{color:var(--pink);background:var(--pink-pale);}
+[data-theme="dark"] .menu-item.active{background:var(--bg3);}
+.menu-item svg{flex-shrink:0;}
+.menu-badge{margin-left:auto;background:var(--pink);color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;}
+.menu-divider{height:1px;background:var(--border);margin:8px 4px;}
+
+/* ─── VIEWS ────────────────────────────────────────── */
+.view{display:none;}
+.view.active{display:block;animation:fadeUp .38s cubic-bezier(.22,1,.36,1) both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+/* ─── POST TYPE TABS (modal) ───────────────────────── */
+.post-type-tabs{display:flex;gap:4px;background:var(--bg3);border-radius:12px;padding:4px;margin-bottom:18px;}
+.ptt{flex:1;padding:8px;border-radius:9px;border:none;background:transparent;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.ptt.active{background:var(--card);color:var(--pink);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.ptt:hover:not(.active){color:var(--text2);}
+
+/* ─── STATUS POST CARD (clean, no colour bg) ───────── */
+.status-body{padding:14px 20px 10px;border-left:3px solid var(--pink);margin:4px 16px 8px;background:var(--bg2);border-radius:0 10px 10px 0;}
+.status-text{font-size:16px;line-height:1.7;color:var(--text);word-break:break-word;}
+.status-mood-tag{display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;color:var(--text3);background:var(--bg3);padding:3px 10px;border-radius:20px;border:1px solid var(--border);}
+/* profile status list items */
+.status-list-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .22s;animation:fadeUp .3s ease both;}
+.status-list-item:hover{border-color:var(--pink);transform:translateX(3px);box-shadow:0 4px 18px rgba(226,104,138,.1);}
+.status-list-text{font-size:15px;line-height:1.65;color:var(--text);margin-bottom:8px;word-break:break-word;}
+.status-list-meta{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:12px;}
+
+/* ─── TEXT POST IN-MODAL PREVIEW ───────────────────── */
+.status-input-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;min-height:120px;position:relative;transition:border-color .2s;}
+.status-input-wrap:focus-within{border-color:var(--pink);}
+.status-textarea{width:100%;background:transparent;border:none;outline:none;font-family:'Jost',sans-serif;font-size:16px;font-weight:500;color:var(--text);line-height:1.6;resize:none;min-height:90px;}
+.status-textarea::placeholder{color:var(--text3);}
+.status-char{position:absolute;bottom:10px;right:12px;font-size:11px;color:var(--text3);}
+.mood-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.mood-chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);font-size:12px;cursor:pointer;transition:all .2s;color:var(--text2);}
+.mood-chip:hover,.mood-chip.sel{border-color:var(--pink);color:var(--pink);background:var(--pink-pale);}
+[data-theme="dark"] .mood-chip:hover,[data-theme="dark"] .mood-chip.sel{background:var(--bg3);}
+
+/* ─── STORIES ──────────────────────────────────────── */
+.stories-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--card-shadow);transition:background .3s,border-color .3s;}
+.stories-row{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.stories-row::-webkit-scrollbar{display:none;}
+.story-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;}
+.story-ring{padding:2px;border-radius:50%;background:linear-gradient(135deg,var(--pink),#f4a6be,#ffd1dc);}
+.story-ring.seen{background:var(--bg3);}
+.story-ring.add-ring{background:transparent;border:1.5px dashed var(--pink);}
+.story-avatar{width:52px;height:52px;border-radius:50%;background:var(--bg3);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:18px;font-weight:600;color:var(--text2);transition:transform .2s;}
+.story-item:hover .story-avatar{transform:scale(1.06);}
+.story-avatar img{width:100%;height:100%;object-fit:cover;}
+.story-name{font-size:11px;color:var(--text3);font-weight:500;text-align:center;max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ─── CREATE BAR ───────────────────────────────────── */
+.create-bar{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--card-shadow);transition:background .3s,border-color .3s;}
+.create-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:9px 16px;color:var(--text);font-family:'Jost',sans-serif;font-size:13.5px;outline:none;cursor:pointer;transition:border-color .2s,background .3s;}
+.create-input:hover{border-color:var(--pink);}
+.create-input::placeholder{color:var(--text3);}
+.photo-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12.5px;font-family:'Jost',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.photo-btn:hover{border-color:var(--pink);color:var(--pink);}
+
+/* ─── POST CARD ────────────────────────────────────── */
+.post-card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:16px;overflow:hidden;box-shadow:var(--card-shadow);animation:cardIn .42s cubic-bezier(.22,1,.36,1) both;transition:border-color .25s,box-shadow .25s,background .3s;}
+.post-card:hover{border-color:rgba(226,104,138,.3);box-shadow:0 6px 28px rgba(180,100,140,.13);}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+.post-header{display:flex;align-items:center;padding:14px 16px 10px;gap:10px;position:relative;}
+.post-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-soft));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:white;flex-shrink:0;overflow:hidden;cursor:pointer;}
+.post-avatar img{width:100%;height:100%;object-fit:cover;}
+.post-meta{flex:1;}
+.post-username{font-size:13.5px;font-weight:600;color:var(--text);cursor:pointer;transition:color .2s;}
+.post-username:hover{color:var(--pink);}
+.post-time{font-size:11.5px;color:var(--text3);margin-top:1px;}
+.post-more{background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:8px;transition:all .2s;display:flex;align-items:center;}
+.post-more:hover{background:var(--bg3);color:var(--text2);}
+/* ─── CAROUSEL ─────────────────────────────────────── */
+.carousel-wrap{position:relative;overflow:hidden;background:var(--bg3);}
+.carousel-track{display:flex;transition:transform .38s cubic-bezier(.4,0,.2,1);}
+.carousel-slide{min-width:100%;position:relative;}
+.carousel-slide img{width:100%;max-height:520px;object-fit:cover;display:block;cursor:pointer;}
+.carousel-btn{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.85);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1a0d12;font-size:14px;z-index:5;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.carousel-btn:hover{background:white;box-shadow:0 4px 14px rgba(0,0,0,.22);}
+.carousel-prev{left:10px;}.carousel-next{right:10px;}
+.carousel-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5;}
+.carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);transition:all .2s;cursor:pointer;}
+.carousel-dot.active{background:white;width:18px;border-radius:4px;}
+.multi-badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:white;border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px;z-index:5;}
+.post-img-placeholder{width:100%;height:260px;background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);}
+.post-actions{display:flex;align-items:center;padding:10px 14px 6px;gap:2px;}
+.act{display:flex;align-items:center;gap:5px;background:none;border:none;color:var(--text2);font-family:'Jost',sans-serif;font-size:13px;font-weight:500;cursor:pointer;padding:7px 9px;border-radius:8px;transition:all .2s;}
+.act:hover{background:var(--pink-pale);color:var(--pink);}
+[data-theme="dark"] .act:hover{background:var(--bg3);color:var(--pink);}
+.act.liked{color:var(--pink);}
+.act.liked svg{fill:var(--pink);}
+.act svg{transition:transform .2s;}
+.act:hover svg{transform:scale(1.12);}
+.act.liked svg{animation:pop .25s ease;}
+@keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.3);}100%{transform:scale(1);}}
+.act-right{margin-left:auto;}
+.post-content{padding:4px 16px 12px;}
+.post-likes{font-size:13px;font-weight:600;margin-bottom:5px;}
+.post-caption{font-size:13.5px;line-height:1.55;color:var(--text);}
+.post-caption .uname{font-weight:600;margin-right:6px;}
+.comments-wrap{padding:0 16px 14px;}
+.view-all{font-size:12.5px;color:var(--text3);cursor:pointer;margin-bottom:8px;transition:color .2s;font-weight:500;}
+.view-all:hover{color:var(--pink);}
+.comment{display:flex;gap:8px;margin-bottom:8px;animation:fadeUp .2s ease both;}
+.c-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;overflow:hidden;background:var(--pink-pale);color:var(--pink);}
+[data-theme="dark"] .c-avatar{background:var(--bg3);}
+.c-avatar img{width:100%;height:100%;object-fit:cover;}
+.c-bubble{background:var(--bg2);border-radius:0 10px 10px 10px;padding:6px 11px;flex:1;transition:background .3s;}
+.c-user{font-size:11.5px;font-weight:600;color:var(--pink);margin-bottom:1px;}
+.c-text{font-size:12.5px;line-height:1.4;color:var(--text);}
+.c-input-row{display:flex;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.c-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:7px 13px;color:var(--text);font-family:'Jost',sans-serif;font-size:12.5px;outline:none;transition:border-color .2s,background .3s;}
+.c-input:focus{border-color:var(--pink);}
+.c-input::placeholder{color:var(--text3);}
+.c-send{width:30px;height:30px;border-radius:50%;background:var(--pink);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;transition:all .2s;flex-shrink:0;}
+.c-send:hover{background:var(--pink-soft);box-shadow:0 0 14px var(--pink-glow);}
+.post-menu{position:absolute;right:12px;top:46px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px;z-index:50;min-width:140px;box-shadow:0 8px 28px rgba(0,0,0,.12);display:none;transition:background .3s;}
+.post-menu.open{display:block;}
+.pm-item{padding:8px 12px;font-size:13px;cursor:pointer;border-radius:7px;transition:background .15s;display:flex;align-items:center;gap:8px;color:var(--text2);font-weight:500;}
+.pm-item:hover{background:var(--bg3);color:var(--text);}
+.pm-item.danger{color:#e05577;}
+.pm-item.danger:hover{background:rgba(224,85,119,.08);}
+
+/* ─── RIGHT SIDEBAR ────────────────────────────────── */
+.sidebar-right{position:sticky;top:calc(58px + 18px);display:flex;flex-direction:column;gap:16px;}
+.s-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--card-shadow);transition:background .3s,border-color .3s;}
+.s-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:14px;}
+.sug-user{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+.sug-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;overflow:hidden;}
+.sug-avatar img{width:100%;height:100%;object-fit:cover;}
+.sug-info{flex:1;}
+.sug-name{font-size:13px;font-weight:600;}
+.sug-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.follow-btn{background:none;border:1px solid var(--pink);color:var(--pink);border-radius:16px;padding:4px 13px;font-size:12px;font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.follow-btn:hover,.follow-btn.on{background:var(--pink);color:white;}
+.tag{background:var(--bg3);border:1px solid var(--border);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;color:var(--text2);font-weight:500;transition:all .2s;display:inline-block;margin:0 4px 6px 0;}
+.tag:hover{border-color:var(--pink);color:var(--pink);}
+
+/* ─── PAGE HEADER ──────────────────────────────────── */
+.page-header{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:var(--card-shadow);}
+.page-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;font-style:italic;background:linear-gradient(130deg,#d44f7a,#f4a8c0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--text3);}
+
+/* ─── PROFILE PAGE ─────────────────────────────────── */
+.profile-banner{width:100%;height:220px;border-radius:16px 16px 0 0;background:linear-gradient(135deg,#f4a8c0,#e2688a,#c93f6e);position:relative;overflow:hidden;background-size:cover;background-position:center;}
+.banner-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+.profile-banner-btns{position:absolute;bottom:12px;right:14px;display:flex;gap:8px;}
+.profile-banner-edit{background:rgba(0,0,0,.48);border:none;color:white;border-radius:8px;padding:6px 11px;font-size:12px;font-family:'Jost',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .2s;font-weight:500;}
+.profile-banner-edit:hover{background:rgba(0,0,0,.68);}
+.banner-upload-input{display:none;}
+.profile-card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:16px;box-shadow:var(--card-shadow);overflow:hidden;}
+.profile-top{padding:0 24px 22px;position:relative;}
+.profile-av-wrap{margin-top:-52px;margin-bottom:14px;display:flex;align-items:flex-end;justify-content:space-between;}
+.profile-av{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-soft));border:4px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:white;overflow:hidden;position:relative;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.12);}
+.profile-av img{width:100%;height:100%;object-fit:cover;}
+.profile-av-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:50%;}
+.profile-av:hover .profile-av-overlay{opacity:1;}
+.profile-actions{display:flex;gap:8px;align-items:center;}
+.edit-profile-btn{background:none;border:1.5px solid var(--border);color:var(--text);border-radius:20px;padding:7px 18px;font-size:13px;font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;transition:all .2s;}
+.edit-profile-btn:hover{border-color:var(--pink);color:var(--pink);}
+.share-profile-btn{background:none;border:1.5px solid var(--border);color:var(--text2);border-radius:20px;padding:7px 14px;font-size:13px;font-family:'Jost',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.share-profile-btn:hover{border-color:var(--pink);color:var(--pink);}
+.profile-name{font-size:20px;font-weight:700;margin-bottom:2px;letter-spacing:-.3px;}
+.profile-handle{font-size:13.5px;color:var(--text3);margin-bottom:10px;}
+.profile-bio{font-size:14px;line-height:1.55;color:var(--text2);margin-bottom:14px;max-width:420px;}
+.profile-stats{display:flex;gap:28px;}
+.stat-item{text-align:center;cursor:pointer;}
+.stat-num{font-size:18px;font-weight:700;color:var(--text);}
+.stat-label{font-size:11.5px;color:var(--text3);margin-top:1px;font-weight:400;}
+.stat-item:hover .stat-num{color:var(--pink);}
+
+/* admin badge */
+.admin-badge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#d44f7a,#f4a8c0);color:white;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;margin-bottom:8px;}
+
+/* dashboard stats */
+.dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;}
+.dash-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 16px;text-align:center;box-shadow:var(--card-shadow);transition:all .2s;}
+.dash-card:hover{border-color:var(--pink);transform:translateY(-2px);}
+.dash-num{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--pink),var(--pink-soft));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.dash-label{font-size:12px;color:var(--text3);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;}
+
+/* post grid */
+.post-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+.grid-item{aspect-ratio:1;background:var(--bg3);overflow:hidden;cursor:pointer;position:relative;}
+.grid-item img{width:100%;height:100%;object-fit:cover;transition:transform .32s;}
+.grid-item:hover img{transform:scale(1.05);}
+.grid-item-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text3);}
+.grid-overlay{position:absolute;inset:0;background:rgba(20,8,16,.52);display:flex;align-items:center;justify-content:center;gap:20px;opacity:0;transition:opacity .22s;color:white;font-size:14px;font-weight:600;}
+.grid-item:hover .grid-overlay{opacity:1;}
+.grid-multi-icon{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);border-radius:4px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;}
+
+/* tabs */
+.profile-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.ptab{padding:10px 16px;font-size:13.5px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;margin-bottom:-1px;}
+.ptab:hover{color:var(--pink);}
+.ptab.active{color:var(--pink);border-bottom-color:var(--pink);}
+
+/* followers modal */
+.follow-list{max-height:340px;overflow-y:auto;}
+.follow-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.follow-item:last-child{border:none;}
+
+/* ─── EDIT PROFILE FORM ─────────────────────────────── */
+.edit-form{display:flex;flex-direction:column;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.form-input{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Jost',sans-serif;font-size:14px;outline:none;transition:border-color .2s,background .3s;}
+.form-input:focus{border-color:var(--pink);}
+.form-input::placeholder{color:var(--text3);}
+textarea.form-input{resize:none;min-height:80px;}
+
+/* color swatches */
+.color-swatches{display:flex;gap:10px;flex-wrap:wrap;}
+.swatch{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .2s;}
+.swatch:hover,.swatch.selected{border-color:var(--text);transform:scale(1.1);}
+
+/* multi-upload preview strip */
+.upload-previews{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.upload-thumb{width:72px;height:72px;border-radius:10px;object-fit:cover;position:relative;border:2px solid var(--border);}
+.upload-thumb-wrap{position:relative;display:inline-block;}
+.remove-thumb{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--pink);border-radius:50%;border:none;color:white;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1;}
+.add-more-btn{width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);transition:all .2s;flex-shrink:0;}
+.add-more-btn:hover{border-color:var(--pink);color:var(--pink);}
+
+/* post lightbox */
+.lightbox{position:fixed;inset:0;z-index:260;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s;}
+.lightbox.open{opacity:1;pointer-events:all;}
+.lightbox-inner{display:grid;grid-template-columns:1fr 380px;max-width:900px;width:95vw;max-height:90vh;background:var(--card);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5);}
+.lightbox-img-side{background:#000;display:flex;align-items:center;justify-content:center;position:relative;min-height:400px;}
+.lightbox-img-side img{width:100%;height:100%;object-fit:contain;max-height:90vh;}
+.lightbox-info-side{display:flex;flex-direction:column;border-left:1px solid var(--border);overflow:hidden;}
+.lb-header{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--border);}
+.lb-close{margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text2);padding:4px;border-radius:6px;}
+.lb-close:hover{color:var(--pink);}
+.lb-caption{padding:14px 16px;font-size:14px;line-height:1.55;border-bottom:1px solid var(--border);flex-shrink:0;}
+.lb-comments{flex:1;overflow-y:auto;padding:12px 16px;}
+.lb-actions{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:4px;}
+.lb-comment-input{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
+@media(max-width:700px){.lightbox-inner{grid-template-columns:1fr;}.lightbox-info-side{max-height:300px;}}
+
+/* ─── MESSAGES PAGE ─────────────────────────────────── */
+.msg-layout{display:grid;grid-template-columns:280px 1fr;gap:0;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--card-shadow);min-height:520px;}
+.msg-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.msg-sidebar-head{padding:16px;border-bottom:1px solid var(--border);}
+.msg-sidebar-title{font-size:15px;font-weight:700;margin-bottom:10px;}
+.msg-search{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:7px 13px;color:var(--text);font-family:'Jost',sans-serif;font-size:12.5px;outline:none;width:100%;transition:border-color .2s;}
+.msg-search:focus{border-color:var(--pink);}
+.msg-search::placeholder{color:var(--text3);}
+.msg-list{flex:1;overflow-y:auto;}
+.msg-conv{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border);position:relative;}
+.msg-conv:hover{background:var(--bg3);}
+.msg-conv.active{background:var(--pink-pale);}
+[data-theme="dark"] .msg-conv.active{background:var(--bg3);}
+.msg-conv-av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;overflow:hidden;color:white;}
+.msg-conv-av img{width:100%;height:100%;object-fit:cover;}
+.msg-conv-info{flex:1;min-width:0;}
+.msg-conv-name{font-size:13.5px;font-weight:600;}
+.msg-conv-last{font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}
+.msg-conv-time{font-size:11px;color:var(--text3);position:absolute;top:12px;right:14px;}
+.msg-conv-dot{width:8px;height:8px;background:var(--pink);border-radius:50%;position:absolute;bottom:12px;right:14px;}
+
+/* chat area */
+.chat-area{display:flex;flex-direction:column;}
+.chat-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.chat-header-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;position:relative;}
+.chat-header-name{font-size:14px;font-weight:600;}
+.chat-header-status{font-size:12px;color:#22c55e;display:flex;align-items:center;gap:4px;}
+.chat-header-status::before{content:'';width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;}
+.chat-msgs{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;max-height:380px;min-height:280px;}
+.chat-msg{display:flex;gap:8px;max-width:78%;animation:msgIn .22s cubic-bezier(.22,1,.36,1) both;}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.chat-msg.mine{flex-direction:row-reverse;align-self:flex-end;}
+.chat-msg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;color:white;}
+.chat-bubble{padding:10px 14px;border-radius:18px;font-size:13.5px;line-height:1.5;word-break:break-word;}
+.chat-msg:not(.mine) .chat-bubble{background:var(--bg3);border-radius:4px 18px 18px 18px;color:var(--text);}
+.chat-msg.mine .chat-bubble{background:linear-gradient(135deg,var(--pink),var(--pink-soft));color:white;border-radius:18px 4px 18px 18px;}
+.chat-time{font-size:10.5px;color:var(--text3);margin-top:3px;text-align:right;}
+.chat-msg.mine .chat-time{text-align:left;}
+.chat-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;}
+.chat-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:10px 18px;color:var(--text);font-family:'Jost',sans-serif;font-size:13.5px;outline:none;transition:border-color .2s,background .3s;}
+.chat-input:focus{border-color:var(--pink);background:var(--card);}
+.chat-input::placeholder{color:var(--text3);}
+.chat-send{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-soft));border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;transition:all .22s;flex-shrink:0;box-shadow:0 2px 10px var(--pink-glow);}
+.chat-send:hover{transform:scale(1.08);box-shadow:0 4px 16px var(--pink-glow);}
+.chat-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--text3);padding:40px;}
+.chat-empty svg{opacity:.35;}
+
+/* ─── NOTIFICATIONS PAGE ────────────────────────────── */
+.notif-item{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;transition:all .26s cubic-bezier(.22,1,.36,1);cursor:pointer;animation:notifSlide .38s cubic-bezier(.22,1,.36,1) both;}
+@keyframes notifSlide{from{opacity:0;transform:translateX(-12px);}to{opacity:1;transform:translateX(0);}}
+.notif-item:hover{border-color:var(--pink);transform:translateX(4px);box-shadow:0 4px 18px rgba(226,104,138,.12);}
+.notif-item.unread{border-left:3px solid var(--pink);background:linear-gradient(90deg,rgba(226,104,138,.04),transparent);}
+.notif-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;color:white;}
+.notif-icon{width:20px;height:20px;border-radius:50%;background:var(--pink-pale);display:flex;align-items:center;justify-content:center;margin-left:-14px;margin-top:auto;flex-shrink:0;}
+.notif-text{flex:1;font-size:13.5px;line-height:1.4;}
+.notif-text strong{font-weight:600;}
+.notif-time{font-size:11.5px;color:var(--text3);}
+.notif-thumb{width:44px;height:44px;border-radius:8px;background:var(--bg3);object-fit:cover;flex-shrink:0;}
+.notif-actions{display:flex;gap:8px;margin-bottom:16px;align-items:center;}
+.mark-read-btn{background:none;border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:6px 16px;font-size:13px;font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;}
+.mark-read-btn:hover{border-color:var(--pink);color:var(--pink);}
+.unread-count{font-size:13px;color:var(--text3);}
+/* notif section headers */
+.notif-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:16px 0 8px;padding:0 2px;}
+
+/* ─── TYPING INDICATOR ──────────────────────────────── */
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:10px 14px;}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);animation:typingBounce 1.2s infinite ease-in-out;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes typingBounce{0%,80%,100%{transform:translateY(0);opacity:.5;}40%{transform:translateY(-6px);opacity:1;}}
+/* online dot */
+.online-dot{width:9px;height:9px;background:#22c55e;border-radius:50%;border:2px solid var(--card);position:absolute;bottom:1px;right:1px;}
+.msg-conv-av-wrap{position:relative;flex-shrink:0;}
+/* message reaction */
+.msg-react-btn{background:none;border:none;cursor:pointer;font-size:13px;opacity:0;transition:opacity .2s;padding:2px 5px;border-radius:10px;}
+.chat-msg:hover .msg-react-btn{opacity:1;}
+.chat-msg.mine .msg-react-btn{margin-right:4px;}
+.chat-msg:not(.mine) .msg-react-btn{margin-left:4px;}
+
+/* ─── SETTINGS PAGE ────────────────────────────────── */
+.settings-grid{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start;}
+.settings-nav{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:8px;box-shadow:var(--card-shadow);position:sticky;top:calc(58px+18px);}
+.settings-nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--text2);transition:all .2s;}
+.settings-nav-item:hover{background:var(--pink-pale);color:var(--pink);}
+[data-theme="dark"] .settings-nav-item:hover{background:var(--bg3);color:var(--pink);}
+.settings-nav-item.active{background:var(--pink-pale);color:var(--pink);}
+[data-theme="dark"] .settings-nav-item.active{background:var(--bg3);}
+.settings-section{display:none;}
+.settings-section.active{display:block;}
+.settings-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:14px;box-shadow:var(--card-shadow);}
+.settings-card-title{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.settings-row:last-child{border:none;}
+.settings-row-info{flex:1;}
+.settings-row-label{font-size:14px;font-weight:500;}
+.settings-row-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+
+/* toggle switch */
+.toggle{position:relative;width:42px;height:24px;cursor:pointer;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-track{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--border);border-radius:99px;transition:all .2s;}
+.toggle input:checked+.toggle-track{background:var(--pink);border-color:var(--pink);}
+.toggle-thumb{position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.toggle input:checked~.toggle-thumb{transform:translateX(18px);}
+
+/* danger zone */
+.danger-btn{background:none;border:1px solid #e05577;color:#e05577;border-radius:10px;padding:9px 18px;font-size:13.5px;font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;transition:all .2s;}
+.danger-btn:hover{background:#e05577;color:white;}
+
+/* ─── MODAL ────────────────────────────────────────── */
+.overlay{position:fixed;inset:0;z-index:200;background:rgba(20,5,12,.65);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .22s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:22px;width:100%;max-width:500px;padding:28px;transform:translateY(16px) scale(.97);transition:transform .25s ease,background .3s;}
+.overlay.open .modal{transform:translateY(0) scale(1);}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;font-style:italic;background:linear-gradient(130deg,#d44f7a,#f4a8c0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.modal-x{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:all .2s;}
+.modal-x:hover{background:var(--pink);color:white;}
+.upload-zone{border:1.5px dashed var(--border);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--pink);background:var(--pink-pale);}
+[data-theme="dark"] .upload-zone:hover,[data-theme="dark"] .upload-zone.drag{background:var(--bg3);}
+.upload-zone input[type=file]{display:none;}
+.upload-icon-wrap{display:flex;justify-content:center;margin-bottom:10px;color:var(--text3);}
+.upload-label{font-size:13.5px;color:var(--text2);}
+.upload-label span{color:var(--pink);font-weight:600;cursor:pointer;}
+.upload-hint{font-size:11px;color:var(--text3);margin-top:5px;}
+.preview-img{width:100%;max-height:230px;object-fit:cover;border-radius:10px;display:none;margin-bottom:14px;}
+.modal textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 15px;color:var(--text);font-family:'Jost',sans-serif;font-size:13.5px;resize:none;outline:none;transition:border-color .2s,background .3s;margin-bottom:16px;min-height:85px;}
+.modal textarea:focus{border-color:var(--pink);}
+.modal textarea::placeholder{color:var(--text3);}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;}
+.btn{padding:10px 22px;border-radius:10px;font-family:'Jost',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .2s;border:none;}
+.btn-pink{background:linear-gradient(135deg,var(--pink),var(--pink-soft));color:white;box-shadow:0 4px 14px var(--pink-glow);}
+.btn-pink:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--pink-glow);}
+.btn-pink:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:var(--text3);}
+
+/* ─── TOAST ────────────────────────────────────────── */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(72px);background:var(--card);border:1px solid var(--border);border-radius:30px;padding:9px 22px;font-size:13.5px;font-weight:500;color:var(--text);z-index:300;transition:transform .28s ease,opacity .28s ease,background .3s;opacity:0;white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.15);}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.img-exp{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.img-exp.open{opacity:1;pointer-events:all;}
+.img-exp img{max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;}
+.empty{text-align:center;padding:60px 20px;color:var(--text3);}
+.empty svg{margin-bottom:12px;opacity:.5;}
+.empty p{font-size:14.5px;font-weight:500;}
+
+/* ─── RESPONSIVE ───────────────────────────────────── */
+@media(max-width:1000px){.layout{grid-template-columns:200px 1fr;}.sidebar-right{display:none;}}
+@media(max-width:700px){.layout{grid-template-columns:1fr;padding:calc(58px+12px) 0 40px;}.sidebar-left{display:none;}.post-card,.create-bar,.stories-wrap{border-radius:0;border-left:none;border-right:none;margin-bottom:8px;}nav{padding:0 14px;}.dash-grid{grid-template-columns:repeat(2,1fr);}.settings-grid{grid-template-columns:1fr;}.msg-layout{grid-template-columns:1fr;}.msg-sidebar{display:none;}}
+/* ── AUTH SCREEN ── */
+#authWrap{position:fixed;inset:0;z-index:9999;background:linear-gradient(145deg,#fff0f6,#fde8f2);display:flex;align-items:center;justify-content:center;padding:20px;}
+#authWrap.hidden{display:none!important;}
+.auth-card{background:#fff;border:1px solid rgba(180,120,145,.14);border-radius:24px;padding:36px 28px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(180,100,140,.15);}
+[data-theme="dark"] #authWrap{background:linear-gradient(145deg,#1a0912,#200e18);}
+[data-theme="dark"] .auth-card{background:#1c1118;}
+.auth-brand{font-family:'Playfair Display',serif;font-size:36px;font-weight:900;font-style:italic;background:linear-gradient(130deg,#d44f7a,#f4a8c0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:4px;}
+.auth-tagline{text-align:center;font-size:13px;color:#b8909e;margin-bottom:24px;}
+.auth-tabs{display:flex;gap:4px;background:#f5edf1;border-radius:10px;padding:4px;margin-bottom:20px;}
+.auth-tab{flex:1;padding:8px;border-radius:8px;border:none;background:transparent;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#b8909e;cursor:pointer;transition:all .2s;}
+.auth-tab.active{background:#fff;color:#e2688a;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+[data-theme="dark"] .auth-tabs{background:#271820;}
+[data-theme="dark"] .auth-tab.active{background:#1c1118;}
+.auth-input{width:100%;background:#fdf6f8;border:1.5px solid rgba(180,120,145,.2);border-radius:10px;padding:11px 14px;color:#1a0d12;font-family:'Jost',sans-serif;font-size:14px;outline:none;transition:border-color .2s;margin-bottom:10px;display:block;box-sizing:border-box;}
+.auth-input:focus{border-color:#e2688a;}
+[data-theme="dark"] .auth-input{background:#1e131a;color:#faeef2;border-color:rgba(226,104,138,.2);}
+.auth-btn{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#e2688a,#f0a0b8);color:white;font-family:'Jost',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 14px rgba(226,104,138,.3);}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed;}
+.auth-or{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:#b8909e;font-size:12px;}
+.auth-or::before,.auth-or::after{content:'';flex:1;height:1px;background:rgba(180,120,145,.2);}
+.google-btn{width:100%;padding:11px;border-radius:10px;border:1.5px solid rgba(180,120,145,.2);background:#fff;color:#1a0d12;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
+.google-btn:hover{border-color:#e2688a;}
+[data-theme="dark"] .google-btn{background:#1c1118;color:#faeef2;}
+.auth-err{background:rgba(224,85,119,.1);border:1px solid rgba(224,85,119,.3);color:#e05577;border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:10px;display:none;}
+.auth-err.show{display:block;}
+</style>
+</head>
+<body>
+<!-- AUTH SCREEN -->
+<div id="authWrap">
+  <div class="auth-card">
+    <div class="auth-brand">Kez Media</div>
+    <div class="auth-tagline">Your photos. Your story. Your space.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="atab-in" onclick="switchTab('in')">Sign In</button>
+      <button class="auth-tab" id="atab-up" onclick="switchTab('up')">Create Account</button>
+    </div>
+    <div class="auth-err" id="authErr"></div>
+    <input class="auth-input" id="authEmail" type="email" placeholder="Email address">
+    <input class="auth-input" id="authPass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doAuth()">
+    <input class="auth-input hidden" id="authName" type="text" placeholder="Your name" style="display:none" onkeydown="if(event.key==='Enter')doAuth()">
+    <button class="auth-btn" id="authBtn" onclick="doAuth()">Sign In</button>
+    <div class="auth-or">or</div>
+    <button class="google-btn" onclick="doGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Continue with Google
+    </button>
+  </div>
+</div>
+
+<!-- ── NAV ─────────────────────────────────────────── -->
+<nav>
+  <div class="brand" onclick="goTo('home')">Kez Media</div>
+  <div class="nav-search">
+    <span class="si"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input type="text" placeholder="Search...">
+  </div>
+  <div class="nav-right">
+    <button class="icon-btn" onclick="openModal()" title="New post">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    </button>
+    <button class="icon-btn" title="Notifications" onclick="goTo('notifs')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="badge" id="notifBadge">3</span>
+    </button>
+    <button class="icon-btn" title="Messages" onclick="goTo('messages')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="badge" id="msgBadge">2</span>
+    </button>
+    <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+      <span id="themeIcon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
+    </button>
+    <div class="nav-avatar" id="navAvatar" onclick="goTo('profile')" title="My Profile">Y</div>
+  </div>
+</nav>
+
+<!-- ── LAYOUT ───────────────────────────────────────── -->
+<div class="layout">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar-left">
+    <div class="menu-item active" id="mn-home" onclick="goTo('home')">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </div>
+    <div class="menu-item" id="mn-explore" onclick="goTo('explore')">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Explore
+    </div>
+    <div class="menu-item" onclick="openModal()">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Create Post
+    </div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" id="mn-notifs" onclick="goTo('notifs')">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Notifications
+      <span class="menu-badge" id="mnNotifBadge">3</span>
+    </div>
+    <div class="menu-item" id="mn-messages" onclick="goTo('messages')">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Messages
+      <span class="menu-badge" id="mnMsgBadge">2</span>
+    </div>
+    <div class="menu-item" id="mn-profile" onclick="goTo('profile')">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profile
+    </div>
+    <div class="menu-item" id="mn-settings" onclick="goTo('settings')">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </div>
+    <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+    <div class="menu-item" onclick="doSignOut()" style="color:#e05577;">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </div>
+  </aside>
+
+  <!-- CENTER VIEWS -->
+  <main>
+
+    <!-- HOME VIEW -->
+    <div class="view active" id="view-home">
+      <div class="stories-wrap">
+        <div class="stories-row" id="storiesRow">
+          <div class="story-item" onclick="openModal()">
+            <div class="story-ring add-ring">
+              <div class="story-avatar" style="background:var(--pink-pale);color:var(--pink)">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </div>
+            </div>
+            <div class="story-name">Your story</div>
+          </div>
+        </div>
+      </div>
+      <div class="create-bar">
+        <div class="nav-avatar" id="createAvatar" style="width:36px;height:36px;font-size:13px;">Y</div>
+        <input class="create-input" type="text" placeholder="Share something beautiful..." onclick="openModal()" readonly>
+        <button class="photo-btn" onclick="openModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Photo
+        </button>
+      </div>
+      <div id="feed"></div>
+    </div>
+
+    <!-- EXPLORE VIEW -->
+    <div class="view" id="view-explore">
+      <div class="page-header">
+        <div class="page-title">Explore</div>
+        <div class="page-sub">Discover posts from everyone on Kez Media</div>
+      </div>
+      <div id="exploreFeed"></div>
+    </div>
+
+    <!-- NOTIFICATIONS VIEW -->
+    <div class="view" id="view-notifs">
+      <div class="page-header">
+        <div class="page-title">Notifications</div>
+        <div class="page-sub">Your activity and updates</div>
+      </div>
+      <div class="notif-actions">
+        <span class="unread-count" id="unreadCount">3 unread</span>
+        <button class="mark-read-btn" onclick="markAllRead()">Mark all as read</button>
+      </div>
+      <div id="notifList"></div>
+    </div>
+
+    <!-- MESSAGES VIEW -->
+    <div class="view" id="view-messages">
+      <div class="page-header" style="margin-bottom:16px;">
+        <div class="page-title">Messages</div>
+        <div class="page-sub">Your direct conversations</div>
+      </div>
+      <div class="msg-layout">
+        <div class="msg-sidebar">
+          <div class="msg-sidebar-head">
+            <div class="msg-sidebar-title">Conversations</div>
+            <input class="msg-search" type="text" placeholder="Search messages..." oninput="filterConvos(this.value)">
+          </div>
+          <div class="msg-list" id="convoList"></div>
+        </div>
+        <div class="chat-area" id="chatArea">
+          <div class="chat-empty">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <p style="font-size:14px;font-weight:500;">Select a conversation</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div class="view" id="view-profile">
+      <div class="profile-card">
+        <div class="profile-banner" id="profileBanner">
+          <img class="banner-img" id="bannerImg" alt="cover">
+          <input type="file" class="banner-upload-input" id="bannerUpload" accept="image/*" onchange="uploadBanner(this)">
+          <div class="profile-banner-btns">
+            <button class="profile-banner-edit" onclick="document.getElementById('bannerUpload').click()">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Upload Cover
+            </button>
+            <button class="profile-banner-edit" onclick="goSettings('appearance')">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Color
+            </button>
+          </div>
+        </div>
+        <div class="profile-top">
+          <div class="profile-av-wrap">
+            <div class="profile-av" id="profileAv" onclick="document.getElementById('avatarUpload').click()">
+              <span id="profileAvInitial">Y</span>
+              <div class="profile-av-overlay">
+                <svg width="22" height="22" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <input type="file" id="avatarUpload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+            </div>
+            <div class="profile-actions">
+              <button class="edit-profile-btn" onclick="goSettings('profile')">Edit Profile</button>
+              <button class="share-profile-btn" onclick="toast('Profile link copied!')">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="admin-badge">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Admin
+          </div>
+          <div class="profile-name" id="profileName">Your Name</div>
+          <div class="profile-handle" id="profileHandle">@you</div>
+          <div class="profile-bio" id="profileBio">✨ Welcome to my Kez Media profile!</div>
+          <div class="profile-stats">
+            <div class="stat-item" onclick="showFollowModal('posts')">
+              <div class="stat-num" id="statPosts">0</div>
+              <div class="stat-label">Posts</div>
+            </div>
+            <div class="stat-item" onclick="showFollowModal('followers')">
+              <div class="stat-num">1.2k</div>
+              <div class="stat-label">Followers</div>
+            </div>
+            <div class="stat-item" onclick="showFollowModal('following')">
+              <div class="stat-num">284</div>
+              <div class="stat-label">Following</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- tabs + grid -->
+      <div class="profile-card" style="overflow:hidden;">
+        <div style="padding:0 16px;">
+          <div class="profile-tabs">
+            <div class="ptab active" onclick="switchTab(this,'grid')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="display:inline;margin-right:4px;vertical-align:middle;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Photos
+            </div>
+            <div class="ptab" onclick="switchTab(this,'status-tab')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="display:inline;margin-right:4px;vertical-align:middle;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Status
+            </div>
+            <div class="ptab" onclick="switchTab(this,'saved-tab')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="display:inline;margin-right:4px;vertical-align:middle;"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              Saved
+            </div>
+          </div>
+        </div>
+        <div id="grid" class="post-grid"></div>
+        <div id="status-tab" style="display:none;padding:16px;"><div id="statusList"></div></div>
+        <div id="saved-tab" style="display:none;padding:16px;"><div class="post-grid" id="savedGrid"></div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div class="view" id="view-settings">
+      <div class="page-header">
+        <div class="page-title">Settings</div>
+        <div class="page-sub">Manage your account — you have full admin access</div>
+      </div>
+      <div class="settings-grid">
+        <div class="settings-nav">
+          <div class="settings-nav-item active" id="sn-profile" onclick="switchSettingsNav('profile')">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Edit Profile
+          </div>
+          <div class="settings-nav-item" id="sn-appearance" onclick="switchSettingsNav('appearance')">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+            Appearance
+          </div>
+          <div class="settings-nav-item" id="sn-notifset" onclick="switchSettingsNav('notifset')">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Notifications
+          </div>
+          <div class="settings-nav-item" id="sn-privacy" onclick="switchSettingsNav('privacy')">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Privacy
+          </div>
+          <div class="settings-nav-item" id="sn-admin" onclick="switchSettingsNav('admin')">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Admin Panel
+          </div>
+        </div>
+
+        <div>
+          <!-- EDIT PROFILE -->
+          <div class="settings-section active" id="ss-profile">
+            <div class="settings-card">
+              <div class="settings-card-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Edit Profile
+              </div>
+              <div class="edit-form">
+                <div class="form-group">
+                  <label class="form-label">Display Name</label>
+                  <input class="form-input" id="editName" type="text" placeholder="Your full name">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Username</label>
+                  <input class="form-input" id="editHandle" type="text" placeholder="@username">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Bio</label>
+                  <textarea class="form-input" id="editBio" placeholder="Tell everyone about yourself..."></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Profile Color</label>
+                  <div class="color-swatches" id="colorSwatches"></div>
+                </div>
+                <button class="btn btn-pink" style="align-self:flex-start;" onclick="saveProfile()">Save Changes</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- APPEARANCE -->
+          <div class="settings-section" id="ss-appearance">
+            <div class="settings-card">
+              <div class="settings-card-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+                Appearance
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Dark Mode</div>
+                  <div class="settings-row-sub">Switch between light and dark theme</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="darkToggle" onchange="toggleTheme()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Banner Color</div>
+                  <div class="settings-row-sub">Choose your profile banner gradient</div>
+                </div>
+              </div>
+              <div class="color-swatches" id="bannerSwatches" style="padding-top:10px;"></div>
+            </div>
+          </div>
+
+          <!-- NOTIFICATIONS SETTINGS -->
+          <div class="settings-section" id="ss-notifset">
+            <div class="settings-card">
+              <div class="settings-card-title">Notification Preferences</div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Likes</div><div class="settings-row-sub">When someone likes your post</div></div>
+                <label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Comments</div><div class="settings-row-sub">When someone comments on your post</div></div>
+                <label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">New Followers</div><div class="settings-row-sub">When someone follows you</div></div>
+                <label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Messages</div><div class="settings-row-sub">When you receive a new message</div></div>
+                <label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- PRIVACY -->
+          <div class="settings-section" id="ss-privacy">
+            <div class="settings-card">
+              <div class="settings-card-title">Privacy & Security</div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Private Account</div><div class="settings-row-sub">Only followers can see your posts</div></div>
+                <label class="toggle"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Show Activity Status</div><div class="settings-row-sub">Let others see when you're active</div></div>
+                <label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Allow Messages from Everyone</div><div class="settings-row-sub">Receive DMs from non-followers</div></div>
+                <label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card-title" style="color:#e05577;">Danger Zone</div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Clear All Posts</div><div class="settings-row-sub">Permanently delete all your posts</div></div>
+                <button class="danger-btn" onclick="clearAllPosts()">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN PANEL -->
+          <div class="settings-section" id="ss-admin">
+            <div class="settings-card">
+              <div class="settings-card-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Admin Panel — Full Control
+              </div>
+              <div style="background:var(--pink-pale);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--text2);">
+                👑 You are the admin of <strong>Kez Media</strong>. You can see and manage all posts, users, and content.
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Total Posts on Platform</div><div class="settings-row-sub">All posts including other users</div></div>
+                <span style="font-weight:700;color:var(--pink);" id="adminTotalPosts">—</span>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Total Users</div><div class="settings-row-sub">Active accounts on Kez Media</div></div>
+                <span style="font-weight:700;color:var(--pink);">6</span>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-info"><div class="settings-row-label">Total Likes Given</div><div class="settings-row-sub">Across all posts</div></div>
+                <span style="font-weight:700;color:var(--pink);" id="adminTotalLikes">—</span>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card-title">Manage All Posts</div>
+              <div id="adminPostList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT SIDEBAR -->
+  <aside class="sidebar-right">
+    <div class="s-card">
+      <div class="s-title">Your Profile</div>
+      <div class="sug-user">
+        <div class="sug-avatar" id="sidebarProfileAv" style="background:linear-gradient(135deg,var(--pink),var(--pink-soft));color:white;font-size:14px;font-weight:700;">Y</div>
+        <div class="sug-info">
+          <div class="sug-name" id="sidebarName">You</div>
+          <div class="sug-sub">Your posts reach everyone</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-card">
+      <div class="s-title">Suggested for you</div>
+      <div id="sugList"></div>
+    </div>
+    <div class="s-card">
+      <div class="s-title">Trending</div>
+      <div id="trendTags"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- POST MODAL -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-head">
+      <div class="modal-title">New Post</div>
+      <button class="modal-x" onclick="closeModal()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <!-- Post type tabs -->
+    <div class="post-type-tabs">
+      <button class="ptt active" id="ptt-status" onclick="switchPostType('status')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Status
+      </button>
+      <button class="ptt" id="ptt-photo" onclick="switchPostType('photo')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Photo
+      </button>
+    </div>
+    <!-- STATUS panel -->
+    <div id="statusPanel">
+      <div class="status-input-wrap">
+        <textarea class="status-textarea" id="statusInput" placeholder="What's on your mind?" maxlength="280" oninput="updateStatusChar()"></textarea>
+        <span class="status-char" id="statusChar">280</span>
+      </div>
+      <div class="mood-row" id="moodRow">
+        <span class="mood-chip" onclick="toggleMood(this,'😊 Feeling happy')">😊 Happy</span>
+        <span class="mood-chip" onclick="toggleMood(this,'✨ Feeling excited')">✨ Excited</span>
+        <span class="mood-chip" onclick="toggleMood(this,'💭 Thinking...')">💭 Thinking</span>
+        <span class="mood-chip" onclick="toggleMood(this,'🌿 Feeling calm')">🌿 Calm</span>
+        <span class="mood-chip" onclick="toggleMood(this,'🎉 Celebrating!')">🎉 Celebrating</span>
+        <span class="mood-chip" onclick="toggleMood(this,'💪 Motivated')">💪 Motivated</span>
+      </div>
+    </div>
+    <!-- PHOTO panel -->
+    <div id="photoPanel" style="display:none;">
+      <div class="upload-zone" id="uploadZone" ondragover="handleDrag(event,'over')" ondragleave="handleDrag(event,'leave')" ondrop="handleDrop(event)">
+        <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this)">
+        <div id="uploadPrompt">
+          <div class="upload-icon-wrap"><svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          <div class="upload-label">Drop photos here or <span onclick="document.getElementById('fileInput').click()">browse</span></div>
+          <div class="upload-hint">Select multiple photos · JPG · PNG · GIF · WEBP</div>
+        </div>
+      </div>
+      <div class="upload-previews" id="uploadPreviews"></div>
+      <textarea id="captionInput" placeholder="Write a caption..." maxlength="500" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 15px;color:var(--text);font-family:'Jost',sans-serif;font-size:13.5px;resize:none;outline:none;transition:border-color .2s,background .3s;margin-bottom:0;min-height:75px;"></textarea>
+    </div>
+    <div class="modal-foot" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-pink" onclick="submitPost()">Share Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOLLOW MODAL -->
+<div class="overlay" id="followOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <div class="modal-title" id="followModalTitle">Followers</div>
+      <button class="modal-x" onclick="document.getElementById('followOverlay').classList.remove('open')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="follow-list" id="followList"></div>
+  </div>
+</div>
+
+<!-- POST LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <div class="lightbox-inner" id="lightboxInner"></div>
+</div>
+
+<!-- IMG EXPAND -->
+<div class="img-exp" id="imgExp" onclick="this.classList.remove('open')"><img id="imgExpSrc" src="" alt=""></div>
+
+<!-- TOAST -->
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ── FIREBASE INIT ─────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCxDRIL9XOeA7d-yqXF84tndWPZY8JxLSY",
+  authDomain: "kezz-media.firebaseapp.com",
+  projectId: "kezz-media",
+  storageBucket: "kezz-media.firebasestorage.app",
+  messagingSenderId: "307892917050",
+  appId: "1:307892917050:web:5b318f4039affaa26b3603"
+};
+firebase.initializeApp(firebaseConfig);
+const db      = firebase.firestore();
+const storage = firebase.storage();
+const auth    = firebase.auth();
+
+// ── FIREBASE HELPERS ──────────────────────────────────
+async function uploadToStorage(base64, path) {
+  const ref  = storage.ref(path);
+  const snap = await ref.putString(base64, 'data_url');
+  return await snap.ref.getDownloadURL();
+}
+const postsCol   = () => db.collection('posts');
+const profileDoc = () => db.collection('profiles').doc('me');
+
+let _seeded = false;
+
+function startPostsListener() {
+  postsCol().orderBy('createdAt','desc').onSnapshot(async snap => {
+    // First run & empty → seed sample posts
+    if(snap.empty && !_seeded) {
+      _seeded = true;
+      const batch = db.batch();
+      SAMPLE_POSTS.forEach(p => {
+        batch.set(postsCol().doc(String(p.id)), {
+          ...p,
+          createdAt: firebase.firestore.Timestamp.fromMillis(p.id)
+        });
+      });
+      await batch.commit();
+      return;
+    }
+    _seeded = true;
+    const prev = posts.length;
+    posts = snap.docs.map(d => ({...d.data()}));
+    // Full re-render only when count changes (new post / delete)
+    if(prev !== posts.length) {
+      renderFeed();
+      renderExploreFeed();
+      if(currentView==='profile')  refreshProfile();
+      if(currentView==='settings') refreshAdmin();
+    }
+  }, err => {
+    console.warn('Firestore error:', err.message);
+    toast('⚠️ Could not reach database');
+  });
+}
+
+async function savePostToFirestore(p) {
+  await postsCol().doc(String(p.id)).set({
+    ...p,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+async function updatePostField(id, updates) {
+  await postsCol().doc(String(id)).update(updates);
+}
+async function deletePostFromFirestore(id) {
+  await postsCol().doc(String(id)).delete();
+}
+async function loadProfile() {
+  try {
+    const doc = await profileDoc().get();
+    if(doc.exists) Object.assign(me, doc.data());
+  } catch(e) { /* offline, use defaults */ }
+}
+async function saveProfileToFirestore() {
+  try { await profileDoc().set(me); } catch(e) {}
+}
+
+// ── STATE ────────────────────────────────────────────
+const USERS = [
+  {name:'Alex Rivera', handle:'alex_r',  color:'linear-gradient(135deg,#a78bfa,#7c3aed)', initial:'A', followers:2100},
+  {name:'Mia Chen',    handle:'mia.chen',color:'linear-gradient(135deg,#f9a8d4,#e879a3)', initial:'M', followers:8400},
+  {name:'Kai Tanaka',  handle:'kai_t',   color:'linear-gradient(135deg,#6ee7f7,#2dd4bf)', initial:'K', followers:1300},
+  {name:'Sofia Reyes', handle:'sofi_r',  color:'linear-gradient(135deg,#86efac,#22c55e)', initial:'S', followers:5700},
+  {name:"Liam O'Brien",handle:'liam.ob', color:'linear-gradient(135deg,#fde68a,#f59e0b)', initial:'L', followers:980},
+];
+
+let me = {};
+
+const SAMPLE_POSTS = [
+  {id:Date.now()-90000,  user:USERS[1], images:['https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'], image:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80', caption:'Sunday mornings are made for slow coffee and slower scrolling ✨', likes:142, liked:false, comments:[{user:USERS[0],text:"Honestly same ☕"},{user:USERS[3],text:"Can I join? 🙋‍♀️"}], saved:false, time:'2h ago', showComments:true},
+  {id:Date.now()-180000, user:USERS[3], images:['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80','https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80'], image:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80', caption:'Golden hour never misses 🌅 #sunset #photography', likes:389, liked:false, comments:[{user:USERS[2],text:"This is stunning!"}], saved:false, time:'5h ago', showComments:false},
+  {id:Date.now()-360000, user:USERS[0], images:['https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&q=80'], image:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&q=80', caption:'New project just dropped — been working on this for months!', likes:54, liked:false, comments:[], saved:false, time:'11h ago', showComments:false},
+];
+
+let posts = []; // filled by Firestore onSnapshot listener
+let uploadImages = []; // array of base64 strings
+let toastTimer, currentConvo = null;
+
+const CONVOS = [
+  {id:1, user:USERS[1], unread:true,  messages:[{from:'them',text:"Hey! Loved your latest post 😍", time:'2:14 PM'},{from:'me',text:"Thank you so much!! 💖",time:'2:16 PM'},{from:'them',text:"When are you posting next?",time:'2:17 PM'}]},
+  {id:2, user:USERS[0], unread:true,  messages:[{from:'them',text:"Can we collab sometime?",time:'Yesterday'},{from:'me',text:"Yes for sure! Let's plan it",time:'Yesterday'}]},
+  {id:3, user:USERS[2], unread:false, messages:[{from:'them',text:"Your feed is so aesthetic 🌸",time:'Monday'},{from:'me',text:"Aww that means so much!",time:'Monday'}]},
+  {id:4, user:USERS[3], unread:false, messages:[{from:'them',text:"Following you now!",time:'Last week'}]},
+  {id:5, user:USERS[4], unread:false, messages:[{from:'them',text:"Love the vibes here ✨",time:'Last week'}]},
+];
+
+const NOTIFS = [
+  {id:1,type:'like',   user:USERS[1], text:'liked your post', time:'2m ago',  unread:true},
+  {id:2,type:'comment',user:USERS[0], text:'commented: "This is amazing!!"', time:'15m ago', unread:true},
+  {id:3,type:'follow', user:USERS[3], text:'started following you', time:'1h ago',  unread:true},
+  {id:4,type:'like',   user:USERS[2], text:'liked your post', time:'3h ago',  unread:false},
+  {id:5,type:'comment',user:USERS[4], text:'commented: "So beautiful 🌸"', time:'5h ago',  unread:false},
+  {id:6,type:'follow', user:USERS[1], text:'started following you', time:'1d ago',  unread:false},
+];
+
+const COLORS = [
+  'linear-gradient(135deg,#e2688a,#f0a0b8)',
+  'linear-gradient(135deg,#a78bfa,#7c3aed)',
+  'linear-gradient(135deg,#f9a8d4,#e879a3)',
+  'linear-gradient(135deg,#6ee7f7,#2dd4bf)',
+  'linear-gradient(135deg,#86efac,#22c55e)',
+  'linear-gradient(135deg,#fde68a,#f59e0b)',
+  'linear-gradient(135deg,#f97316,#ef4444)',
+  'linear-gradient(135deg,#60a5fa,#2563eb)',
+];
+
+const BANNER_COLORS = [
+  'linear-gradient(135deg,#f4a8c0,#e2688a,#c93f6e)',
+  'linear-gradient(135deg,#c9b8ff,#a78bfa,#7c3aed)',
+  'linear-gradient(135deg,#99f6e4,#2dd4bf,#0d9488)',
+  'linear-gradient(135deg,#fde68a,#f59e0b,#d97706)',
+  'linear-gradient(135deg,#bfdbfe,#60a5fa,#2563eb)',
+  'linear-gradient(135deg,#fbcfe8,#f472b6,#db2777)',
+];
+
+// ── THEME ─────────────────────────────────────────────
+let isDark = localStorage.getItem('kez_theme')==='dark';
+const MOON='<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const SUN='<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',isDark?'dark':'light');
+  document.getElementById('themeIcon').innerHTML=isDark?MOON:SUN;
+  const dt=document.getElementById('darkToggle');if(dt)dt.checked=isDark;
+}
+function toggleTheme(){isDark=!isDark;localStorage.setItem('kez_theme',isDark?'dark':'light');applyTheme();}
+applyTheme();
+
+// ── NAVIGATION ────────────────────────────────────────
+let currentView='home';
+function goTo(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  const mn=document.getElementById('mn-'+view);if(mn)mn.classList.add('active');
+  currentView=view;
+  // profile mode: hide right sidebar, expand center
+  const layout=document.querySelector('.layout');
+  if(view==='profile'){layout.classList.add('profile-mode');}
+  else{layout.classList.remove('profile-mode');}
+  if(view==='profile')refreshProfile();
+  if(view==='notifs')renderNotifs();
+  if(view==='messages')renderConvos();
+  if(view==='settings'){refreshSettings();}
+  if(view==='admin')refreshAdmin();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goSettings(section){goTo('settings');setTimeout(()=>switchSettingsNav(section),50);}
+
+// ── INIT ──────────────────────────────────────────────
+async function init(){
+  // Load profile from Firestore first
+  await loadProfile();
+  applyTheme();
+  applyUserProfile();
+  renderStories();
+  renderSuggested();
+  renderTrending();
+  renderColorSwatches();
+  renderBannerSwatches();
+  updateNotifBadges();
+  updateMsgBadges();
+  // Start real-time posts listener — fills feed automatically
+  startPostsListener();
+}
+
+// ── USER PROFILE ──────────────────────────────────────
+function applyUserProfile(){
+  me.initial = me.name ? me.name.trim()[0].toUpperCase() : 'Y';
+  // nav + create avatars
+  ['navAvatar','createAvatar'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    if(me.avatar){el.innerHTML=`<img src="${me.avatar}" alt="">`;el.style.background='none';}
+    else{el.textContent=me.initial;el.style.background=me.color;}
+  });
+  // profile avatar
+  const pa=document.getElementById('profileAv');
+  const pai=document.getElementById('profileAvInitial');
+  if(pa&&pai){
+    if(me.avatar){pai.innerHTML=`<img src="${me.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;pa.style.background='none';}
+    else{pai.textContent=me.initial;pa.style.background=me.color;}
+    const overlay=pa.querySelector('.profile-av-overlay');if(overlay)pa.appendChild(overlay);
+  }
+  // banner
+  const banner=document.getElementById('profileBanner');
+  const bi=document.getElementById('bannerImg');
+  if(banner&&bi){
+    if(me.bannerImage){bi.src=me.bannerImage;bi.style.display='block';banner.style.background='none';}
+    else{bi.style.display='none';banner.style.background=me.bannerColor||'linear-gradient(135deg,#f4a8c0,#e2688a,#c93f6e)';}
+  }
+  // sidebar
+  const sa=document.getElementById('sidebarProfileAv');if(sa){sa.style.background=me.color;sa.textContent=me.initial;}
+  const sbn=document.getElementById('sidebarName');if(sbn)sbn.textContent=me.name||'You';
+  // profile text
+  const pn=document.getElementById('profileName');if(pn)pn.textContent=me.name||'Your Name';
+  const ph=document.getElementById('profileHandle');if(ph)ph.textContent='@'+(me.handle||'you');
+  const pb=document.getElementById('profileBio');if(pb)pb.textContent=me.bio||'✨ Welcome to my Kez Media profile!';
+  // edit fields
+  const en=document.getElementById('editName');if(en)en.value=me.name||'';
+  const eh=document.getElementById('editHandle');if(eh)eh.value=me.handle||'';
+  const eb=document.getElementById('editBio');if(eb)eb.value=me.bio||'';
+}
+
+function saveProfile(){
+  const n=document.getElementById('editName').value.trim();
+  const h=document.getElementById('editHandle').value.trim().replace('@','');
+  const b=document.getElementById('editBio').value.trim();
+  if(!n){toast('Name cannot be empty');return;}
+  me.name=n;me.handle=h||'you';me.bio=b;
+  saveProfileToFirestore();applyUserProfile();refreshProfile();
+  toast('Profile saved! ✓');
+}
+
+function uploadAvatar(inp){
+  const f=inp.files[0];if(!f)return;
+  toast('Uploading photo...');
+  const r=new FileReader();
+  r.onload=async e=>{
+    try{
+      const url=await uploadToStorage(e.target.result,`avatars/me_${Date.now()}`);
+      me.avatar=url;
+    }catch(err){
+      me.avatar=e.target.result; // fallback to base64
+    }
+    saveProfileToFirestore();applyUserProfile();toast('Profile photo updated! ✓');
+  };
+  r.readAsDataURL(f);
+}
+
+// ── STORIES ───────────────────────────────────────────
+function renderStories(){
+  const row=document.getElementById('storiesRow');
+  while(row.children.length>1)row.removeChild(row.lastChild);
+  USERS.forEach((u,i)=>{
+    const d=document.createElement('div');d.className='story-item';
+    d.innerHTML=`<div class="story-ring ${i>1?'seen':''}"><div class="story-avatar" style="background:${u.color};color:white;">${u.initial}</div></div><div class="story-name">${u.name.split(' ')[0]}</div>`;
+    d.onclick=()=>toast(`${u.name}'s story`);row.appendChild(d);
+  });
+}
+
+// ── FEED ──────────────────────────────────────────────
+function renderFeed(){
+  const feed=document.getElementById('feed');feed.innerHTML='';
+  if(!posts.length){feed.innerHTML='<div class="empty"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><p>No posts yet!</p></div>';return;}
+  posts.slice().reverse().forEach((p,i)=>feed.appendChild(buildCard(p,i)));
+}
+function renderExploreFeed(){
+  const ef=document.getElementById('exploreFeed');ef.innerHTML='';
+  posts.slice().reverse().forEach((p,i)=>ef.appendChild(buildCard(p,i)));
+}
+
+function buildCard(p,i){
+  const card=document.createElement('div');card.className='post-card';card.id=`pc-${p.id}`;card.style.animationDelay=`${i*.05}s`;
+  const own = (p.uid&&p.uid===me.uid) || p.user?.handle===me.handle || isAdmin();
+  const imgs=p.images||(p.image?[p.image]:[]);
+
+  // ── media section
+  let mediaHTML='';
+  if(p.isStatus){
+    // clean, simple text post — no colour background
+    mediaHTML=`<div class="status-body">
+      <p class="status-text">${esc(p.caption)}</p>
+      ${p.mood?`<div class="status-mood-tag">${esc(p.mood)}</div>`:''}
+    </div>`;
+  } else if(imgs.length===0){
+    mediaHTML=''; // no placeholder for text posts without status flag
+  } else if(imgs.length===1){
+    mediaHTML=`<div class="carousel-wrap"><img style="width:100%;max-height:520px;object-fit:cover;display:block;cursor:pointer;" src="${imgs[0]}" onclick="expandImg('${imgs[0]}')" alt="post"></div>`;
+  } else {
+    const slides=imgs.map(src=>`<div class="carousel-slide"><img src="${src}" onclick="expandImg('${src}')" alt="post"></div>`).join('');
+    const dots=imgs.map((_,di)=>`<span class="carousel-dot ${di===0?'active':''}" onclick="goSlide('car-${p.id}',${di})"></span>`).join('');
+    mediaHTML=`<div class="carousel-wrap" id="car-${p.id}" data-idx="0"
+      onmouseenter="stopFeedAutoSlide(${p.id})" onmouseleave="startFeedAutoSlide(${p.id},${imgs.length})">
+      <div class="carousel-track" id="ct-${p.id}">${slides}</div>
+      <button class="carousel-btn carousel-prev" onclick="shiftSlide('car-${p.id}',-1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="carousel-btn carousel-next" onclick="shiftSlide('car-${p.id}',1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <div class="carousel-dots" id="cd-${p.id}">${dots}</div>
+      <div class="multi-badge"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2H22V17"/></svg>${imgs.length}</div>
+    </div>`;
+    // start auto-slide after card renders
+    setTimeout(()=>startFeedAutoSlide(p.id,imgs.length),600+i*80);
+  }
+
+  const captionRow = (!p.isStatus && p.caption)
+    ? `<div class="post-content"><div class="post-caption"><span class="uname">@${p.user.handle}</span>${esc(p.caption)}</div></div>` : '';
+
+  card.innerHTML=`
+    <div class="post-header">
+      <div class="post-avatar" style="background:${p.user.color}">${p.user.avatar?`<img src="${p.user.avatar}" alt="">`:p.user.initial}</div>
+      <div class="post-meta">
+        <div class="post-username">@${p.user.handle}</div>
+        <div class="post-time">${p.time}${p.isStatus?` · <span style="color:var(--pink);font-size:11px;">status</span>`:''}</div>
+      </div>
+      <button class="post-more" onclick="toggleMenu(event,'pm-${p.id}')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+      <div class="post-menu" id="pm-${p.id}">
+        ${own?`<div class="pm-item danger" onclick="deletePost(${p.id})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>Delete</div>`:''}
+        <div class="pm-item" onclick="toast('Link copied!');closeMenus()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy link</div>
+        <div class="pm-item" onclick="toast('Reported');closeMenus()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Report</div>
+      </div>
+    </div>
+    ${mediaHTML}
+    <div class="post-actions">
+      <button class="act ${p.liked?'liked':''}" onclick="doLike(${p.id})">
+        <svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span class="lc">${p.likes}</span>
+      </button>
+      <button class="act" onclick="openLightbox(${p.id})">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="cc">${p.comments.length}</span>
+      </button>
+      <button class="act" onclick="toast('Post shared!')">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+      <button class="act act-right ${p.saved?'liked':''}" onclick="doSave(${p.id})">
+        <svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      </button>
+    </div>
+    ${captionRow}
+    <div class="comments-wrap" id="cw-${p.id}">
+      ${p.comments.length>2&&!p.showComments?`<div class="view-all" onclick="toggleComments(${p.id})">View all ${p.comments.length} comments</div>`:''}
+      <div id="cl-${p.id}">${(p.showComments?p.comments:p.comments.slice(-1)).map(commentHTML).join('')}</div>
+      <div class="c-input-row">
+        <div class="c-avatar" style="background:${me.color};color:white;">${me.initial}</div>
+        <input class="c-input" id="ci-${p.id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(${p.id})">
+        <button class="c-send" onclick="addComment(${p.id})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      </div>
+    </div>`;
+  return card;
+}
+
+function commentHTML(c){
+  return `<div class="comment"><div class="c-avatar" style="background:${c.user.color};color:white;">${c.user.initial}</div><div class="c-bubble"><div class="c-user">@${c.user.handle}</div><div class="c-text">${esc(c.text)}</div></div></div>`;
+}
+
+// ── INTERACTIONS ──────────────────────────────────────
+function doLike(id){
+  const p=posts.find(x=>x.id===id);if(!p)return;
+  p.liked=!p.liked;p.likes+=p.liked?1:-1;
+  // optimistic DOM update
+  document.querySelectorAll(`#pc-${id}`).forEach(card=>{
+    const btn=card.querySelector('.act');
+    btn.className=`act ${p.liked?'liked':''}`;
+    btn.innerHTML=`<svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="lc">${p.likes}</span>`;
+  });
+  updatePostField(id,{liked:p.liked,likes:p.likes});
+}
+function doSave(id){
+  const p=posts.find(x=>x.id===id);if(!p)return;
+  p.saved=!p.saved;
+  document.querySelectorAll(`#pc-${id}`).forEach(card=>{
+    const btn=card.querySelector('.act-right');
+    btn.className=`act act-right ${p.saved?'liked':''}`;
+    btn.innerHTML=`<svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+  });
+  updatePostField(id,{saved:p.saved});
+  toast(p.saved?'Post saved':'Post unsaved');
+}
+function toggleComments(id){
+  const p=posts.find(x=>x.id===id);if(!p)return;
+  p.showComments=!p.showComments;savePosts();
+  document.querySelectorAll(`[id^="cl-${id}"]`).forEach(cl=>{
+    cl.innerHTML=(p.showComments?p.comments:p.comments.slice(-1)).map(commentHTML).join('');
+    const va=cl.parentElement.querySelector('.view-all');
+    if(va)va.textContent=p.showComments?'Hide comments':`View all ${p.comments.length} comments`;
+  });
+}
+function addComment(id){
+  const inp=document.getElementById(`ci-${id}`);
+  const txt=inp.value.trim();if(!txt)return;
+  const p=posts.find(x=>x.id===id);if(!p)return;
+  const c={user:{...me},text:txt};
+  p.comments.push(c);p.showComments=true;inp.value='';
+  const cl=document.getElementById(`cl-${id}`);
+  if(cl){const d=document.createElement('div');d.innerHTML=commentHTML(c);cl.appendChild(d.firstChild);}
+  document.querySelectorAll(`#pc-${id}`).forEach(card=>{const cc=card.querySelectorAll('.act')[1];if(cc)cc.querySelector('.cc').textContent=p.comments.length;});
+  updatePostField(id,{comments:p.comments,showComments:true});
+}
+function deletePost(id){
+  closeMenus();
+  document.querySelectorAll(`#pc-${id}`).forEach(card=>{card.style.cssText='opacity:0;transform:scale(.96);transition:all .28s ease;';});
+  setTimeout(()=>deletePostFromFirestore(id),300);
+  toast('Post deleted');
+}
+function toggleMenu(e,mid){e.stopPropagation();closeMenus();document.getElementById(mid).classList.add('open');}
+function closeMenus(){document.querySelectorAll('.post-menu.open').forEach(m=>m.classList.remove('open'));}
+document.addEventListener('click',closeMenus);
+
+// ── PROFILE PAGE ──────────────────────────────────────
+function refreshProfile(){
+  applyUserProfile();
+  const myPosts=posts.filter(p=>p.user.handle===me.handle);
+  const totalSaved=posts.filter(p=>p.saved).length;
+  document.getElementById('statPosts').textContent=myPosts.length;
+  renderPostGrid();renderSavedGrid();renderStatusList();
+}
+function renderPostGrid(){
+  const grid=document.getElementById('grid');grid.innerHTML='';
+  // only photo posts (not status) in the grid
+  const myPosts=posts.filter(p=>p.user.handle===me.handle && !p.isStatus);
+  if(!myPosts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No photo posts yet. Share your first photo!</div>';return;}
+  myPosts.slice().reverse().forEach(p=>{
+    const imgs=p.images||(p.image?[p.image]:[]);
+    const firstImg=imgs[0]||null;
+    const item=document.createElement('div');item.className='grid-item';
+    const multiIcon=imgs.length>1?`<div class="grid-multi-icon"><svg width="12" height="12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2H22V17"/></svg></div>`:'';
+    item.innerHTML=firstImg
+      ?`<img src="${firstImg}" alt="">${multiIcon}<div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span><svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${p.comments.length}</span></div>`
+      :`<div class="grid-item-placeholder"><svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+    item.onclick=()=>openLightbox(p.id);
+    grid.appendChild(item);
+  });
+}
+function renderStatusList(){
+  const list=document.getElementById('statusList');if(!list)return;
+  list.innerHTML='';
+  const myStatus=posts.filter(p=>p.user.handle===me.handle && p.isStatus);
+  if(!myStatus.length){list.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;">No status posts yet. Share what\'s on your mind!</div>';return;}
+  myStatus.slice().reverse().forEach((p,i)=>{
+    const d=document.createElement('div');d.className='status-list-item';d.style.animationDelay=`${i*.04}s`;
+    d.innerHTML=`
+      <div class="status-list-text">${esc(p.caption)}</div>
+      ${p.mood?`<div class="status-mood-tag" style="margin-bottom:8px;">${esc(p.mood)}</div>`:''}
+      <div class="status-list-meta">
+        <span>${p.time}</span>
+        <span>♥ ${p.likes}</span>
+        <span>💬 ${p.comments.length}</span>
+      </div>`;
+    d.onclick=()=>openLightbox(p.id);
+    list.appendChild(d);
+  });
+}
+function renderSavedGrid(){
+  const grid=document.getElementById('savedGrid');grid.innerHTML='';
+  const saved=posts.filter(p=>p.saved);
+  if(!saved.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">Nothing saved yet.</div>';return;}
+  saved.forEach(p=>{
+    const imgs=p.images||(p.image?[p.image]:[]);
+    const item=document.createElement('div');item.className='grid-item';
+    if(p.isStatus){
+      // status posts in saved: show as text tile
+      item.style.cssText='aspect-ratio:1;background:var(--bg2);border-left:3px solid var(--pink);display:flex;align-items:center;padding:12px;cursor:pointer;';
+      item.innerHTML=`<span style="font-size:13px;color:var(--text);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(p.caption)}</span>`;
+    } else {
+      item.innerHTML=imgs[0]?`<img src="${imgs[0]}" alt=""><div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span></div>`:`<div class="grid-item-placeholder"><svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+    }
+    item.onclick=()=>openLightbox(p.id);
+    grid.appendChild(item);
+  });
+}
+function switchTab(el,tabId){
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('grid').style.display=tabId==='grid'?'grid':'none';
+  document.getElementById('status-tab').style.display=tabId==='status-tab'?'block':'none';
+  document.getElementById('saved-tab').style.display=tabId==='saved-tab'?'block':'none';
+}
+function showFollowModal(type){
+  document.getElementById('followModalTitle').textContent=type==='followers'?'Followers':type==='following'?'Following':'Posts';
+  const list=document.getElementById('followList');list.innerHTML='';
+  const users=type==='posts'?[]:USERS;
+  if(type==='posts'){posts.filter(p=>p.user.handle===me.handle).forEach(p=>{const d=document.createElement('div');d.className='follow-item';d.innerHTML=`<div style="font-size:13px;color:var(--text)">${p.caption.substring(0,60)}...</div>`;list.appendChild(d);});
+  } else {
+    users.forEach(u=>{const d=document.createElement('div');d.className='follow-item';d.innerHTML=`<div class="sug-avatar" style="background:${u.color};color:white;">${u.initial}</div><div class="sug-info"><div class="sug-name">${u.name}</div><div class="sug-sub">@${u.handle}</div></div>`;list.appendChild(d);});
+  }
+  document.getElementById('followOverlay').classList.add('open');
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────
+function renderNotifs(){
+  const list=document.getElementById('notifList');list.innerHTML='';
+  const unread=NOTIFS.filter(n=>n.unread).length;
+  document.getElementById('unreadCount').textContent=unread?`${unread} unread`:'All caught up ✓';
+  const icon={'like':'<svg width="11" height="11" fill="var(--pink)" stroke="var(--pink)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>','comment':'<svg width="11" height="11" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>','follow':'<svg width="11" height="11" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'};
+  // Group: new vs earlier
+  const newNotifs=NOTIFS.filter(n=>n.unread);
+  const oldNotifs=NOTIFS.filter(n=>!n.unread);
+  let delay=0;
+  if(newNotifs.length){
+    const lbl=document.createElement('div');lbl.className='notif-section-label';lbl.textContent='New';list.appendChild(lbl);
+    newNotifs.forEach(n=>{list.appendChild(_buildNotifItem(n,icon,delay));delay+=60;});
+  }
+  if(oldNotifs.length){
+    const lbl=document.createElement('div');lbl.className='notif-section-label';lbl.textContent='Earlier';list.appendChild(lbl);
+    oldNotifs.forEach(n=>{list.appendChild(_buildNotifItem(n,icon,delay));delay+=40;});
+  }
+  updateNotifBadges();
+}
+function _buildNotifItem(n,icon,delay){
+  const d=document.createElement('div');d.className=`notif-item ${n.unread?'unread':''}`;
+  d.style.animationDelay=delay+'ms';
+  d.innerHTML=`<div class="notif-av" style="background:${n.user.color};color:white;font-size:14px;font-weight:700;">${n.user.initial}</div><div class="notif-icon">${icon[n.type]}</div><div class="notif-text"><strong>${n.user.name}</strong> ${n.text}</div><div class="notif-time">${n.time}</div>`;
+  d.onclick=()=>{n.unread=false;d.classList.remove('unread');updateNotifBadges();renderNotifs();};
+  return d;
+}
+function markAllRead(){
+  NOTIFS.forEach(n=>n.unread=false);updateNotifBadges();renderNotifs();toast('All notifications marked as read');}
+function updateNotifBadges(){
+  const c=NOTIFS.filter(n=>n.unread).length;
+  document.getElementById('notifBadge').classList.toggle('hidden',!c);
+  document.getElementById('notifBadge').textContent=c;
+  document.getElementById('mnNotifBadge').style.display=c?'':'none';
+  document.getElementById('mnNotifBadge').textContent=c;
+}
+
+// ── MESSAGES ──────────────────────────────────────────
+function renderConvos(filter=''){
+  const list=document.getElementById('convoList');list.innerHTML='';
+  CONVOS.filter(c=>!filter||c.user.name.toLowerCase().includes(filter.toLowerCase())).forEach(c=>{
+    const last=c.messages[c.messages.length-1];
+    const d=document.createElement('div');d.className=`msg-conv ${currentConvo===c.id?'active':''}`;
+    d.innerHTML=`<div class="msg-conv-av" style="background:${c.user.color}">${c.user.initial}</div><div class="msg-conv-info"><div class="msg-conv-name">${c.user.name}</div><div class="msg-conv-last">${last.from==='me'?'You: ':''}${last.text}</div></div><div class="msg-conv-time">${last.time}</div>${c.unread?'<div class="msg-conv-dot"></div>':''}`;
+    d.onclick=()=>openConvo(c.id);
+    list.appendChild(d);
+  });
+}
+function openConvo(id){
+  currentConvo=id;
+  const c=CONVOS.find(x=>x.id===id);if(!c)return;
+  c.unread=false;updateMsgBadges();renderConvos();
+  const area=document.getElementById('chatArea');
+  area.innerHTML=`
+    <div class="chat-header">
+      <div class="chat-header-av" style="background:${c.user.color}">${c.user.initial}</div>
+      <div><div class="chat-header-name">${c.user.name}</div><div class="chat-header-status">Active now</div></div>
+    </div>
+    <div class="chat-msgs" id="chatMsgs">${c.messages.map(m=>chatMsgHTML(m,c.user)).join('')}</div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="Message ${c.user.name.split(' ')[0]}..." onkeydown="if(event.key==='Enter')sendMsg(${id})">
+      <button class="chat-send" onclick="sendMsg(${id})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    </div>`;
+  scrollChat();
+}
+function chatMsgHTML(m,user){
+  const mine=m.from==='me';
+  const av=mine?`<div class="chat-msg-av" style="background:${me.color}">${me.initial}</div>`:`<div class="chat-msg-av" style="background:${user.color}">${user.initial}</div>`;
+  return `<div class="chat-msg ${mine?'mine':''}">
+    ${!mine?av:''}
+    <div><div class="chat-bubble">${esc(m.text)}</div><div class="chat-time">${m.time}</div></div>
+    ${mine?av:''}
+  </div>`;
+}
+function sendMsg(id){
+  const inp=document.getElementById('chatInput');
+  const txt=inp.value.trim();if(!txt)return;
+  const c=CONVOS.find(x=>x.id===id);if(!c)return;
+  const now=new Date();const time=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const msg={from:'me',text:txt,time};
+  c.messages.push(msg);inp.value='';
+  const msgs=document.getElementById('chatMsgs');
+  if(msgs){const d=document.createElement('div');d.innerHTML=chatMsgHTML(msg,c.user);msgs.appendChild(d.firstChild);}
+  scrollChat();
+  // show typing indicator
+  if(msgs){
+    const t=document.createElement('div');t.id='typingInd';t.className='chat-msg';
+    t.innerHTML=`<div class="chat-msg-av" style="background:${c.user.color}">${c.user.initial}</div><div class="chat-bubble" style="background:var(--bg3);padding:10px 16px;"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+    msgs.appendChild(t);scrollChat();
+  }
+  setTimeout(()=>{
+    const replies=["That sounds great! 💕","Haha yes!! 😂","Love it ✨","Omg same!!","Can't wait! 🎉","You're so right 🌸","Absolutely!! 💖","Tell me more! 👀","No way!! 😲","Yessss 🙌","So cute omg 🥹","I was just thinking about that!"];
+    const rep={from:'them',text:replies[Math.floor(Math.random()*replies.length)],time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})};
+    c.messages.push(rep);
+    const ti=document.getElementById('typingInd');if(ti)ti.remove();
+    const msgs=document.getElementById('chatMsgs');
+    if(msgs){const d=document.createElement('div');d.innerHTML=chatMsgHTML(rep,c.user);msgs.appendChild(d.firstChild);}
+    scrollChat();
+  },1200+Math.random()*900);
+}
+function scrollChat(){const m=document.getElementById('chatMsgs');if(m)m.scrollTop=m.scrollHeight;}
+function filterConvos(v){renderConvos(v);}
+function updateMsgBadges(){
+  const c=CONVOS.filter(x=>x.unread).length;
+  document.getElementById('msgBadge').classList.toggle('hidden',!c);
+  document.getElementById('msgBadge').textContent=c;
+  document.getElementById('mnMsgBadge').style.display=c?'':'none';
+  document.getElementById('mnMsgBadge').textContent=c;
+}
+
+// ── SETTINGS ─────────────────────────────────────────
+function refreshSettings(){
+  document.getElementById('editName').value=me.name||'';
+  document.getElementById('editHandle').value=me.handle||'';
+  document.getElementById('editBio').value=me.bio||'';
+  document.getElementById('darkToggle').checked=isDark;
+  refreshAdmin();
+}
+function switchSettingsNav(sec){
+  document.querySelectorAll('.settings-nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sn-'+sec).classList.add('active');
+  document.getElementById('ss-'+sec).classList.add('active');
+}
+function refreshAdmin(){
+  const tp=document.getElementById('adminTotalPosts');if(tp)tp.textContent=posts.length;
+  const tl=document.getElementById('adminTotalLikes');if(tl)tl.textContent=posts.reduce((a,p)=>a+p.likes,0);
+  const apl=document.getElementById('adminPostList');if(!apl)return;
+  apl.innerHTML='';
+  if(!posts.length){apl.innerHTML='<p style="color:var(--text3);font-size:13px;">No posts on the platform yet.</p>';return;}
+  posts.slice().reverse().forEach(p=>{
+    const d=document.createElement('div');d.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);';
+    d.innerHTML=`<div class="sug-avatar" style="background:${p.user.color};color:white;font-size:12px;font-weight:700;width:32px;height:32px;">${p.user.initial}</div><div style="flex:1;min-width:0;"><div style="font-size:12.5px;font-weight:600;">@${p.user.handle}</div><div style="font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.caption||'[no caption]'}</div></div><div style="font-size:12px;color:var(--text3);">♥ ${p.likes}</div><button onclick="deletePost(${p.id});refreshAdmin();" style="background:none;border:none;cursor:pointer;color:#e05577;font-size:12px;padding:4px 8px;border-radius:6px;" onmouseover="this.style.background='rgba(224,85,119,.1)'" onmouseout="this.style.background='none'">Delete</button>`;
+    apl.appendChild(d);
+  });
+}
+function clearAllPosts(){
+  if(!confirm('Delete ALL your posts? This cannot be undone.'))return;
+  const mine=posts.filter(p=>p.user.handle===me.handle);
+  mine.forEach(p=>deletePostFromFirestore(p.id));
+  toast('All your posts deleted');
+}
+
+// ── COLOR SWATCHES ────────────────────────────────────
+function renderColorSwatches(){
+  const container=document.getElementById('colorSwatches');if(!container)return;
+  COLORS.forEach((c,i)=>{
+    const s=document.createElement('div');s.className=`swatch ${me.color===c?'selected':''}`;s.style.background=c;
+    s.onclick=()=>{me.color=c;document.querySelectorAll('#colorSwatches .swatch').forEach(x=>x.classList.remove('selected'));s.classList.add('selected');saveProfileToFirestore();applyUserProfile();toast('Color updated!');};
+    container.appendChild(s);
+  });
+}
+function renderBannerSwatches(){
+  const container=document.getElementById('bannerSwatches');if(!container)return;
+  BANNER_COLORS.forEach(c=>{
+    const s=document.createElement('div');s.className=`swatch ${me.bannerColor===c?'selected':''}`;s.style.background=c;s.style.width='48px';s.style.height='28px';s.style.borderRadius='8px';
+    s.onclick=()=>{me.bannerColor=c;document.querySelectorAll('#bannerSwatches .swatch').forEach(x=>x.classList.remove('selected'));s.classList.add('selected');document.getElementById('profileBanner').style.background=c;saveProfileToFirestore();toast('Banner updated!');};
+    container.appendChild(s);
+  });
+}
+
+// ── SIDEBAR ───────────────────────────────────────────
+function renderSuggested(){
+  const list=document.getElementById('sugList');
+  USERS.slice(0,4).forEach(u=>{
+    const d=document.createElement('div');d.className='sug-user';
+    d.innerHTML=`<div class="sug-avatar" style="background:${u.color};color:white;">${u.initial}</div><div class="sug-info"><div class="sug-name">${u.name}</div><div class="sug-sub">${(u.followers/1000).toFixed(1)}k followers</div></div><button class="follow-btn" onclick="this.classList.toggle('on');toast(this.classList.contains('on')?'Following ${u.name}':'Unfollowed ${u.name}')">Follow</button>`;
+    list.appendChild(d);
+  });
+}
+function renderTrending(){
+  const c=document.getElementById('trendTags');
+  ['#photography','#aesthetic','#travel','#art','#food','#fashion','#nature','#minimal'].forEach(t=>{
+    const s=document.createElement('span');s.className='tag';s.textContent=t;s.onclick=()=>toast(`Searching ${t}`);c.appendChild(s);
+  });
+}
+
+// ── POST MODAL ────────────────────────────────────────
+let postMode='status'; // 'status' | 'photo'
+let selectedMood='';
+let feedAutoTimers={};
+
+function switchPostType(mode){
+  postMode=mode;
+  document.getElementById('ptt-status').classList.toggle('active',mode==='status');
+  document.getElementById('ptt-photo').classList.toggle('active',mode==='photo');
+  document.getElementById('statusPanel').style.display=mode==='status'?'block':'none';
+  document.getElementById('photoPanel').style.display=mode==='photo'?'block':'none';
+}
+function updateStatusChar(){
+  const v=document.getElementById('statusInput').value.length;
+  const el=document.getElementById('statusChar');
+  el.textContent=280-v;
+  el.style.color=v>250?'var(--pink)':'var(--text3)';
+}
+function toggleMood(el,mood){
+  document.querySelectorAll('.mood-chip').forEach(c=>c.classList.remove('sel'));
+  if(selectedMood===mood){selectedMood='';return;}
+  el.classList.add('sel');selectedMood=mood;
+}
+
+function openModal(){
+  document.getElementById('overlay').classList.add('open');
+  uploadImages=[];selectedMood='';postMode='status';
+  document.getElementById('fileInput').value='';
+  document.getElementById('uploadPreviews').innerHTML='';
+  document.getElementById('captionInput').value='';
+  document.getElementById('statusInput').value='';
+  document.getElementById('statusChar').textContent='280';
+  document.getElementById('uploadZone').style.display='block';
+  document.getElementById('uploadPrompt').style.display='block';
+  document.querySelectorAll('.mood-chip').forEach(c=>c.classList.remove('sel'));
+  switchPostType('status');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+function overlayClick(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+function handleFiles(inp){
+  const files=Array.from(inp.files);
+  files.forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      uploadImages.push(e.target.result);
+      renderUploadPreviews();
+      document.getElementById('uploadZone').style.display='none';
+    };
+    r.readAsDataURL(f);
+  });
+}
+function renderUploadPreviews(){
+  const wrap=document.getElementById('uploadPreviews');
+  wrap.innerHTML='';
+  uploadImages.forEach((src,i)=>{
+    const w=document.createElement('div');w.className='upload-thumb-wrap';
+    w.innerHTML=`<img class="upload-thumb" src="${src}"><button class="remove-thumb" onclick="removeUploadImg(${i})">✕</button>`;
+    wrap.appendChild(w);
+  });
+  if(uploadImages.length<10){
+    const add=document.createElement('div');add.className='add-more-btn';
+    add.innerHTML='<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    add.onclick=()=>document.getElementById('fileInput').click();
+    wrap.appendChild(add);
+  }
+}
+function removeUploadImg(i){uploadImages.splice(i,1);if(!uploadImages.length)document.getElementById('uploadZone').style.display='block';renderUploadPreviews();}
+
+function handleDrag(e,t){e.preventDefault();document.getElementById('uploadZone').classList.toggle('drag',t==='over');}
+function handleDrop(e){
+  e.preventDefault();document.getElementById('uploadZone').classList.remove('drag');
+  const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
+  if(!files.length)return;
+  const dt=new DataTransfer();files.forEach(f=>dt.items.add(f));
+  document.getElementById('fileInput').files=dt.files;
+  handleFiles(document.getElementById('fileInput'));
+}
+
+async function submitPost(){
+  const uid=auth.currentUser?auth.currentUser.uid:'anon';
+  if(postMode==='status'){
+    const txt=document.getElementById('statusInput').value.trim();
+    if(!txt){toast('Write something first!');return;}
+    const p={id:Date.now(),uid,user:{...me},images:[],image:null,caption:txt,mood:selectedMood,isStatus:true,likes:0,liked:false,comments:[],saved:false,time:'Just now',showComments:true};
+    closeModal();toast('Posting... ✨');
+    await savePostToFirestore(p);toast('Status shared! ✨');
+  }else{
+    const cap=document.getElementById('captionInput').value.trim();
+    if(!uploadImages.length&&!cap){toast('Add a photo or caption first');return;}
+    closeModal();toast('Uploading... 🌸');
+    let imageUrls=[];
+    for(let i=0;i<uploadImages.length;i++){
+      const url=await uploadToStorage(uploadImages[i],`posts/${uid}/${Date.now()}_${i}`);
+      imageUrls.push(url);
+    }
+    const p={id:Date.now(),uid,user:{...me},images:imageUrls,image:imageUrls[0]||null,caption:cap||'',likes:0,liked:false,comments:[],saved:false,time:'Just now',showComments:false};
+    await savePostToFirestore(p);toast('Post shared! 🌸');
+  }
+  uploadImages=[];
+}
+
+// ── FEED AUTO-SLIDE (carousel in feed auto-advances) ─────
+function startFeedAutoSlide(postId,count){
+  if(feedAutoTimers[postId])return; // already running
+  feedAutoTimers[postId]=setInterval(()=>{
+    shiftSlide('car-'+postId,1);
+  },3500);
+}
+function stopFeedAutoSlide(postId){
+  clearInterval(feedAutoTimers[postId]);
+  delete feedAutoTimers[postId];
+}
+
+// ── CAROUSEL ─────────────────────────────────────────
+function shiftSlide(wrapId,dir){
+  const wrap=document.getElementById(wrapId);if(!wrap)return;
+  // support both feed carousels (ct-{id}) and lightbox (ct{wrapId})
+  const trackId='ct-'+wrapId.replace('car-','');
+  const track=document.getElementById(trackId)||document.getElementById('ct'+wrapId);
+  if(!track)return;
+  const slides=track.querySelectorAll('.carousel-slide');
+  let idx=parseInt(wrap.dataset.idx||0)+dir;
+  if(idx<0)idx=slides.length-1;
+  if(idx>=slides.length)idx=0;
+  wrap.dataset.idx=idx;
+  track.style.transform=`translateX(-${idx*100}%)`;
+  const dotContainerId=wrapId.replace('car-','');
+  const dots=document.querySelectorAll(`#cd-${dotContainerId} .carousel-dot`);
+  dots.forEach((d,i)=>d.classList.toggle('active',i===idx));
+}
+function goSlide(wrapId,idx){
+  const wrap=document.getElementById(wrapId);if(!wrap)return;
+  const trackId='ct-'+wrapId.replace('car-','');
+  const track=document.getElementById(trackId)||document.getElementById('ct'+wrapId);
+  if(!track)return;
+  wrap.dataset.idx=idx;
+  track.style.transform=`translateX(-${idx*100}%)`;
+  const dotContainerId=wrapId.replace('car-','');
+  const dots=document.querySelectorAll(`#cd-${dotContainerId} .carousel-dot`);
+  dots.forEach((d,i)=>d.classList.toggle('active',i===idx));
+}
+
+// ── LIGHTBOX ─────────────────────────────────────────
+let lbAutoTimer = null;
+
+function openLightbox(pid){
+  const p=posts.find(x=>x.id===pid);if(!p)return;
+  const imgs=p.images||(p.image?[p.image]:[]);
+  const inner=document.getElementById('lightboxInner');
+  let imgSide='';
+  if(imgs.length===0){
+    if(p.isStatus){
+      imgSide=`<div class="lightbox-img-side" style="background:var(--bg2);display:flex;align-items:center;justify-content:center;padding:40px 36px;">
+        <div>
+          <div style="width:36px;height:3px;background:var(--pink);border-radius:2px;margin-bottom:20px;"></div>
+          <div style="font-size:${p.caption.length>120?'16px':p.caption.length>60?'19px':'22px'};line-height:1.7;color:var(--text);word-break:break-word;">${esc(p.caption)}</div>
+          ${p.mood?`<div style="margin-top:16px;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);background:var(--bg3);padding:4px 12px;border-radius:20px;border:1px solid var(--border);">${esc(p.mood)}</div>`:''}
+        </div>
+      </div>`;
+    } else {
+      imgSide=`<div class="lightbox-img-side" style="background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:48px;">🖼️</div>`;
+    }
+  } else if(imgs.length===1){
+    imgSide=`<div class="lightbox-img-side"><img src="${imgs[0]}" alt="" style="width:100%;height:100%;object-fit:contain;"></div>`;
+  } else {
+    const slides=imgs.map(src=>`<div class="carousel-slide" style="min-width:100%;"><img src="${src}" style="width:100%;max-height:90vh;object-fit:contain;display:block;"></div>`).join('');
+    const dots=imgs.map((_,di)=>`<span class="carousel-dot ${di===0?'active':''}" onclick="goSlide('lbcar',${di})"></span>`).join('');
+    imgSide=`<div class="lightbox-img-side" style="overflow:hidden;"><div id="lbcar" data-idx="0" style="position:relative;height:100%;overflow:hidden;"><div class="carousel-track" id="ctlbcar" style="display:flex;height:100%;">${slides}</div><button class="carousel-btn carousel-prev" onclick="shiftSlide('lbcar',-1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><button class="carousel-btn carousel-next" onclick="shiftSlide('lbcar',1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button><div class="carousel-dots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;">${dots}</div></div></div>`;
+  }
+  inner.innerHTML=`
+    ${imgSide}
+    <div class="lightbox-info-side">
+      <div class="lb-header">
+        <div class="post-avatar" style="background:${p.user.color};width:34px;height:34px;font-size:13px;">${p.user.initial}</div>
+        <div>
+          <div style="font-size:13.5px;font-weight:600;">@${p.user.handle}</div>
+          <div style="font-size:11.5px;color:var(--text3);">${p.time}</div>
+        </div>
+        <button class="lb-close" onclick="closeLightbox()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      ${p.caption?`<div class="lb-caption"><span style="font-weight:600;margin-right:6px;">@${p.user.handle}</span>${esc(p.caption)}</div>`:''}
+      <div class="lb-comments" id="lbComments">${p.comments.map(c=>`<div class="comment" style="margin-bottom:10px;">${commentHTML(c)}</div>`).join('')}</div>
+      <div class="lb-actions">
+        <button class="act ${p.liked?'liked':''}" id="lbLikeBtn" onclick="doLike(${p.id});updateLbLike(${p.id})">
+          <svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span id="lbLikeCount">${p.likes}</span>
+        </button>
+        <button class="act" onclick="toast('Shared!')"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        <button class="act act-right ${p.saved?'liked':''}" onclick="doSave(${p.id})"><svg width="17" height="17" fill="${p.saved?'var(--pink)':'none'}" stroke="${p.saved?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+      </div>
+      <div class="lb-comment-input">
+        <div class="c-avatar" style="background:${me.color};color:white;">${me.initial}</div>
+        <input class="c-input" id="lbCommentInput" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addLbComment(${p.id})">
+        <button class="c-send" onclick="addLbComment(${p.id})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      </div>
+    </div>`;
+  document.getElementById('lightbox').classList.add('open');
+  // auto-advance if multiple images
+  clearInterval(lbAutoTimer);
+  if(imgs.length>1){
+    lbAutoTimer=setInterval(()=>shiftSlide('lbcar',1),3000);
+  }
+}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');clearInterval(lbAutoTimer);}
+function addLbComment(pid){
+  const inp=document.getElementById('lbCommentInput');
+  const txt=inp.value.trim();if(!txt)return;
+  const p=posts.find(x=>x.id===pid);if(!p)return;
+  const c={user:{...me},text:txt};p.comments.push(c);p.showComments=true;inp.value='';
+  const lbc=document.getElementById('lbComments');
+  if(lbc){const d=document.createElement('div');d.innerHTML=commentHTML(c);lbc.appendChild(d.firstChild);lbc.scrollTop=lbc.scrollHeight;}
+  const cl=document.getElementById(`cl-${pid}`);
+  if(cl){const d=document.createElement('div');d.innerHTML=commentHTML(c);cl.appendChild(d.firstChild);}
+  updatePostField(pid,{comments:p.comments,showComments:true});
+}
+function updateLbLike(pid){
+  const p=posts.find(x=>x.id===pid);if(!p)return;
+  const btn=document.getElementById('lbLikeBtn');const cnt=document.getElementById('lbLikeCount');
+  if(btn){btn.className=`act ${p.liked?'liked':''}`;btn.querySelector('svg').setAttribute('fill',p.liked?'var(--pink)':'none');btn.querySelector('svg').setAttribute('stroke',p.liked?'var(--pink)':'currentColor');}
+  if(cnt)cnt.textContent=p.likes;
+}
+
+// ── BANNER UPLOAD ─────────────────────────────────────
+function uploadBanner(inp){
+  const f=inp.files[0];if(!f)return;
+  toast('Uploading cover...');
+  const r=new FileReader();
+  r.onload=async e=>{
+    try{
+      const url=await uploadToStorage(e.target.result,`banners/me_${Date.now()}`);
+      me.bannerImage=url;
+    }catch(err){
+      me.bannerImage=e.target.result;
+    }
+    me.bannerColor='';
+    saveProfileToFirestore();
+    const bi=document.getElementById('bannerImg');
+    bi.src=me.bannerImage;bi.style.display='block';
+    document.getElementById('profileBanner').style.background='none';
+    toast('Cover photo updated! ✓');
+  };
+  r.readAsDataURL(f);
+}
+
+// ── UTILS ─────────────────────────────────────────────
+function expandImg(src){document.getElementById('imgExpSrc').src=src;document.getElementById('imgExp').classList.add('open');}
+function toast(msg){const el=document.getElementById('toastEl');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
+// Legacy stubs (no longer used for posts — kept for any remaining calls)
+function savePosts(){}
+function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function loadJSON(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── IMAGE COMPRESSION ────────────────────────────────
+const CLOUD_NAME='dyspuqa0s', UPLOAD_PRESET='kezz_media';
+async function uploadToStorage(base64,path){
+  try{
+    const blob=await fetch(base64).then(r=>r.blob());
+    const form=new FormData();
+    form.append('file',blob);
+    form.append('upload_preset',UPLOAD_PRESET);
+    const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:'POST',body:form});
+    const data=await res.json();
+    if(data.secure_url)return data.secure_url;
+    throw new Error('no url');
+  }catch(e){
+    // fallback compress
+    return await new Promise(resolve=>{
+      const img=new Image();
+      img.onload=()=>{const c=document.createElement('canvas');let w=img.width,h=img.height;if(w>800){h=Math.round(h*800/w);w=800;}c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.65));};
+      img.onerror=()=>resolve(base64);img.src=base64;
+    });
+  }
+}
+
+// ── AUTH ─────────────────────────────────────────────
+const ADMIN_EMAILS=['kezzme@gmail.com']; // ← YOUR EMAIL HERE
+let authMode='in';
+function isAdmin(){return auth.currentUser&&ADMIN_EMAILS.includes(auth.currentUser.email);}
+function switchTab(m){
+  authMode=m;
+  document.getElementById('atab-in').classList.toggle('active',m==='in');
+  document.getElementById('atab-up').classList.toggle('active',m==='up');
+  document.getElementById('authBtn').textContent=m==='in'?'Sign In':'Create Account';
+  document.getElementById('authName').style.display=m==='up'?'block':'none';
+  document.getElementById('authErr').classList.remove('show');
+}
+function showErr(msg){const e=document.getElementById('authErr');e.textContent=msg;e.classList.add('show');}
+async function doAuth(){
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  if(!email||!pass){showErr('Please fill in all fields');return;}
+  const btn=document.getElementById('authBtn');btn.disabled=true;
+  try{
+    if(authMode==='in'){
+      await auth.signInWithEmailAndPassword(email,pass);
+    }else{
+      const name=document.getElementById('authName').value.trim()||'Kez User';
+      const c=await auth.createUserWithEmailAndPassword(email,pass);
+      await c.user.updateProfile({displayName:name});
+    }
+  }catch(e){
+    const msgs={'auth/user-not-found':'No account found','auth/wrong-password':'Wrong password','auth/email-already-in-use':'Email already registered','auth/weak-password':'Password needs 6+ characters','auth/invalid-credential':'Wrong email or password'};
+    showErr(msgs[e.code]||e.message);
+    btn.disabled=false;
+  }
+}
+async function doGoogle(){
+  try{
+    const p=new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(p);
+  }catch(e){
+    if(e.code==='auth/popup-blocked'){
+      await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+    }else{
+      showErr('Google sign-in failed. Try email instead.');
+    }
+  }
+}
+function doSignOut(){if(confirm('Sign out?'))auth.signOut();}
+
+auth.onAuthStateChanged(async user=>{
+  const wrap=document.getElementById('authWrap');
+  if(user){
+    wrap.classList.add('hidden');
+    const saved=loadJSON('kez_me_'+user.uid,{});
+    me=Object.assign({
+      name:user.displayName||'Kez User',
+      handle:(user.displayName||'user').toLowerCase().replace(/\s+/g,'_'),
+      color:'linear-gradient(135deg,#e2688a,#f0a0b8)',
+      initial:(user.displayName||'K')[0].toUpperCase(),
+      bio:'✨ Welcome to my Kez Media profile!',
+      bannerColor:'linear-gradient(135deg,#f4a8c0,#e2688a,#c93f6e)',
+      uid:user.uid,email:user.email
+    },saved);
+    init();
+    // Show admin badge only for admin
+    const badge=document.querySelector('.admin-badge');
+    if(badge)badge.style.display=isAdmin()?'inline-flex':'none';
+  }else{
+    wrap.classList.remove('hidden');
+  }
+});
+</script>
+</body>
+</html>
