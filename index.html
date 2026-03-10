@@ -1172,6 +1172,11 @@ textarea.form-input{resize:none;min-height:80px;}
 <div class="toast" id="toastEl"></div>
 
 <script>
+// ── UID REGISTRY — safe data passing without JSON in onclick ──
+const _reg = [];
+function _r(val){ const i = _reg.length; _reg.push(val); return i; }
+function _g(i){ return _reg[i]; }
+
 // ── FIREBASE INIT ─────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyCxDRIL9XOeA7d-yqXF84tndWPZY8JxLSY",
@@ -2337,7 +2342,7 @@ async function searchUsers(q){
     const iU=_r(String(u.uid||''));
     return `<div class="search-result" onclick="closeSearch();viewProfile(_g(${iU}))">
       <div class="search-result-av" style="background:${u.color||'var(--pink)'}">
-        ${u.avatar?`<img src="${u.avatar}" alt="">`:(u.initial||u.name?.[0]||'?')}
+        ${u.avatar?`<img src="${u.avatar}" alt="">`:(u.initial||(u.name?u.name.charAt(0):'')||'?')}
       </div>
       <div>
         <div class="search-result-name">${esc(u.name||u.handle||'User')}</div>
@@ -2391,82 +2396,107 @@ async function loadOtherProfile(uid){
 }
 
 function _drawOtherProfile(uid, prof){
-  const container = document.getElementById('otherProfileContent');
-  if(!container) return;
+  try{
+    var container = document.getElementById('otherProfileContent');
+    if(!container) return;
 
-  const isFollowing = Array.isArray(me.following) && me.following.includes(uid);
-  const presStatus  = getPresenceStatus(uid);
-  const isOnline    = presStatus === 'online';
-  const userPosts   = posts.filter(function(p){ return p.uid===uid; });
-  const feedPosts   = userPosts.filter(function(p){ return !p.isStatus; });
-  const iUid        = _r(uid);
-  const iName       = _r(String(prof.name||prof.handle||'User'));
+    var isFollowing = Array.isArray(me.following) && me.following.includes(uid);
+    var isOnline    = getPresenceStatus(uid) === 'online';
+    var userPosts   = posts.filter(function(p){ return p.uid===uid; });
+    var feedPosts   = userPosts.filter(function(p){ return !p.isStatus; });
+    var iUid        = _r(uid);
+    var profName    = prof.name || prof.handle || 'User';
+    var iName       = _r(String(profName));
+    var initial     = prof.initial || (prof.name ? prof.name.charAt(0) : '?');
+    var bannerBg    = prof.bannerColor || 'linear-gradient(135deg,#f4a8c0,#e2688a)';
+    var avBg        = prof.color || 'var(--pink)';
+    var followersCount = prof.followersCount || 0;
+    var followingCount = (prof.following && prof.following.length) ? prof.following.length : 0;
 
-  container.innerHTML =
-    '<div class="profile-card">'
-      +'<div class="opu-banner" style="background:'+(prof.bannerColor||'linear-gradient(135deg,#f4a8c0,#e2688a)')+';">'
-        +(prof.bannerImage?'<img src="'+prof.bannerImage+'" alt="">':'')
-        +'<button class="opu-back" id="opuBackBtn">'
-          +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>'
-        +'</button>'
-      +'</div>'
-      +'<div class="opu-top">'
-        +'<div class="opu-av" style="background:'+(prof.color||'var(--pink)')+'">'
-          +(prof.avatar?'<img src="'+prof.avatar+'" alt="">':esc(prof.initial||prof.name?.[0]||'?'))
-          +(isOnline?'<div class="opu-online-dot"></div>':'')
-        +'</div>'
-        +'<div class="opu-name">'+esc(prof.name||'User')+(isOnline?'<span class="opu-online-badge">● Active now</span>':'')+'</div>'
-        +'<div class="opu-handle">@'+esc(prof.handle||'user')+'</div>'
-        +(prof.bio?'<div class="opu-bio">'+esc(prof.bio)+'</div>':'')
-        +'<div class="opu-actions">'
-          +'<button class="opu-follow-btn'+(isFollowing?' following':'')+'" id="opuFollowBtn">'+(isFollowing?'Following':'Follow')+'</button>'
-          +'<button class="opu-msg-btn" id="opuMsgBtn">'
-            +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Message'
+    var avHtml = prof.avatar
+      ? '<img src="'+prof.avatar+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+      : '<span>'+initial+'</span>';
+
+    var html =
+      '<div class="profile-card">'
+        +'<div class="opu-banner" style="background:'+bannerBg+';">'
+          +(prof.bannerImage ? '<img src="'+prof.bannerImage+'" alt="" style="width:100%;height:100%;object-fit:cover;">' : '')
+          +'<button class="opu-back" id="opuBackBtn" style="position:absolute;top:12px;left:12px;background:rgba(0,0,0,.38);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;z-index:2;">'
+            +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>'
           +'</button>'
         +'</div>'
-        +'<div class="opu-stats">'
-          +'<div class="opu-stat"><div class="opu-stat-n">'+feedPosts.length+'</div><div class="opu-stat-l">Posts</div></div>'
-          +'<div class="opu-stat"><div class="opu-stat-n">'+(prof.followersCount||0)+'</div><div class="opu-stat-l">Followers</div></div>'
-          +'<div class="opu-stat"><div class="opu-stat-n">'+((prof.following||[]).length)+'</div><div class="opu-stat-l">Following</div></div>'
+        +'<div class="opu-top">'
+          +'<div class="opu-av" style="background:'+avBg+';width:80px;height:80px;border-radius:50%;border:4px solid var(--card);margin-top:-40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:26px;color:white;overflow:hidden;position:relative;z-index:1;">'
+            +avHtml
+            +(isOnline ? '<div style="position:absolute;bottom:4px;right:4px;width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid var(--card);"></div>' : '')
+          +'</div>'
+          +'<div style="font-size:20px;font-weight:800;margin-top:12px;display:flex;align-items:center;gap:8px;">'
+            +esc(profName)
+            +(isOnline ? '<span style="font-size:11px;font-weight:600;color:#22c55e;background:rgba(34,197,94,.1);padding:2px 8px;border-radius:10px;">● Active now</span>' : '')
+          +'</div>'
+          +'<div style="font-size:13.5px;color:var(--text3);margin-top:2px;">@'+esc(prof.handle||'user')+'</div>'
+          +(prof.bio ? '<div style="font-size:13.5px;color:var(--text2);margin-top:10px;line-height:1.6;">'+esc(prof.bio)+'</div>' : '')
+          +'<div style="display:flex;gap:8px;margin-top:14px;align-items:center;">'
+            +'<button id="opuFollowBtn" style="background:'+(isFollowing?'transparent':'var(--pink)')+';color:'+(isFollowing?'var(--pink)':'white')+';border:'+(isFollowing?'2px solid var(--pink)':'none')+';border-radius:22px;padding:9px 22px;font-size:13.5px;font-family:Jost,sans-serif;font-weight:600;cursor:pointer;">'
+              +(isFollowing?'Following':'Follow')
+            +'</button>'
+            +'<button id="opuMsgBtn" style="background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);border-radius:22px;padding:9px 18px;font-size:13.5px;font-family:Jost,sans-serif;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">'
+              +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Message'
+            +'</button>'
+          +'</div>'
+          +'<div style="display:flex;gap:0;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">'
+            +'<div style="flex:1;text-align:center;cursor:pointer;padding:6px 0;border-radius:10px;"><div style="font-size:18px;font-weight:800;">'+feedPosts.length+'</div><div style="font-size:11.5px;color:var(--text3);margin-top:1px;">Posts</div></div>'
+            +'<div style="flex:1;text-align:center;cursor:pointer;padding:6px 0;border-radius:10px;" id="opuFollowersStat"><div style="font-size:18px;font-weight:800;">'+followersCount+'</div><div style="font-size:11.5px;color:var(--text3);margin-top:1px;">Followers</div></div>'
+            +'<div style="flex:1;text-align:center;cursor:pointer;padding:6px 0;border-radius:10px;"><div style="font-size:18px;font-weight:800;">'+followingCount+'</div><div style="font-size:11.5px;color:var(--text3);margin-top:1px;">Following</div></div>'
+          +'</div>'
         +'</div>'
       +'</div>'
-    +'</div>'
-    +'<div class="opu-feed-tabs">'
-      +'<div class="opu-feed-tab'+(otherProfilePostsTab==='posts'?' active':'')+'" id="opuTabPosts">📋 Posts</div>'
-      +'<div class="opu-feed-tab'+(otherProfilePostsTab==='grid'?' active':'')+'" id="opuTabGrid">⊞ Grid</div>'
-    +'</div>'
-    +'<div id="opuFeedContent"></div>';
+      +'<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px;">'
+        +'<div id="opuTabPosts" style="flex:1;padding:12px;text-align:center;font-size:13.5px;font-weight:600;cursor:pointer;color:'+(otherProfilePostsTab==='posts'?'var(--pink)':'var(--text3)')+';border-bottom:2px solid '+(otherProfilePostsTab==='posts'?'var(--pink)':'transparent')+';">📋 Posts</div>'
+        +'<div id="opuTabGrid" style="flex:1;padding:12px;text-align:center;font-size:13.5px;font-weight:600;cursor:pointer;color:'+(otherProfilePostsTab==='grid'?'var(--pink)':'var(--text3)')+';border-bottom:2px solid '+(otherProfilePostsTab==='grid'?'var(--pink)':'transparent')+';">⊞ Grid</div>'
+      +'</div>'
+      +'<div id="opuFeedContent"></div>';
 
-  // back button
-  document.getElementById('opuBackBtn').addEventListener('click', function(){ goTo(previousView||'home'); });
+    container.innerHTML = html;
 
-  // follow button
-  document.getElementById('opuFollowBtn').addEventListener('click', function(){ toggleFollowUserOpu(uid, prof.name||prof.handle||'User'); });
+    // wire buttons
+    document.getElementById('opuBackBtn').onclick = function(){ goTo(previousView||'home'); };
 
-  // message button
-  document.getElementById('opuMsgBtn').addEventListener('click', function(){ openDMFromPost(_g(iUid), _g(iName)); });
+    document.getElementById('opuFollowBtn').onclick = function(){
+      toggleFollowUserOpu(uid, profName);
+    };
 
-  // tab: posts
-  document.getElementById('opuTabPosts').addEventListener('click', function(){
-    otherProfilePostsTab='posts';
-    document.querySelectorAll('.opu-feed-tab').forEach(function(t){ t.classList.remove('active'); });
-    this.classList.add('active');
-    renderOtherProfileFeed(userPosts);
-  });
+    document.getElementById('opuMsgBtn').onclick = function(){
+      openDMFromPost(_g(iUid), _g(iName));
+    };
 
-  // tab: grid
-  document.getElementById('opuTabGrid').addEventListener('click', function(){
-    otherProfilePostsTab='grid';
-    document.querySelectorAll('.opu-feed-tab').forEach(function(t){ t.classList.remove('active'); });
-    this.classList.add('active');
-    renderOtherProfileGrid(feedPosts);
-  });
+    document.getElementById('opuTabPosts').onclick = function(){
+      otherProfilePostsTab='posts';
+      this.style.color='var(--pink)'; this.style.borderBottom='2px solid var(--pink)';
+      var g=document.getElementById('opuTabGrid');
+      if(g){g.style.color='var(--text3)';g.style.borderBottom='2px solid transparent';}
+      renderOtherProfileFeed(userPosts);
+    };
 
-  // render initial tab
-  if(otherProfilePostsTab==='grid'){
-    renderOtherProfileGrid(feedPosts);
-  } else {
-    renderOtherProfileFeed(userPosts);
+    document.getElementById('opuTabGrid').onclick = function(){
+      otherProfilePostsTab='grid';
+      this.style.color='var(--pink)'; this.style.borderBottom='2px solid var(--pink)';
+      var p=document.getElementById('opuTabPosts');
+      if(p){p.style.color='var(--text3)';p.style.borderBottom='2px solid transparent';}
+      renderOtherProfileGrid(feedPosts);
+    };
+
+    // render initial tab
+    if(otherProfilePostsTab==='grid'){
+      renderOtherProfileGrid(feedPosts);
+    } else {
+      renderOtherProfileFeed(userPosts);
+    }
+
+  } catch(err){
+    console.error('_drawOtherProfile error:', err);
+    var c = document.getElementById('otherProfileContent');
+    if(c) c.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);">Could not load profile. <button onclick="loadOtherProfile(currentOtherProfileUid)" style="color:var(--pink);background:none;border:none;cursor:pointer;font-family:Jost,sans-serif;font-size:14px;">Tap to retry</button></div>';
   }
 }
 
@@ -2593,7 +2623,7 @@ async function openDMWith(otherUid,otherName){
   chatArea.innerHTML=`
     <div class="chat-header">
       <div class="post-avatar" style="background:${otherProf.color||'var(--pink)'};width:36px;height:36px;font-size:13px;cursor:pointer;" onclick="viewProfile(_g(${_r(otherUid)}))">
-        ${otherProf.avatar?`<img src="${otherProf.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(otherProf.initial||otherProf.name?.[0]||'U')}
+        ${otherProf.avatar?`<img src="${otherProf.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(otherProf.initial||(otherProf.name?otherProf.name.charAt(0):'')||'U')}
       </div>
       <div style="cursor:pointer;" onclick="viewProfile(_g(${_r(otherUid)}))">
         <div style="font-size:14px;font-weight:600;">${esc(otherProf.name||'User')}</div>
@@ -2630,7 +2660,7 @@ async function openDMWith(otherUid,otherName){
     [`name_${me.uid}`]:otherProf.name||'User',
     [`avatar_${me.uid}`]:otherProf.avatar||null,
     [`color_${me.uid}`]:otherProf.color||'var(--pink)',
-    [`initial_${me.uid}`]:otherProf.initial||otherProf.name?.[0]||'U',
+    [`initial_${me.uid}`]:otherProf.initial||(otherProf.name?otherProf.name.charAt(0):'')||'U',
     [`handle_${me.uid}`]:otherProf.handle||'user',
     [`name_${otherUid}`]:me.name,
     [`avatar_${otherUid}`]:me.avatar||null,
@@ -2982,7 +3012,7 @@ function searchPageUsers(q){
     card.className = 'people-card';
     card.innerHTML =
       '<div class="people-card-av" style="background:'+(u.color||'var(--pink)')+';">'
-        +(u.avatar ? '<img src="'+u.avatar+'" alt="">' : esc(u.initial||u.name?.[0]||'?'))
+        +(u.avatar ? '<img src="'+u.avatar+'" alt="">' : esc(u.initial||(u.name?u.name.charAt(0):'')||'?'))
         +(presStatus==='online' ? '<div class="pc-online" data-presence-uid="'+u.uid+'"></div>' : '')
       +'</div>'
       +'<div class="people-card-name">'+esc(u.name||u.handle||'User')+'</div>'
