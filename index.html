@@ -518,6 +518,97 @@ textarea.form-input{resize:none;min-height:80px;}
 [data-theme=dark] .ac-google{background:#1c1118;color:#faeef2;}
 .ac-err{background:rgba(224,85,119,.1);border:1px solid rgba(224,85,119,.3);color:#e05577;border-radius:7px;padding:8px 11px;font-size:12px;margin-bottom:9px;display:none;}
 .ac-err.on{display:block;}
+
+/* ─── SEARCH / PEOPLE PAGE ─────────────────────────────── */
+.search-page-bar{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:12px 16px;margin-bottom:20px;}
+.search-page-bar input{flex:1;background:none;border:none;outline:none;font-family:'Jost',sans-serif;font-size:15px;color:var(--text);}
+.search-page-bar input::placeholder{color:var(--text3);}
+.people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;}
+.people-card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .22s cubic-bezier(.22,1,.36,1);}
+.people-card:hover{border-color:var(--pink);transform:translateY(-3px);box-shadow:0 10px 28px rgba(226,104,138,.13);}
+.people-card-av{width:60px;height:60px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;overflow:hidden;position:relative;}
+.people-card-av img{width:100%;height:100%;object-fit:cover;}
+.pc-online{position:absolute;bottom:1px;right:1px;width:11px;height:11px;background:#22c55e;border-radius:50%;border:2px solid var(--card);}
+.people-card-name{font-size:13.5px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.people-card-handle{font-size:11.5px;color:var(--text3);margin-bottom:12px;}
+.people-card-actions{display:flex;gap:6px;justify-content:center;}
+.pc-btn{border:none;border-radius:20px;padding:6px 13px;font-size:12px;font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;transition:all .18s;}
+.pc-btn-follow{background:var(--pink);color:white;}
+.pc-btn-follow:hover{opacity:.85;}
+.pc-btn-follow.following{background:transparent;border:1.5px solid var(--pink) !important;color:var(--pink);}
+.pc-btn-msg{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);}
+.pc-btn-msg:hover{border-color:var(--pink);color:var(--pink);}
+.search-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px;}
+/* ─── ADMIN DASHBOARD ───────────────────────────────────── */
+.admin-stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
+.admin-stat-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;}
+.admin-stat-n{font-size:28px;font-weight:800;background:linear-gradient(135deg,#d44f7a,#f4a8c0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.admin-stat-l{font-size:11.5px;color:var(--text3);margin-top:3px;}
+.admin-section{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px;}
+.admin-section-title{font-size:15px;font-weight:700;margin-bottom:14px;}
+.admin-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.admin-tab{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:none;color:var(--text2);font-family:'Jost',sans-serif;transition:all .2s;}
+.admin-tab.active{background:var(--pink);color:white;border-color:var(--pink);}
+.admin-user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.admin-user-row:last-child{border-bottom:none;}
+.admin-user-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:white;overflow:hidden;}
+.admin-user-av img{width:100%;height:100%;object-fit:cover;}
+.admin-post-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.admin-post-row:last-child{border-bottom:none;}
+.admin-post-thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;background:var(--bg3);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.admin-del-btn{background:none;border:1.5px solid #e05577;color:#e05577;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .18s;flex-shrink:0;}
+.admin-del-btn:hover{background:#e05577;color:white;}
+.admin-msg-btn{background:none;border:1.5px solid var(--pink);color:var(--pink);border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Jost',sans-serif;margin-right:5px;transition:all .18s;flex-shrink:0;}
+.admin-msg-btn:hover{background:var(--pink);color:white;}
+/* ─── FRIENDS / PRESENCE SIDEBAR ───────────────────────── */
+.friends-sidebar-section{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);}
+.friends-sidebar-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:12px;}
+.friend-row{display:flex;align-items:center;gap:9px;padding:6px 0;cursor:pointer;border-radius:10px;transition:background .15s;}
+.friend-row:hover{background:var(--bg3);}
+.friend-av{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;overflow:hidden;position:relative;}
+.friend-av img{width:100%;height:100%;object-fit:cover;}
+.friend-av-dot{position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;border:2px solid var(--card);}
+.dot-online{background:#22c55e;}
+.dot-away{background:#f59e0b;}
+.dot-offline{background:#94a3b8;}
+.friend-name{font-size:12.5px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.friend-status{font-size:10.5px;color:var(--text3);}
+
+/* ─── OTHER USER PROFILE VIEW ───────────────────────── */
+#view-other-profile .profile-card{border-radius:18px;overflow:hidden;border:1px solid var(--border);margin-bottom:20px;}
+.opu-banner{height:160px;position:relative;background:linear-gradient(135deg,#f4a8c0,#e2688a);}
+.opu-banner img{width:100%;height:100%;object-fit:cover;}
+.opu-back{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.35);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;transition:background .2s;}
+.opu-back:hover{background:rgba(0,0,0,.55);}
+.opu-top{padding:0 20px 20px;position:relative;}
+.opu-av{width:80px;height:80px;border-radius:50%;border:4px solid var(--card);margin-top:-40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:26px;color:white;overflow:hidden;position:relative;z-index:1;}
+.opu-av img{width:100%;height:100%;object-fit:cover;}
+.opu-online-dot{position:absolute;bottom:4px;right:4px;width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid var(--card);}
+.opu-actions{display:flex;gap:8px;margin-top:12px;align-items:center;}
+.opu-follow-btn{background:var(--pink);color:white;border:none;border-radius:22px;padding:9px 22px;font-size:13.5px;font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;transition:all .2s;}
+.opu-follow-btn:hover{opacity:.88;}
+.opu-follow-btn.following{background:transparent;border:2px solid var(--pink);color:var(--pink);}
+.opu-msg-btn{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);border-radius:22px;padding:9px 18px;font-size:13.5px;font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.opu-msg-btn:hover{border-color:var(--pink);color:var(--pink);}
+.opu-name{font-size:20px;font-weight:800;margin-top:12px;display:flex;align-items:center;gap:8px;}
+.opu-online-badge{font-size:11px;font-weight:600;color:#22c55e;background:rgba(34,197,94,.1);padding:2px 8px;border-radius:10px;}
+.opu-handle{font-size:13.5px;color:var(--text3);margin-top:2px;}
+.opu-bio{font-size:13.5px;color:var(--text2);margin-top:10px;line-height:1.6;}
+.opu-stats{display:flex;gap:0;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.opu-stat{flex:1;text-align:center;cursor:pointer;padding:6px 0;border-radius:10px;transition:background .15s;}
+.opu-stat:hover{background:var(--bg3);}
+.opu-stat-n{font-size:18px;font-weight:800;}
+.opu-stat-l{font-size:11.5px;color:var(--text3);margin-top:1px;}
+.opu-feed-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px;}
+.opu-feed-tab{flex:1;padding:12px;text-align:center;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:all .2s;}
+.opu-feed-tab.active{color:var(--pink);border-bottom-color:var(--pink);}
+.opu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:16px;}
+.opu-grid-item{aspect-ratio:1;overflow:hidden;cursor:pointer;position:relative;background:var(--bg3);border-radius:4px;}
+.opu-grid-item img{width:100%;height:100%;object-fit:cover;transition:transform .2s;}
+.opu-grid-item:hover img{transform:scale(1.05);}
+.opu-grid-overlay{position:absolute;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;gap:10px;color:white;font-size:13px;font-weight:600;opacity:0;transition:opacity .18s;}
+.opu-grid-item:hover .opu-grid-overlay{opacity:1;}
+.opu-empty{text-align:center;padding:50px 20px;color:var(--text3);font-size:14px;}
 </style>
 </head>
 <body>
@@ -655,6 +746,11 @@ textarea.form-input{resize:none;min-height:80px;}
         <div class="page-sub">Discover posts from everyone on Kez Media</div>
       </div>
       <div id="exploreFeed"></div>
+    </div>
+
+    <!-- OTHER USER PROFILE VIEW -->
+    <div class="view" id="view-other-profile">
+      <div id="otherProfileContent"></div>
     </div>
 
     <!-- SEARCH VIEW -->
@@ -985,6 +1081,11 @@ textarea.form-input{resize:none;min-height:80px;}
       <div class="s-title">Trending</div>
       <div id="trendTags"></div>
     </div>
+  
+    <div class="friends-sidebar-section">
+      <div class="friends-sidebar-title">Following</div>
+      <div id="sidebarFriends"><div style="font-size:12px;color:var(--text3);">Loading...</div></div>
+    </div>
   </aside>
 </div>
 
@@ -1140,7 +1241,14 @@ async function seedDummyPosts() {
 
 function startPostsListener() {
   postsCol().orderBy('createdAt','desc').onSnapshot(snap => {
-    posts = snap.docs.map(d => d.data());
+    posts = snap.docs.map(d => {
+      const data = d.data();
+      const likedBy = Array.isArray(data.likedBy) ? data.likedBy : [];
+      data.liked = likedBy.includes(me.uid);
+      data.likedBy = likedBy;
+      if(!data.comments) data.comments=[];
+      return data;
+    });
     renderFeed();
     renderExploreFeed();
     if(currentView==='profile')  refreshProfile();
@@ -1330,25 +1438,30 @@ applyTheme();
 
 // ── NAVIGATION ────────────────────────────────────────
 let currentView='home';
+let previousView = 'home';
 function goTo(view){
+  previousView = currentView || 'home';
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
-  document.getElementById('view-'+view).classList.add('active');
-  const mn=document.getElementById('mn-'+view);if(mn)mn.classList.add('active');
-  currentView=view;
-  // profile mode: hide right sidebar, expand center
-  const layout=document.querySelector('.layout');
-  if(view==='profile'){layout.classList.add('profile-mode');}
-  else{layout.classList.remove('profile-mode');}
-  if(view==='profile')refreshProfile();
-  if(view==='notifs'){renderNotifs();}
-  if(view==='search'){searchPageUsers(document.getElementById('searchPageInput')?.value||'');}
-  if(view==='admin'){refreshAdminDashboard();}
-  if(view==='messages'){loadDMConvos();}
-  if(view==='settings'){refreshSettings();}
-  if(view==='admin')refreshAdmin();
+  const viewEl = document.getElementById('view-'+view);
+  if(!viewEl){ console.warn('No view:', view); return; }
+  viewEl.classList.add('active');
+  const mn = document.getElementById('mn-'+view);
+  if(mn) mn.classList.add('active');
+  currentView = view;
+  const layout = document.querySelector('.layout');
+  if(view==='profile'||view==='other-profile'){ layout.classList.add('profile-mode'); }
+  else{ layout.classList.remove('profile-mode'); }
+  if(view==='profile') refreshProfile();
+  if(view==='other-profile') loadOtherProfile(currentOtherProfileUid);
+  if(view==='notifs') renderNotifs();
+  if(view==='search') searchPageUsers(document.getElementById('searchPageInput')?.value||'');
+  if(view==='admin') refreshAdminDashboard();
+  if(view==='messages') loadDMConvos();
+  if(view==='settings') refreshSettings();
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
 function goSettings(section){goTo('settings');setTimeout(()=>switchSettingsNav(section),50);}
 
 // ── INIT ──────────────────────────────────────────────
@@ -1366,6 +1479,8 @@ async function init(){
   watchUsers();
   loadDMConvos();
   watchNotifications();
+  startPresence();
+  watchPresence();
   await seedDummyPosts();
   startPostsListener();
 }
@@ -1604,15 +1719,34 @@ function commentHTML(c){
 function doLike(id){
   id=String(id);
   const p=posts.find(x=>String(x.id)===id);if(!p)return;
-  p.liked=!p.liked;p.likes+=p.liked?1:-1;
-  document.querySelectorAll(`#pc-${id}`).forEach(card=>{
-    const btn=card.querySelector('.act');
-    btn.className=`act ${p.liked?'liked':''}`;
-    btn.innerHTML=`<svg width="17" height="17" fill="${p.liked?'var(--pink)':'none'}" stroke="${p.liked?'var(--pink)':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="lc">${p.likes}</span>`;
+  // ONE like per account — stored as array of UIDs in Firestore
+  const likedBy = Array.isArray(p.likedBy) ? p.likedBy : [];
+  const alreadyLiked = likedBy.includes(me.uid);
+  if(alreadyLiked){
+    // unlike
+    p.liked=false; p.likes=Math.max(0,p.likes-1);
+    p.likedBy=likedBy.filter(u=>u!==me.uid);
+    postsCol().doc(id).update({
+      likes: firebase.firestore.FieldValue.increment(-1),
+      likedBy: p.likedBy
+    }).catch(()=>{});
+  } else {
+    // like
+    p.liked=true; p.likes=p.likes+1;
+    p.likedBy=[...likedBy, me.uid];
+    postsCol().doc(id).update({
+      likes: firebase.firestore.FieldValue.increment(1),
+      likedBy: p.likedBy
+    }).catch(()=>{});
+    if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'like',me,'');
+  }
+  // update UI
+  document.querySelectorAll('#pc-'+id).forEach(function(card){
+    const btn=card.querySelector('[data-like]');
+    if(!btn) return;
+    btn.className='act '+(p.liked?'liked':'');
+    btn.innerHTML='<svg width="17" height="17" fill="'+(p.liked?'var(--pink)':'none')+'" stroke="'+(p.liked?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="lc">'+p.likes+'</span>';
   });
-  updatePostField(id,{likes:p.likes});
-  // notify post owner
-  if(p.liked && p.uid && p.uid!==me.uid) sendNotification(p.uid,'like',me,'');
 }
 function doSave(id){
   id=String(id);
@@ -2219,69 +2353,183 @@ function closeSearch(){
 
 // ── VIEW OTHER USER PROFILE ───────────────────────────
 async function viewProfile(uid){
-  if(!uid||uid==='system')return;
-  if(uid===me.uid){goTo('profile');return;}
-  const overlay=document.getElementById('userProfileOverlay');
-  const content=document.getElementById('userProfileContent');
-  content.innerHTML='<div style="padding:60px;text-align:center;color:var(--text3);">Loading profile...</div>';
-  overlay.classList.add('open');
+  if(!uid || uid==='system') return;
+  if(uid === me.uid){ goTo('profile'); return; }
 
-  // get profile doc
-  let prof={uid,name:'User',handle:'user',color:'linear-gradient(135deg,#e2688a,#f0a0b8)',initial:'U'};
+  // Navigate to the dedicated other-profile view
+  currentOtherProfileUid = uid;
+  goTo('other-profile');
+}
+
+let currentOtherProfileUid = null;
+let otherProfilePostsTab = 'posts'; // 'posts' | 'grid'
+
+async function loadOtherProfile(uid){
+  if(!uid) return;
+  const container = document.getElementById('otherProfileContent');
+  if(!container) return;
+  container.innerHTML = '<div style="padding:80px;text-align:center;color:var(--text3);">Loading profile...</div>';
+
+  // Load profile
+  let prof = {uid, name:'User', handle:'user', color:'var(--pink)', initial:'U'};
   try{
-    const doc=await db.collection('profiles').doc(uid).get();
-    if(doc.exists) prof={uid,...doc.data()};
-  }catch(e){}
-
-  // fallback: get from posts if no profile doc
-  if(!prof.handle||prof.handle==='user'){
-    const postByUser=posts.find(p=>p.uid===uid);
-    if(postByUser&&postByUser.user) Object.assign(prof,postByUser.user,{uid});
+    const doc = await db.collection('profiles').doc(uid).get();
+    if(doc.exists) prof = {uid, ...doc.data()};
+  } catch(e){}
+  // Fallback from post author data
+  if(!prof.handle || prof.handle==='user'){
+    const postByUser = posts.find(p=>p.uid===uid);
+    if(postByUser && postByUser.user) Object.assign(prof, postByUser.user, {uid});
   }
 
-  const userPosts=posts.filter(p=>p.uid===uid&&!p.isStatus);
-  const isFollowing=(me.following||[]).includes(uid);
+  const isFollowing = (me.following||[]).includes(uid);
+  const presStatus = getPresenceStatus(uid);
+  const isOnline = presStatus === 'online';
 
-  // Use registry for safe onclick
-  const iUid2=_r(String(uid));
-  const iProfName=_r(String(prof.name||prof.handle||'User'));
-  const postItems=userPosts.map(p=>{
-    const img=(p.images&&p.images[0])||p.image||null;
-    const iPstId=_r(String(p.id));
-    return img
-      ?`<div class="upm-grid-item" onclick="closeUserProfile();openLightbox(_g(${iPstId}))"><img src="${img}" alt=""></div>`
-      :`<div class="upm-grid-item" style="display:flex;align-items:center;justify-content:center;" onclick="closeUserProfile();openLightbox(_g(${iPstId}))"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
-  }).join('');
-  content.innerHTML=`
-    <div class="upm-banner" style="background:${prof.bannerColor||'linear-gradient(135deg,#f4a8c0,#e2688a)'}">
-      ${prof.bannerImage?`<img class="upm-banner-img" src="${prof.bannerImage}" alt="">`:''}
-      <button class="upm-close" onclick="closeUserProfile()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>
-    <div class="upm-top">
-      <div class="upm-av" style="background:${prof.color||'var(--pink)'}">
-        ${prof.avatar?`<img src="${prof.avatar}" alt="">`:esc(prof.initial||prof.name?.[0]||'U')}
-      </div>
-      <div class="upm-actions">
-        <button class="upm-msg-btn" onclick="closeUserProfile();openDMFromPost(_g(${iUid2}),_g(${iProfName}))">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Message
-        </button>
-        <button class="upm-follow-btn ${isFollowing?'following':''}" id="upmFollowBtn" onclick="toggleFollowUser(_g(${iUid2}),_g(${iProfName}))">
-          ${isFollowing?'Following':'Follow'}
-        </button>
-      </div>
-      <div class="upm-name">${esc(prof.name||'User')}</div>
-      <div class="upm-handle">@${esc(prof.handle||'user')}</div>
-      ${prof.bio?`<div class="upm-bio">${esc(prof.bio)}</div>`:''}
-      <div class="upm-stats">
-        <div class="upm-stat"><div class="upm-stat-n">${userPosts.length}</div><div class="upm-stat-l">Posts</div></div>
-        <div class="upm-stat"><div class="upm-stat-n">${prof.followersCount||0}</div><div class="upm-stat-l">Followers</div></div>
-        <div class="upm-stat"><div class="upm-stat-n">${(prof.following||[]).length}</div><div class="upm-stat-l">Following</div></div>
-      </div>
-    </div>
-    <div class="upm-posts-grid">
-      ${userPosts.length?postItems:'<div class="upm-empty">No posts yet</div>'}
-    </div>`;
+  // Posts by this user
+  const userPosts = posts.filter(p=>p.uid===uid);
+  const userFeedPosts = userPosts.filter(p=>!p.isStatus);
+
+  const iUid = _r(uid);
+  const iName = _r(prof.name||prof.handle||'User');
+
+  // Build header HTML
+  container.innerHTML =
+    '<div class="profile-card">'
+      +'<div class="opu-banner" style="background:'+(prof.bannerColor||'linear-gradient(135deg,#f4a8c0,#e2688a)')+';">'
+        +(prof.bannerImage ? '<img src="'+prof.bannerImage+'" alt="">' : '')
+        +'<button class="opu-back" id="opuBackBtn"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>'
+      +'</div>'
+      +'<div class="opu-top">'
+        +'<div class="opu-av" style="background:'+(prof.color||'var(--pink)')+'">'
+          +(prof.avatar ? '<img src="'+prof.avatar+'" alt="">' : esc(prof.initial||'?'))
+          +(isOnline ? '<div class="opu-online-dot"></div>' : '')
+        +'</div>'
+        +'<div class="opu-name">'
+          +esc(prof.name||'User')
+          +(isOnline ? '<span class="opu-online-badge">● Active now</span>' : '')
+        +'</div>'
+        +'<div class="opu-handle">@'+esc(prof.handle||'user')+'</div>'
+        +(prof.bio ? '<div class="opu-bio">'+esc(prof.bio)+'</div>' : '')
+        +'<div class="opu-actions">'
+          +'<button class="opu-follow-btn'+(isFollowing?' following':'')+'" id="opuFollowBtn">'+(isFollowing?'Following':'Follow')+'</button>'
+          +'<button class="opu-msg-btn" id="opuMsgBtn"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Message</button>'
+        +'</div>'
+        +'<div class="opu-stats">'
+          +'<div class="opu-stat"><div class="opu-stat-n">'+userFeedPosts.length+'</div><div class="opu-stat-l">Posts</div></div>'
+          +'<div class="opu-stat"><div class="opu-stat-n">'+(prof.followersCount||0)+'</div><div class="opu-stat-l">Followers</div></div>'
+          +'<div class="opu-stat"><div class="opu-stat-n">'+((prof.following||[]).length)+'</div><div class="opu-stat-l">Following</div></div>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="opu-feed-tabs">'
+      +'<div class="opu-feed-tab'+(otherProfilePostsTab==='posts'?' active':'')+'" id="opuTabPosts">📋 Posts</div>'
+      +'<div class="opu-feed-tab'+(otherProfilePostsTab==='grid'?' active':'')+'" id="opuTabGrid">⊞ Grid</div>'
+    +'</div>'
+    +'<div id="opuFeedContent"></div>';
+
+  // Wire back button
+  document.getElementById('opuBackBtn').addEventListener('click', function(){
+    history.back ? window.history.back() : goTo('home');
+    // fallback: go to previous view
+    goTo(previousView||'home');
+  });
+
+  // Wire follow button
+  document.getElementById('opuFollowBtn').addEventListener('click', function(){
+    toggleFollowUserOpu(uid, prof.name||prof.handle||'User');
+  });
+
+  // Wire message button
+  document.getElementById('opuMsgBtn').addEventListener('click', function(){
+    openDMFromPost(_g(iUid), _g(iName));
+  });
+
+  // Wire tab buttons
+  document.getElementById('opuTabPosts').addEventListener('click', function(){
+    otherProfilePostsTab='posts';
+    document.querySelectorAll('.opu-feed-tab').forEach(t=>t.classList.remove('active'));
+    this.classList.add('active');
+    renderOtherProfileFeed(uid, userPosts, prof);
+  });
+  document.getElementById('opuTabGrid').addEventListener('click', function(){
+    otherProfilePostsTab='grid';
+    document.querySelectorAll('.opu-feed-tab').forEach(t=>t.classList.remove('active'));
+    this.classList.add('active');
+    renderOtherProfileGrid(uid, userFeedPosts);
+  });
+
+  // Render initial tab
+  if(otherProfilePostsTab==='posts'){
+    renderOtherProfileFeed(uid, userPosts, prof);
+  } else {
+    renderOtherProfileGrid(uid, userFeedPosts);
+  }
+}
+
+function renderOtherProfileFeed(uid, userPosts, prof){
+  const fc = document.getElementById('opuFeedContent');
+  if(!fc) return;
+  if(!userPosts.length){
+    fc.innerHTML = '<div class="opu-empty">No posts yet 🌸</div>';
+    return;
+  }
+  fc.innerHTML = '';
+  userPosts.forEach(function(p, i){
+    const card = buildCard(p, i);
+    fc.appendChild(card);
+  });
+}
+
+function renderOtherProfileGrid(uid, feedPosts){
+  const fc = document.getElementById('opuFeedContent');
+  if(!fc) return;
+  if(!feedPosts.length){
+    fc.innerHTML = '<div class="opu-empty">No posts yet 🌸</div>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'opu-grid';
+  feedPosts.forEach(function(p){
+    const imgs = p.images||(p.image?[p.image]:[]);
+    const img = imgs[0]||null;
+    const iPid = _r(String(p.id));
+    const item = document.createElement('div');
+    item.className = 'opu-grid-item';
+    item.innerHTML = img
+      ? '<img src="'+img+'" alt=""><div class="opu-grid-overlay"><span>❤️ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>'
+      : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:28px;">'+(p.isStatus?'💬':'🖼️')+'</div>';
+    item.addEventListener('click', function(){ openLightbox(_g(iPid)); });
+    grid.appendChild(item);
+  });
+  fc.innerHTML = '';
+  fc.appendChild(grid);
+}
+
+function toggleFollowUserOpu(uid, name){
+  if(!me.following) me.following=[];
+  const btn = document.getElementById('opuFollowBtn');
+  const idx = me.following.indexOf(uid);
+  if(idx > -1){
+    me.following.splice(idx, 1);
+    if(btn){ btn.textContent='Follow'; btn.classList.remove('following'); }
+    toast('Unfollowed '+name);
+    db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(-1)}).catch(()=>{});
+  } else {
+    me.following.push(uid);
+    if(btn){ btn.textContent='Following'; btn.classList.add('following'); }
+    toast('Following '+name+'! 🌸');
+    db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
+    sendNotification(uid,'follow',me,'');
+  }
+  // Update the followers count shown
+  const statEls = document.querySelectorAll('.opu-stat-n');
+  if(statEls[1]){
+    const cur = parseInt(statEls[1].textContent)||0;
+    statEls[1].textContent = me.following.includes(uid) ? cur+1 : Math.max(0,cur-1);
+  }
+  saveProfileToFirestore();
+  renderFriendsInSidebar();
 }
 
 function closeUserProfile(){
@@ -2596,6 +2844,295 @@ auth.onAuthStateChanged(async function(user){
     overlay.style.display = 'flex';
   }
 });
+
+// ═══════════════════════════════════════════════════
+// PRESENCE SYSTEM — tracks who's online in real time
+// ═══════════════════════════════════════════════════
+let presenceInterval = null;
+let onlineFriends = {}; // uid -> {online, lastSeen}
+
+function startPresence(){
+  if(!me.uid) return;
+  const ref = db.collection('presence').doc(me.uid);
+  // Write online immediately
+  ref.set({online:true, lastSeen:firebase.firestore.FieldValue.serverTimestamp(), name:me.name||me.handle, handle:me.handle, color:me.color, initial:me.initial, avatar:me.avatar||null}).catch(()=>{});
+  // Heartbeat every 30s
+  presenceInterval = setInterval(function(){
+    ref.update({online:true, lastSeen:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+  }, 30000);
+  // Mark offline on page hide/unload
+  window.addEventListener('beforeunload', function(){
+    ref.update({online:false, lastSeen:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+  });
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){
+      ref.update({online:false, lastSeen:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+    } else {
+      ref.update({online:true, lastSeen:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+    }
+  });
+}
+
+function watchPresence(){
+  // Watch presence for ALL users — updates right sidebar friends list
+  db.collection('presence').onSnapshot(function(snap){
+    onlineFriends = {};
+    snap.docs.forEach(function(d){
+      if(d.id !== me.uid) onlineFriends[d.id] = d.data();
+    });
+    renderFriendsInSidebar();
+    // Also update online dots on people cards if visible
+    document.querySelectorAll('[data-presence-uid]').forEach(function(el){
+      const uid = el.dataset.presenceUid;
+      const p = onlineFriends[uid];
+      el.style.display = (p && p.online) ? '' : 'none';
+    });
+  }, function(){});
+}
+
+function getPresenceStatus(uid){
+  const p = onlineFriends[uid];
+  if(!p) return 'offline';
+  if(p.online) return 'online';
+  // Check if seen in last 5 min = away
+  if(p.lastSeen){
+    const ms = p.lastSeen.toMillis ? p.lastSeen.toMillis() : (p.lastSeen.seconds ? p.lastSeen.seconds*1000 : 0);
+    if(Date.now() - ms < 5*60*1000) return 'away';
+  }
+  return 'offline';
+}
+
+function renderFriendsInSidebar(){
+  const container = document.getElementById('sidebarFriends');
+  if(!container) return;
+  // Show followed users that you follow (friends = mutual or following)
+  const following = me.following || [];
+  if(!following.length){
+    container.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0;">Follow people to see them here</div>';
+    return;
+  }
+  container.innerHTML = '';
+  following.slice(0, 15).forEach(function(uid){
+    const prof = allUsers[uid] || onlineFriends[uid];
+    if(!prof) return;
+    const status = getPresenceStatus(uid);
+    const dotClass = status === 'online' ? 'dot-online' : status === 'away' ? 'dot-away' : 'dot-offline';
+    const statusText = status === 'online' ? 'Active now' : status === 'away' ? 'Away' : 'Offline';
+    const iU = _r(uid);
+    const row = document.createElement('div');
+    row.className = 'friend-row';
+    row.innerHTML =
+      '<div class="friend-av" style="background:'+(prof.color||'var(--pink)')+';">'
+        +(prof.avatar ? '<img src="'+prof.avatar+'" alt="">' : esc(prof.initial||'?'))
+        +'<div class="friend-av-dot '+dotClass+'"></div>'
+      +'</div>'
+      +'<div>'
+        +'<div class="friend-name">'+esc(prof.name||prof.handle||'User')+'</div>'
+        +'<div class="friend-status">'+statusText+'</div>'
+      +'</div>'
+      +'<button style="background:none;border:none;cursor:pointer;color:var(--pink);font-size:16px;padding:2px 4px;" title="Message">💬</button>';
+    row.querySelector('.friend-av').addEventListener('click', function(){ viewProfile(_g(iU)); });
+    row.querySelector('.friend-name').addEventListener('click', function(){ viewProfile(_g(iU)); });
+    row.querySelector('button').addEventListener('click', function(e){
+      e.stopPropagation();
+      openDMFromPost(_g(iU), prof.name||prof.handle||'User');
+    });
+    container.appendChild(row);
+  });
+}
+
+
+// ═══════════════════════════════════════════════════
+// SEARCH PAGE — find anyone on the server
+// ═══════════════════════════════════════════════════
+function searchPageUsers(q){
+  const results = document.getElementById('searchPageResults');
+  if(!results) return;
+  q = (q||'').trim().toLowerCase();
+  // Collect all known users
+  const seen = new Set();
+  const allU = [];
+  Object.values(allUsers).forEach(function(u){
+    if(u.uid && u.uid !== me.uid && !seen.has(u.uid)){
+      seen.add(u.uid); allU.push(u);
+    }
+  });
+  posts.forEach(function(p){
+    if(!p.uid || p.uid===me.uid || p.uid==='system' || seen.has(p.uid)) return;
+    seen.add(p.uid); allU.push({uid:p.uid, ...p.user});
+  });
+  const filtered = q
+    ? allU.filter(function(u){ return (u.name||'').toLowerCase().includes(q)||(u.handle||'').toLowerCase().includes(q); })
+    : allU;
+  if(!filtered.length){
+    results.innerHTML = '<div class="search-empty">'+(q ? 'No users found for <strong>'+esc(q)+'</strong>' : 'No other users on Kez Media yet 🌸')+'</div>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'people-grid';
+  filtered.slice(0,40).forEach(function(u){
+    const iU = _r(String(u.uid));
+    const iN = _r(String(u.name||u.handle||'User'));
+    const isFollowing = (me.following||[]).includes(u.uid);
+    const presStatus = getPresenceStatus(u.uid);
+    const card = document.createElement('div');
+    card.className = 'people-card';
+    card.innerHTML =
+      '<div class="people-card-av" style="background:'+(u.color||'var(--pink)')+';">'
+        +(u.avatar ? '<img src="'+u.avatar+'" alt="">' : esc(u.initial||u.name?.[0]||'?'))
+        +(presStatus==='online' ? '<div class="pc-online" data-presence-uid="'+u.uid+'"></div>' : '')
+      +'</div>'
+      +'<div class="people-card-name">'+esc(u.name||u.handle||'User')+'</div>'
+      +'<div class="people-card-handle">@'+esc(u.handle||'')+'</div>'
+      +'<div class="people-card-actions">'
+        +'<button class="pc-btn pc-btn-follow'+(isFollowing?' following':'')+'">'+( isFollowing?'Following':'Follow')+'</button>'
+        +'<button class="pc-btn pc-btn-msg">💬</button>'
+      +'</div>';
+    // click avatar/name → view profile
+    card.querySelector('.people-card-av').addEventListener('click', function(){ viewProfile(_g(iU)); });
+    card.querySelector('.people-card-name').addEventListener('click', function(){ viewProfile(_g(iU)); });
+    // follow button
+    card.querySelector('.pc-btn-follow').addEventListener('click', function(e){
+      e.stopPropagation();
+      toggleFollowUser(_g(iU), _g(iN));
+      setTimeout(function(){ searchPageUsers(document.getElementById('searchPageInput').value); }, 400);
+    });
+    // message button
+    card.querySelector('.pc-btn-msg').addEventListener('click', function(e){
+      e.stopPropagation();
+      openDMFromPost(_g(iU), _g(iN));
+    });
+    grid.appendChild(card);
+  });
+  results.innerHTML = '';
+  results.appendChild(grid);
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN DASHBOARD
+// ═══════════════════════════════════════════════════
+let adminTab = 'users';
+async function refreshAdminDashboard(){
+  if(!isAdmin()) return;
+  const dash = document.getElementById('adminDashboard');
+  if(!dash) return;
+  // Stats
+  const totalPosts = posts.length;
+  const totalLikes = posts.reduce(function(a,p){ return a+p.likes; }, 0);
+  const totalUsers = Object.keys(allUsers).length || '…';
+  const onlineCount = Object.values(onlineFriends).filter(function(p){ return p.online; }).length;
+
+  dash.innerHTML =
+    '<div class="admin-stat-grid">'
+      +'<div class="admin-stat-card"><div class="admin-stat-n">'+totalUsers+'</div><div class="admin-stat-l">👤 Users</div></div>'
+      +'<div class="admin-stat-card"><div class="admin-stat-n">'+totalPosts+'</div><div class="admin-stat-l">📸 Posts</div></div>'
+      +'<div class="admin-stat-card"><div class="admin-stat-n">'+totalLikes+'</div><div class="admin-stat-l">❤️ Total Likes</div></div>'
+      +'<div class="admin-stat-card"><div class="admin-stat-n" style="-webkit-text-fill-color:#22c55e;">'+onlineCount+'</div><div class="admin-stat-l">🟢 Online Now</div></div>'
+    +'</div>'
+    +'<div class="admin-tabs">'
+      +'<button class="admin-tab'+(adminTab==='users'?' active':'')+'" id="atab-users">👤 All Users</button>'
+      +'<button class="admin-tab'+(adminTab==='posts'?' active':'')+'" id="atab-posts">📸 All Posts</button>'
+      +'<button class="admin-tab'+(adminTab==='notifs'?' active':'')+'" id="atab-notifs">🔔 Notifications</button>'
+    +'</div>'
+    +'<div id="adminTabContent"></div>';
+
+  dash.querySelector('#atab-users').addEventListener('click', function(){ adminTab='users'; refreshAdminDashboard(); });
+  dash.querySelector('#atab-posts').addEventListener('click', function(){ adminTab='posts'; refreshAdminDashboard(); });
+  dash.querySelector('#atab-notifs').addEventListener('click', function(){ adminTab='notifs'; refreshAdminDashboard(); });
+
+  const tc = document.getElementById('adminTabContent');
+
+  if(adminTab === 'users'){
+    const sec = document.createElement('div'); sec.className='admin-section';
+    sec.innerHTML = '<div class="admin-section-title">👤 Registered Users</div><div id="adminUserList"><div style="padding:20px;text-align:center;color:var(--text3);">Loading from Firestore…</div></div>';
+    tc.appendChild(sec);
+    try{
+      const snap = await db.collection('profiles').get();
+      const ul = document.getElementById('adminUserList'); if(!ul) return;
+      if(snap.empty){ ul.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);">No profiles yet</div>'; return; }
+      ul.innerHTML = '';
+      snap.docs.forEach(function(d){
+        const u = d.data();
+        const iU = _r(String(d.id));
+        const iN = _r(String(u.name||u.handle||'User'));
+        const status = getPresenceStatus(d.id);
+        const dotColor = status==='online'?'#22c55e': status==='away'?'#f59e0b':'#94a3b8';
+        const row = document.createElement('div'); row.className='admin-user-row';
+        row.innerHTML =
+          '<div class="admin-user-av" style="background:'+(u.color||'var(--pink)')+';">'+(u.avatar?'<img src="'+u.avatar+'" alt="">':esc(u.initial||'?'))+'</div>'
+          +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">'
+              +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+dotColor+';"></span>'
+              +esc(u.name||'User')+(d.id===me.uid?' <span style="color:var(--pink);font-size:10px;">(You)</span>':'')
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text3);">@'+esc(u.handle||'')+' · '+esc(u.email||'')+'</div>'
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-right:8px;">'+(u.followersCount||0)+' followers</div>'
+          +(d.id!==me.uid
+            ? '<button class="admin-msg-btn">Message</button>'
+            : '');
+        if(d.id !== me.uid){
+          row.querySelector('.admin-msg-btn').addEventListener('click', function(){
+            openDMFromPost(_g(iU), _g(iN));
+          });
+        }
+        ul.appendChild(row);
+      });
+    } catch(e){
+      const ul = document.getElementById('adminUserList');
+      if(ul) ul.innerHTML='<div style="padding:16px;color:#e05577;">⚠️ Could not load users — check Firestore rules allow read for authenticated users</div>';
+    }
+  } else if(adminTab === 'posts'){
+    const sec = document.createElement('div'); sec.className='admin-section';
+    sec.innerHTML = '<div class="admin-section-title">📸 All Posts ('+posts.length+')</div><div id="adminPostListFull"></div><button id="clearAllPostsBtn" style="margin-top:14px;background:#e05577;color:white;border:none;border-radius:10px;padding:9px 20px;font-size:13px;font-family:Jost,sans-serif;font-weight:600;cursor:pointer;">🗑 Clear ALL Posts</button>';
+    tc.appendChild(sec);
+    sec.querySelector('#clearAllPostsBtn').addEventListener('click', clearAllPosts);
+    const apl = document.getElementById('adminPostListFull'); if(!apl) return;
+    if(!posts.length){ apl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);">No posts</div>'; return; }
+    posts.slice(0,60).forEach(function(p){
+      const iPid = _r(String(p.id));
+      const imgs = p.images||(p.image?[p.image]:[]);
+      const row = document.createElement('div'); row.className='admin-post-row';
+      row.innerHTML =
+        (imgs[0]
+          ? '<img class="admin-post-thumb" src="'+imgs[0]+'" alt="">'
+          : '<div class="admin-post-thumb" style="font-size:18px;">'+(p.isStatus?'💬':'🖼️')+'</div>')
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:12px;font-weight:600;">@'+esc(p.user&&p.user.handle||'')+'</div>'
+          +'<div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc((p.caption||'').slice(0,60))+'</div>'
+          +'<div style="font-size:11px;color:var(--text3);">'+timeAgo(p.createdAt||0)+' · ❤️ '+p.likes+' 💬 '+p.comments.length+'</div>'
+        +'</div>'
+        +'<button class="admin-del-btn">Delete</button>';
+      row.querySelector('.admin-del-btn').addEventListener('click', function(){ deletePost(_g(iPid)); row.remove(); });
+      apl.appendChild(row);
+    });
+  } else if(adminTab === 'notifs'){
+    const sec = document.createElement('div'); sec.className='admin-section';
+    sec.innerHTML = '<div class="admin-section-title">🔔 Recent Notifications (all users)</div><div id="adminNotifList"><div style="padding:20px;text-align:center;color:var(--text3);">Loading…</div></div>';
+    tc.appendChild(sec);
+    try{
+      const snap = await db.collection('notifications').orderBy('ts','desc').limit(40).get();
+      const nl = document.getElementById('adminNotifList'); if(!nl) return;
+      if(snap.empty){ nl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);">No notifications yet</div>'; return; }
+      nl.innerHTML='';
+      const icons={like:'❤️',comment:'💬',follow:'👤',message:'✉️'};
+      const texts={like:'liked a post',comment:'commented',follow:'followed someone',message:'sent a DM'};
+      snap.docs.forEach(function(d){
+        const n=d.data();
+        const row=document.createElement('div');
+        row.style.cssText='padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px;display:flex;align-items:center;gap:10px;';
+        row.innerHTML='<span>'+(icons[n.type]||'🔔')+'</span>'
+          +'<div style="flex:1;"><strong>'+esc(n.fromName||'?')+'</strong> '+(texts[n.type]||n.type)+(n.extra?' — '+esc(n.extra.slice(0,40)):'')+'<br><span style="color:var(--text3);font-size:10.5px;">to @'+esc(n.toUid.slice(0,8))+'… · '+timeAgo(n.ts)+'</span></div>'
+          +(n.read?'':'<span style="width:7px;height:7px;border-radius:50%;background:var(--pink);display:inline-block;"></span>');
+        nl.appendChild(row);
+      });
+    } catch(e){
+      const nl=document.getElementById('adminNotifList');
+      if(nl) nl.innerHTML='<div style="padding:16px;color:#e05577;">⚠️ Could not load — check Firestore rules</div>';
+    }
+  }
+}
+
 </script>
 </body>
 </html>
