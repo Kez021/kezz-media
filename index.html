@@ -491,36 +491,121 @@ textarea.form-input{resize:none;min-height:80px;}
 .empty svg{margin-bottom:12px;opacity:.5;}
 .empty p{font-size:14.5px;font-weight:500;}
 
+.msg-back-btn{display:none;background:none;border:none;cursor:pointer;color:var(--text2);padding:4px 6px;margin-right:2px;align-items:center;}
+
 /* ─── RESPONSIVE ───────────────────────────────────── */
 @media(max-width:1000px){
   .layout{grid-template-columns:200px 1fr;}
   .sidebar-right{display:none;}
 }
+
 @media(max-width:700px){
-  .layout{grid-template-columns:1fr;padding:calc(58px + 8px) 0 70px;}
-  .sidebar-left{display:none;}
-  .sidebar-right{display:none;}
-  nav{padding:0 12px;}
-  .post-card,.create-bar,.stories-wrap{border-radius:0;border-left:none;border-right:none;margin-bottom:6px;}
-  .dash-grid{grid-template-columns:repeat(2,1fr);}
-  .settings-grid{grid-template-columns:1fr;}
-  /* Messages: full screen, sidebar hidden, chat full width */
-  .msg-layout{grid-template-columns:1fr;border-radius:0;min-height:calc(100vh - 130px);}
-  .msg-sidebar{display:none;}
-  .msg-sidebar.show{display:flex;position:fixed;inset:0;z-index:200;background:var(--card);border-radius:0;}
-  .chat-area{border-radius:0;}
-  /* Profile mobile */
+  /* ── Layout ── */
+  .layout{
+    grid-template-columns:1fr;
+    padding:calc(58px + 6px) 0 72px;
+    gap:0;
+    max-width:100%;
+  }
+  .sidebar-left,.sidebar-right{display:none;}
+  nav{padding:0 10px;gap:8px;}
+  .nav-search{max-width:140px;}
+  .brand{font-size:20px;}
+
+  /* ── Posts/Feed ── */
+  .post-card,.create-bar,.stories-wrap{
+    border-radius:0;
+    border-left:none;
+    border-right:none;
+    margin-bottom:6px;
+  }
+  .post-card{padding:0;}
+
+  /* ── Mobile bottom nav ── */
+  .mobile-bottom-nav{display:flex;}
+
+  /* ── Messages: sidebar becomes a full-screen overlay ── */
+  .msg-layout{
+    grid-template-columns:1fr;
+    border-radius:0;
+    border:none;
+    min-height:calc(100dvh - 130px);
+    background:var(--card);
+  }
+  /* Show convo list full width, hide chat until selected */
+  .msg-sidebar{
+    display:flex !important;
+    position:static;
+    width:100%;
+    min-height:calc(100dvh - 130px);
+  }
+  .chat-area{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:200;
+    background:var(--card);
+    flex-direction:column;
+    border-radius:0;
+    padding-top:0;
+  }
+  .chat-area.open{display:flex;}
+  .chat-msgs{
+    flex:1;
+    padding:12px;
+    overflow-y:auto;
+    max-height:unset;
+    min-height:0;
+  }
+  .chat-input-row{
+    padding:10px 12px;
+    padding-bottom:max(12px, env(safe-area-inset-bottom));
+  }
+  .msg-back-btn{display:flex !important;}
+
+  /* ── Own Profile ── */
   .profile-card{border-radius:0;border-left:none;border-right:none;}
-  .opu-banner{height:130px;}
-  .profile-stats{gap:0;}
-  .stat-item{flex:1;}
-  /* Admin/search grids */
+  .profile-banner{height:120px;}
+  .profile-av{width:68px;height:68px;font-size:22px;}
+  .profile-top{padding:0 14px 16px;}
+  .profile-name{font-size:17px;}
+  .profile-stats{padding:10px 0;gap:0;}
+  .stat-item{flex:1;padding:4px;}
+  .profile-grid{grid-template-columns:repeat(3,1fr);}
+  .edit-profile-btn{font-size:12px;padding:7px 14px;}
+
+  /* ── Other User Profile ── */
+  .opu-banner{height:120px !important;}
+  .opu-banner img{height:120px;}
+  .opu-av{
+    width:68px !important;
+    height:68px !important;
+    font-size:20px !important;
+    margin-top:-34px !important;
+    border-width:3px !important;
+  }
+  .opu-top{padding:0 14px 14px !important;}
+  .opu-name{font-size:17px !important;margin-top:8px !important;}
+  .opu-handle{font-size:12.5px !important;}
+  .opu-bio{font-size:12.5px !important;}
+  .opu-actions{gap:6px !important;margin-top:10px !important;}
+  .opu-follow-btn{padding:8px 18px !important;font-size:13px !important;}
+  .opu-msg-btn{padding:8px 14px !important;font-size:13px !important;}
+  .opu-stats{margin-top:12px !important;padding-top:12px !important;}
+  .opu-stat-n{font-size:16px !important;}
+  .opu-stat-l{font-size:11px !important;}
+  .opu-feed-tab{padding:10px 8px;font-size:12.5px;}
+  #view-other-profile .profile-card{border-radius:0;border-left:none;border-right:none;margin-bottom:0;}
+
+  /* ── Settings ── */
+  .settings-grid{grid-template-columns:1fr;}
+
+  /* ── Admin / search grids ── */
   .admin-stat-grid{grid-template-columns:repeat(2,1fr);}
   .people-grid{grid-template-columns:repeat(2,1fr);}
-}
-/* Mobile bottom nav */
-@media(max-width:700px){
-  .mobile-bottom-nav{display:flex;}
+
+  /* ── Modal ── */
+  .modal-box{border-radius:18px 18px 0 0;max-height:90dvh;margin:auto 0 0;}
 }
 /* AUTH */
 #authOverlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#fff0f6,#fde8f2);display:flex;align-items:center;justify-content:center;padding:16px;}
@@ -646,32 +731,7 @@ textarea.form-input{resize:none;min-height:80px;}
 .mob-nav-item span{font-size:9.5px;font-weight:600;}
 .mob-nav-badge{position:absolute;top:0;right:6px;background:var(--pink);color:white;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
 
-/* ─── MESSAGES MOBILE FIX ───────────────────────────── */
-.msg-back-btn{display:none;background:none;border:none;cursor:pointer;color:var(--text2);padding:4px;margin-right:4px;}
-@media(max-width:700px){
-  .msg-back-btn{display:flex;align-items:center;}
-  .chat-area{display:none;position:fixed;inset:0;z-index:150;background:var(--card);flex-direction:column;border-radius:0;}
-  .chat-area.open{display:flex;}
-  .chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;}
-  .chat-input-row{padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));}
-  .chat-header{padding:10px 14px;}
-}
-
-/* ─── OWN PROFILE MOBILE ────────────────────────────── */
-@media(max-width:700px){
-  .profile-banner{height:130px;}
-  .profile-av{width:70px;height:70px;font-size:22px;}
-  .profile-name{font-size:17px;}
-  .profile-stats{padding:12px 0;}
-  .profile-grid{grid-template-columns:repeat(3,1fr);}
-}
-
-/* ─── OTHER PROFILE MOBILE ───────────────────────────── */
-@media(max-width:700px){
-  .opu-av{width:68px !important;height:68px !important;font-size:22px !important;margin-top:-34px !important;}
-  .opu-top{padding:0 14px 16px !important;}
-  .opu-stats>div{padding:4px !important;}
-}
+/* Mobile CSS consolidated above */
 </style>
 </head>
 <body>
@@ -853,22 +913,18 @@ textarea.form-input{resize:none;min-height:80px;}
 
     <!-- MESSAGES VIEW -->
     <div class="view" id="view-messages">
-      <div class="page-header" style="margin-bottom:16px;">
-        <div class="page-title">Messages</div>
-        <div class="page-sub">Your direct conversations</div>
-      </div>
       <div class="msg-layout">
-        <div class="msg-sidebar">
+        <div class="msg-sidebar" id="msgSidebar">
           <div class="msg-sidebar-head">
-            <div class="msg-sidebar-title">Conversations</div>
-            <input class="msg-search" type="text" placeholder="Search messages..." oninput="filterConvos(this.value)">
+            <div class="msg-sidebar-title">💬 Messages</div>
+            <input class="msg-search" type="text" placeholder="Search conversations..." oninput="filterConvos(this.value)">
           </div>
           <div class="msg-list" id="convoList"></div>
         </div>
         <div class="chat-area" id="chatArea">
           <div class="chat-empty">
             <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <p style="font-size:14px;font-weight:500;">Select a conversation</p>
+            <p style="font-size:14px;font-weight:500;margin-top:10px;">Select a conversation</p>
           </div>
         </div>
       </div>
@@ -1406,41 +1462,32 @@ async function sendNotification(toUid, type, fromUser, extra){
 }
 function watchNotifications(){
   if(!me.uid) return;
-  if(notifUnsubscribe) notifUnsubscribe();
-  // Try with orderBy first (requires Firestore composite index)
-  // Fall back to just where() if index not yet built
-  function handleSnap(snap){
-    const count = snap.docs.filter(function(d){ return !d.data().read; }).length;
-    const badge = document.getElementById('notifBadge');
-    const mnBadge = document.getElementById('mnNotifBadge');
-    const mobBadge = document.getElementById('mobNotifBadge');
-    if(badge){ badge.textContent=count; badge.classList.toggle('hidden',!count); }
-    if(mnBadge){ mnBadge.textContent=count; mnBadge.style.display=count?'':'none'; }
-    if(mobBadge){ mobBadge.textContent=count; mobBadge.style.display=count?'':'none'; }
-    if(document.getElementById('view-notifs') && document.getElementById('view-notifs').classList.contains('active')){
-      renderNotifs(snap.docs);
-    }
-  }
-  function handleErr(err){
-    if(err.code==='failed-precondition'){
-      // Index not ready — try without orderBy
-      notifUnsubscribe = db.collection('notifications')
-        .where('toUid','==',me.uid)
-        .onSnapshot(function(snap){
-          // Sort client-side
-          const sorted = snap.docs.slice().sort(function(a,b){
-            const ta = a.data().ts ? (a.data().ts.toMillis ? a.data().ts.toMillis() : 0) : 0;
-            const tb = b.data().ts ? (b.data().ts.toMillis ? b.data().ts.toMillis() : 0) : 0;
-            return tb - ta;
-          });
-          handleSnap({docs:sorted});
-        }, function(){});
-    }
-  }
+  if(notifUnsubscribe){ notifUnsubscribe(); notifUnsubscribe=null; }
+  // NO orderBy — avoids Firestore composite index requirement entirely
+  // Sort client-side so it works immediately with zero Firebase setup
   notifUnsubscribe = db.collection('notifications')
     .where('toUid','==',me.uid)
-    .orderBy('ts','desc')
-    .onSnapshot(handleSnap, handleErr);
+    .onSnapshot(function(snap){
+      // Sort newest first client-side
+      const sorted = snap.docs.slice().sort(function(a,b){
+        const da=a.data(), db_=b.data();
+        const ta=da.ts?(da.ts.toMillis?da.ts.toMillis():da.ts.seconds?da.ts.seconds*1000:0):0;
+        const tb=db_.ts?(db_.ts.toMillis?db_.ts.toMillis():db_.ts.seconds?db_.ts.seconds*1000:0):0;
+        return tb-ta;
+      });
+      const count = sorted.filter(function(d){return !d.data().read;}).length;
+      // Update all badges
+      ['notifBadge','mnNotifBadge','mobNotifBadge'].forEach(function(id){
+        const el=document.getElementById(id);
+        if(!el) return;
+        el.textContent=count;
+        if(id==='notifBadge') el.classList.toggle('hidden',!count);
+        else el.style.display=count?'':'none';
+      });
+      // Refresh notifs view if open
+      const nv=document.getElementById('view-notifs');
+      if(nv && nv.classList.contains('active')) renderNotifs(sorted);
+    }, function(err){ console.warn('notif listener:', err.message); });
 }
 function renderNotifs(docs){
   const list=document.getElementById('notifList');
@@ -1448,8 +1495,13 @@ function renderNotifs(docs){
   list.innerHTML='';
   // If called without docs, fetch them
   if(!docs){
-    db.collection('notifications').where('toUid','==',me.uid).orderBy('ts','desc').limit(50).get().then(snap=>{
-      renderNotifs(snap.docs);
+    db.collection('notifications').where('toUid','==',me.uid).limit(50).get().then(function(snap){
+      const sorted=snap.docs.slice().sort(function(a,b){
+        const ta=a.data().ts?(a.data().ts.toMillis?a.data().ts.toMillis():0):0;
+        const tb=b.data().ts?(b.data().ts.toMillis?b.data().ts.toMillis():0):0;
+        return tb-ta;
+      });
+      renderNotifs(sorted);
     });
     return;
   }
@@ -1710,10 +1762,13 @@ function buildCard(p,i){
   card.style.animationDelay=(i*.05)+'s';
   const own=(p.uid&&p.uid===me.uid)||isAdmin();
   const imgs=p.images||(p.image?[p.image]:[]);
-  const userHandle=esc((p.user&&p.user.handle)||'');
-  const userColor=(p.user&&p.user.color)||'var(--pink)';
-  const userInitial=esc((p.user&&p.user.initial)||'?');
-  const userAvatar=(p.user&&p.user.avatar)||'';
+  // Always prefer live profile data (allUsers) over stale post.user
+  // This ensures name/handle changes show immediately on all posts
+  const liveUser = (p.uid && allUsers[p.uid]) ? allUsers[p.uid] : (p.user || {});
+  const userHandle=esc(liveUser.handle||'');
+  const userColor=liveUser.color||'var(--pink)';
+  const userInitial=esc(liveUser.initial||(liveUser.name?liveUser.name.charAt(0):'?'));
+  const userAvatar=liveUser.avatar||'';
 
   let mediaHTML='';
   if(p.isStatus){
@@ -1779,7 +1834,7 @@ function buildCard(p,i){
       +'<div class="c-input-row">'
         +'<div class="c-avatar" style="background:'+me.color+';color:white;">'+me.initial+'</div>'
         +'<input class="c-input" id="ci-'+pid+'" placeholder="Add a comment...">'
-        +'<button class="c-send" data-comment="'+pid+'"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
+        +'<button class="chat-send" data-comment="'+pid+'"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
       +'</div>'
     +'</div>';
 
@@ -2343,7 +2398,7 @@ function openLightbox(pid){
       +'<div class="lb-comment-input">'
         +'<div class="c-avatar" style="background:'+me.color+';color:white;">'+me.initial+'</div>'
         +'<input class="c-input" id="lbCommentInput" placeholder="Add a comment...">'
-        +'<button class="c-send"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
+        +'<button class="chat-send"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
       +'</div>'
     +'</div>';
   document.getElementById('lightbox').classList.add('open');
@@ -2429,8 +2484,23 @@ function fullDate(ts){
 let allUsers = {}; // uid -> profile object, populated from Firestore
 
 function watchUsers(){
-  db.collection('profiles').onSnapshot(snap=>{
-    snap.docs.forEach(d=>{ allUsers[d.id]={uid:d.id,...d.data()}; });
+  db.collection('profiles').onSnapshot(function(snap){
+    var changed = false;
+    snap.docs.forEach(function(d){
+      var prev = allUsers[d.id];
+      var next = {uid:d.id, ...d.data()};
+      // Detect name/handle/avatar changes
+      if(!prev || prev.name!==next.name || prev.handle!==next.handle || prev.avatar!==next.avatar){
+        changed = true;
+      }
+      allUsers[d.id] = next;
+    });
+    // Re-render feed so updated names/avatars show on all posts immediately
+    if(changed && posts && posts.length){
+      renderFeed();
+      renderExploreFeed();
+    }
+    renderFriendsInSidebar();
   });
 }
 
@@ -2543,43 +2613,44 @@ function _drawOtherProfile(uid, prof){
       ? '<img src="'+prof.avatar+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
       : '<span>'+initial+'</span>';
 
+    // Use CSS classes only (no inline styles) so media queries work on mobile
     var html =
       '<div class="profile-card">'
         +'<div class="opu-banner" style="background:'+bannerBg+';">'
-          +(prof.bannerImage ? '<img src="'+prof.bannerImage+'" alt="" style="width:100%;height:100%;object-fit:cover;">' : '')
-          +'<button class="opu-back" id="opuBackBtn" style="position:absolute;top:12px;left:12px;background:rgba(0,0,0,.38);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;z-index:2;">'
+          +(prof.bannerImage ? '<img src="'+prof.bannerImage+'" alt="">' : '')
+          +'<button class="opu-back" id="opuBackBtn">'
             +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>'
           +'</button>'
         +'</div>'
         +'<div class="opu-top">'
-          +'<div class="opu-av" style="background:'+avBg+';width:80px;height:80px;border-radius:50%;border:4px solid var(--card);margin-top:-40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:26px;color:white;overflow:hidden;position:relative;z-index:1;">'
+          +'<div class="opu-av" style="background:'+avBg+';">'
             +avHtml
-            +(isOnline ? '<div style="position:absolute;bottom:4px;right:4px;width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid var(--card);"></div>' : '')
+            +(isOnline ? '<div class="opu-online-dot"></div>' : '')
           +'</div>'
-          +'<div style="font-size:20px;font-weight:800;margin-top:12px;display:flex;align-items:center;gap:8px;">'
+          +'<div class="opu-name">'
             +esc(profName)
-            +(isOnline ? '<span style="font-size:11px;font-weight:600;color:#22c55e;background:rgba(34,197,94,.1);padding:2px 8px;border-radius:10px;">● Active now</span>' : '')
+            +(isOnline ? '<span class="opu-online-badge">● Active now</span>' : '')
           +'</div>'
-          +'<div style="font-size:13.5px;color:var(--text3);margin-top:2px;">@'+esc(prof.handle||'user')+'</div>'
-          +(prof.bio ? '<div style="font-size:13.5px;color:var(--text2);margin-top:10px;line-height:1.6;">'+esc(prof.bio)+'</div>' : '')
-          +'<div style="display:flex;gap:8px;margin-top:14px;align-items:center;">'
-            +'<button id="opuFollowBtn" style="background:'+(isFollowing?'transparent':'var(--pink)')+';color:'+(isFollowing?'var(--pink)':'white')+';border:'+(isFollowing?'2px solid var(--pink)':'none')+';border-radius:22px;padding:9px 22px;font-size:13.5px;font-family:Jost,sans-serif;font-weight:600;cursor:pointer;">'
+          +'<div class="opu-handle">@'+esc(prof.handle||'user')+'</div>'
+          +(prof.bio ? '<div class="opu-bio">'+esc(prof.bio)+'</div>' : '')
+          +'<div class="opu-actions">'
+            +'<button id="opuFollowBtn" class="opu-follow-btn'+(isFollowing?' following':'')+'">'
               +(isFollowing?'Following':'Follow')
             +'</button>'
-            +'<button id="opuMsgBtn" style="background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);border-radius:22px;padding:9px 18px;font-size:13.5px;font-family:Jost,sans-serif;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">'
+            +'<button id="opuMsgBtn" class="opu-msg-btn">'
               +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Message'
             +'</button>'
           +'</div>'
-          +'<div style="display:flex;gap:0;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">'
-            +'<div style="flex:1;text-align:center;cursor:pointer;padding:6px 0;border-radius:10px;"><div style="font-size:18px;font-weight:800;">'+feedPosts.length+'</div><div style="font-size:11.5px;color:var(--text3);margin-top:1px;">Posts</div></div>'
-            +'<div style="flex:1;text-align:center;cursor:pointer;padding:6px 0;border-radius:10px;" id="opuFollowersStat"><div style="font-size:18px;font-weight:800;">'+followersCount+'</div><div style="font-size:11.5px;color:var(--text3);margin-top:1px;">Followers</div></div>'
-            +'<div style="flex:1;text-align:center;cursor:pointer;padding:6px 0;border-radius:10px;"><div style="font-size:18px;font-weight:800;">'+followingCount+'</div><div style="font-size:11.5px;color:var(--text3);margin-top:1px;">Following</div></div>'
+          +'<div class="opu-stats">'
+            +'<div class="opu-stat"><div class="opu-stat-n">'+feedPosts.length+'</div><div class="opu-stat-l">Posts</div></div>'
+            +'<div class="opu-stat" id="opuFollowersStat"><div class="opu-stat-n">'+followersCount+'</div><div class="opu-stat-l">Followers</div></div>'
+            +'<div class="opu-stat"><div class="opu-stat-n">'+followingCount+'</div><div class="opu-stat-l">Following</div></div>'
           +'</div>'
         +'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px;">'
-        +'<div id="opuTabPosts" style="flex:1;padding:12px;text-align:center;font-size:13.5px;font-weight:600;cursor:pointer;color:'+(otherProfilePostsTab==='posts'?'var(--pink)':'var(--text3)')+';border-bottom:2px solid '+(otherProfilePostsTab==='posts'?'var(--pink)':'transparent')+';">📋 Posts</div>'
-        +'<div id="opuTabGrid" style="flex:1;padding:12px;text-align:center;font-size:13.5px;font-weight:600;cursor:pointer;color:'+(otherProfilePostsTab==='grid'?'var(--pink)':'var(--text3)')+';border-bottom:2px solid '+(otherProfilePostsTab==='grid'?'var(--pink)':'transparent')+';">⊞ Grid</div>'
+      +'<div class="opu-feed-tabs">'
+        +'<div id="opuTabPosts" class="opu-feed-tab'+(otherProfilePostsTab==='posts'?' active':'')+'">📋 Posts</div>'
+        +'<div id="opuTabGrid" class="opu-feed-tab'+(otherProfilePostsTab==='grid'?' active':'')+'">⊞ Grid</div>'
       +'</div>'
       +'<div id="opuFeedContent"></div>';
 
@@ -2761,26 +2832,37 @@ async function openDMWith(otherUid,otherName){
     </div>
     <div class="chat-msgs" id="chatMsgs"></div>
     <div class="chat-input-row">
-      <input class="c-input" id="dmInput" placeholder="Send a message..." onkeydown="if(event.key==='Enter')sendDM(_g(${_r(convoId)}))">
-      <button class="c-send" onclick="sendDM(_g(${_r(convoId)}))"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      <input class="chat-input" id="dmInput" placeholder="Send a message..." onkeydown="if(event.key==='Enter')sendDM(_g(${_r(convoId)}))">
+      <button class="chat-send" onclick="sendDM(_g(${_r(convoId)}))"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
     </div>`;
 
-  // listen to messages in real time
-  dmUnsubscribe=db.collection('dms').doc(convoId).collection('messages')
-    .orderBy('ts','asc').onSnapshot(snap=>{
-      const msgs=document.getElementById('chatMsgs');
-      if(!msgs)return;
+  // Real-time message listener (no orderBy to avoid Firestore index requirement)
+  dmUnsubscribe = db.collection('dms').doc(convoId).collection('messages')
+    .onSnapshot(function(snap){
+      var msgs = document.getElementById('chatMsgs');
+      if(!msgs) return;
+      // Sort by ts client-side
+      var sorted = snap.docs.slice().sort(function(a,b){
+        var ta=a.data().ts?(a.data().ts.toMillis?a.data().ts.toMillis():a.data().ts.seconds?a.data().ts.seconds*1000:0):0;
+        var tb=b.data().ts?(b.data().ts.toMillis?b.data().ts.toMillis():b.data().ts.seconds?b.data().ts.seconds*1000:0):0;
+        return ta-tb;
+      });
       msgs.innerHTML='';
-      snap.docs.forEach(d=>{
-        const m=d.data();
-        const mine=m.from===me.uid;
-        const div=document.createElement('div');
-        div.className=`chat-msg ${mine?'mine':'theirs'}`;
-        div.innerHTML=`<div class="chat-bubble">${esc(m.text)}</div>`;
+      sorted.forEach(function(d){
+        var m = d.data();
+        if(!m.text) return;
+        var mine = m.from === me.uid;
+        var div = document.createElement('div');
+        div.className = 'chat-msg ' + (mine ? 'mine' : 'theirs');
+        div.innerHTML = '<div class="chat-bubble">'+esc(m.text)+'</div>';
         msgs.appendChild(div);
       });
-      msgs.scrollTop=msgs.scrollHeight;
-    });
+      msgs.scrollTop = msgs.scrollHeight;
+    }, function(err){ console.warn('DM msg listener:', err.message); });
+
+  // On mobile: slide chat panel open
+  var chatEl = document.getElementById('chatArea');
+  if(chatEl && window.innerWidth <= 700){ chatEl.classList.add('open'); }
 
   // mark convo as active in sidebar
   renderDMConvoList(otherUid);
@@ -2837,14 +2919,14 @@ function loadDMConvos(){
       const lastMsg=c.lastMsg||'Say hello! 👋';
       const iU=_r(otherUid); const iN=_r(name);
       const div=document.createElement('div');
-      div.className='convo-item'+(activeDMUid===otherUid?' active':'');
+      div.className='msg-conv'+(activeDMUid===otherUid?' active':'');
       div.innerHTML=
-        '<div class="convo-av" style="background:'+color+';color:white;">'
+        '<div class="msg-conv-av-wrap"><div class="msg-conv-av" style="background:'+color+';color:white;">'
           +(avatar?'<img src="'+avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(initial))
-        +'</div>'
-        +'<div class="convo-info">'
-          +'<div class="convo-name">'+esc(name)+'</div>'
-          +'<div class="convo-last">'+esc(lastMsg.slice(0,40))+'</div>'
+        +'</div></div>'
+        +'<div class="msg-conv-info">'
+          +'<div class="msg-conv-name">'+esc(name)+'</div>'
+          +'<div class="msg-conv-last">'+esc(lastMsg.slice(0,40))+'</div>'
         +'</div>';
       div.addEventListener('click', function(){
         openDMWith(_g(iU), _g(iN));
@@ -2855,50 +2937,30 @@ function loadDMConvos(){
       list.appendChild(div);
     });
   }
-  function onErr(err){
-    if(err.code==='failed-precondition'){
-      // No index — fallback without orderBy
-      dmConvoUnsubscribe = db.collection('dms')
-        .where('participants','array-contains',me.uid)
-        .onSnapshot(function(snap){
-          const sorted={docs:snap.docs.slice().sort(function(a,b){
-            const ta=a.data().lastTs?a.data().lastTs.toMillis?a.data().lastTs.toMillis():0:0;
-            const tb=b.data().lastTs?b.data().lastTs.toMillis?b.data().lastTs.toMillis():0:0;
-            return tb-ta;
-          })};
-          renderConvos(sorted);
-        },function(){});
-    }
-  }
+
+  // No orderBy - avoids Firestore composite index requirement
+  // Sort client-side instead
   dmConvoUnsubscribe = db.collection('dms')
     .where('participants','array-contains',me.uid)
-    .orderBy('lastTs','desc')
-    .onSnapshot(renderConvos, onErr);
+    .onSnapshot(function(snap){
+      // sort newest first
+      var sorted = {docs: snap.docs.slice().sort(function(a,b){
+        var ad=a.data(), bd=b.data();
+        var ta=ad.lastTs?(ad.lastTs.toMillis?ad.lastTs.toMillis():ad.lastTs.seconds?ad.lastTs.seconds*1000:0):0;
+        var tb=bd.lastTs?(bd.lastTs.toMillis?bd.lastTs.toMillis():bd.lastTs.seconds?bd.lastTs.seconds*1000:0):0;
+        return tb-ta;
+      })};
+      renderConvos(sorted);
+    }, function(err){ console.warn('DM listener error:', err.message); });
 }
 
 function renderDMConvoList(activeUid){
-  document.querySelectorAll('.convo-item').forEach(el=>{
+  document.querySelectorAll('.msg-conv').forEach(el=>{
     el.classList.remove('active');
   });
 }
 
-// Add chat CSS styles dynamically
-(function addChatCSS(){
-  const s=document.createElement('style');
-  s.textContent=`
-.chat-header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
-.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:0;}
-.chat-input-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);align-items:center;}
-.chat-msg{display:flex;}
-.chat-msg.mine{justify-content:flex-end;}
-.chat-msg.theirs{justify-content:flex-start;}
-.chat-bubble{max-width:75%;padding:9px 13px;border-radius:16px;font-size:13.5px;line-height:1.45;word-break:break-word;}
-.chat-msg.mine .chat-bubble{background:var(--pink);color:white;border-radius:16px 16px 4px 16px;}
-.chat-msg.theirs .chat-bubble{background:var(--bg3);color:var(--text);border-radius:16px 16px 16px 4px;}
-.convo-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;overflow:hidden;}
-  `;
-  document.head.appendChild(s);
-})();
+// (chat CSS is in <style> tag above)
 
 
 function uploadBanner(inp){
@@ -3304,7 +3366,7 @@ async function refreshAdminDashboard(){
     sec.innerHTML = '<div class="admin-section-title">🔔 Recent Notifications (all users)</div><div id="adminNotifList"><div style="padding:20px;text-align:center;color:var(--text3);">Loading…</div></div>';
     tc.appendChild(sec);
     try{
-      const snap = await db.collection('notifications').orderBy('ts','desc').limit(40).get();
+      const snap = await db.collection('notifications').limit(40).get();
       const nl = document.getElementById('adminNotifList'); if(!nl) return;
       if(snap.empty){ nl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);">No notifications yet</div>'; return; }
       nl.innerHTML='';
