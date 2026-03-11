@@ -172,7 +172,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;background:var(-
 [data-theme="dark"] .c-avatar{background:var(--bg3);}
 .c-avatar img{width:100%;height:100%;object-fit:cover;}
 .c-bubble{background:var(--bg2);border-radius:0 10px 10px 10px;padding:6px 11px;flex:1;transition:background .3s;}
-.c-user{font-size:11.5px;font-weight:600;color:var(--pink);margin-bottom:1px;}
+.c-user{font-size:11.5px;font-weight:600;color:var(--pink);margin-bottom:1px;transition:opacity .15s;}
+.c-user:hover{opacity:.75;}
 .c-text{font-size:12.5px;line-height:1.4;color:var(--text);}
 .c-input-row{display:flex;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
 .c-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:7px 13px;color:var(--text);font-family:'Jost',sans-serif;font-size:12.5px;outline:none;transition:border-color .2s,background .3s;}
@@ -501,7 +502,7 @@ textarea.form-input{resize:none;min-height:80px;}
 
 @media(max-width:700px){
   /* ── Layout ── */
-  .layout{
+  .layout,.layout.profile-mode{
     grid-template-columns:1fr;
     padding:calc(58px + 6px) 0 72px;
     gap:0;
@@ -575,27 +576,31 @@ textarea.form-input{resize:none;min-height:80px;}
   .edit-profile-btn{font-size:12px;padding:7px 14px;}
 
   /* ── Other User Profile ── */
-  .opu-banner{height:120px !important;}
-  .opu-banner img{height:120px;}
+  .opu-banner{height:150px !important;}
+  .opu-banner img{height:150px;}
   .opu-av{
-    width:68px !important;
-    height:68px !important;
-    font-size:20px !important;
-    margin-top:-34px !important;
+    width:76px !important;
+    height:76px !important;
+    font-size:22px !important;
+    margin-top:-38px !important;
     border-width:3px !important;
   }
   .opu-top{padding:0 14px 14px !important;}
-  .opu-name{font-size:17px !important;margin-top:8px !important;}
-  .opu-handle{font-size:12.5px !important;}
-  .opu-bio{font-size:12.5px !important;}
-  .opu-actions{gap:6px !important;margin-top:10px !important;}
-  .opu-follow-btn{padding:8px 18px !important;font-size:13px !important;}
-  .opu-msg-btn{padding:8px 14px !important;font-size:13px !important;}
-  .opu-stats{margin-top:12px !important;padding-top:12px !important;}
-  .opu-stat-n{font-size:16px !important;}
+  .opu-name{font-size:18px !important;margin-top:8px !important;}
+  .opu-handle{font-size:13px !important;}
+  .opu-bio{font-size:13px !important;}
+  .opu-actions{gap:8px !important;margin-top:12px !important;display:flex !important;}
+  .opu-follow-btn{flex:1;padding:10px 0 !important;font-size:14px !important;text-align:center;}
+  .opu-msg-btn{flex:1;padding:10px 0 !important;font-size:14px !important;justify-content:center;}
+  .opu-stats{margin-top:14px !important;padding-top:14px !important;display:flex !important;justify-content:space-around !important;}
+  .opu-stat-n{font-size:17px !important;}
   .opu-stat-l{font-size:11px !important;}
-  .opu-feed-tab{padding:10px 8px;font-size:12.5px;}
+  .opu-feed-tab{padding:10px 8px;font-size:13px;}
   #view-other-profile .profile-card{border-radius:0;border-left:none;border-right:none;margin-bottom:0;}
+  #view-other-profile{padding:0 !important;}
+  #otherProfileContent .profile-card{margin-bottom:0 !important;}
+  .opu-grid{grid-template-columns:repeat(3,1fr) !important;gap:2px !important;}
+  .opu-back{top:8px !important;left:8px !important;}
 
   /* ── Settings ── */
   .settings-grid{grid-template-columns:1fr;}
@@ -2054,7 +2059,24 @@ function buildCard(p,i){
 }
 
 function commentHTML(c){
-  return `<div class="comment"><div class="c-avatar" style="background:${c.user.color};color:white;">${c.user.initial}</div><div class="c-bubble"><div class="c-user">@${c.user.handle}</div><div class="c-text">${esc(c.text)}</div></div></div>`;
+  // Use live profile data if we have the uid — fixes stale usernames after profile edits
+  var u = c.user || {};
+  var uid = u.uid || '';
+  var live = (uid && allUsers[uid]) ? allUsers[uid] : null;
+  var handle  = live ? (live.handle||u.handle||'') : (u.handle||'');
+  var color   = live ? (live.color||u.color||'var(--pink)') : (u.color||'var(--pink)');
+  var initial = live ? (live.initial||(live.name?live.name.charAt(0):'')||u.initial||'?') : (u.initial||'?');
+  var avatar  = live ? (live.avatar||u.avatar||'') : (u.avatar||'');
+  var avHtml  = avatar ? '<img src="'+avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">' : initial;
+  var iU = uid ? _r(uid) : -1;
+  var nameClick = uid ? ' style="cursor:pointer;" onclick="viewProfile(_g('+iU+'))"' : '';
+  return '<div class="comment">'
+    +'<div class="c-avatar" style="background:'+color+';color:white;'+(uid?'cursor:pointer;':'')+'"'+(uid?' onclick="viewProfile(_g('+iU+'))"':'')+'>'+avHtml+'</div>'
+    +'<div class="c-bubble">'
+      +'<div class="c-user"'+nameClick+'>@'+esc(handle)+'</div>'
+      +'<div class="c-text">'+esc(c.text)+'</div>'
+    +'</div>'
+  +'</div>';
 }
 
 // ── INTERACTIONS ──────────────────────────────────────
@@ -2121,7 +2143,7 @@ function addComment(id){
   const inp=document.getElementById(`ci-${id}`);
   const txt=inp.value.trim();if(!txt)return;
   const p=posts.find(x=>String(x.id)===id);if(!p)return;
-  const c={user:{name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt};
+  const c={user:{uid:me.uid,name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt};
   p.comments.push(c);p.showComments=true;inp.value='';
   const cl=document.getElementById(`cl-${id}`);
   if(cl){const d=document.createElement('div');d.innerHTML=commentHTML(c);cl.appendChild(d.firstChild);}
@@ -2537,14 +2559,24 @@ function openLightbox(pid){
     imgSide
     +'<div class="lightbox-info-side">'
       +'<div class="lb-header">'
-        +'<div class="post-avatar card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="background:'+p.user.color+';width:34px;height:34px;font-size:13px;cursor:pointer;">'+(p.user.avatar?'<img src="'+p.user.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(p.user.initial))+'</div>'
-        +'<div class="card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="cursor:pointer;">'
-          +'<div style="font-size:13.5px;font-weight:600;">@'+esc(p.user.handle)+'</div>'
-          +'<div style="font-size:11.5px;color:var(--text3);" title="'+fullDate(p.createdAt||0)+'">'+timeAgo(p.createdAt||0)+'</div>'
-        +'</div>'
+        +(()=>{
+          var lbLive = (p.uid && allUsers[p.uid]) ? allUsers[p.uid] : (p.user||{});
+          var lbColor = lbLive.color||'var(--pink)';
+          var lbAvatar = lbLive.avatar||'';
+          var lbInitial = lbLive.initial||(lbLive.name?lbLive.name.charAt(0):'')||'?';
+          var lbHandle = lbLive.handle||'';
+          return '<div class="post-avatar card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="background:'+lbColor+';width:34px;height:34px;font-size:13px;cursor:pointer;">'+(lbAvatar?'<img src="'+lbAvatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(lbInitial))+'</div>'
+            +'<div class="card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="cursor:pointer;">'
+              +'<div style="font-size:13.5px;font-weight:600;">@'+esc(lbHandle)+'</div>'
+              +'<div style="font-size:11.5px;color:var(--text3);" title="'+fullDate(p.createdAt||0)+'">'+timeAgo(p.createdAt||0)+'</div>'
+            +'</div>';
+        })()
         +'<button class="lb-close" onclick="closeLightbox()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
       +'</div>'
-      +(p.caption?'<div class="lb-caption"><span style="font-weight:600;margin-right:6px;">@'+esc(p.user.handle)+'</span>'+esc(p.caption)+'</div>':'')
+      +((()=>{
+        var lbLive2 = (p.uid && allUsers[p.uid]) ? allUsers[p.uid] : (p.user||{});
+        return p.caption?'<div class="lb-caption"><span style="font-weight:600;margin-right:6px;">@'+esc(lbLive2.handle||'')+'</span>'+esc(p.caption)+'</div>':'';
+      })())
       +'<div class="lb-comments" id="lbComments">'+(p.comments||[]).map(function(c){return '<div class="comment" style="margin-bottom:10px;">'+commentHTML(c)+'</div>';}).join('')+'</div>'
       +'<div class="lb-actions">'
         +'<button class="act '+(p.liked?'liked':'')+'" id="lbLikeBtn"><svg width="17" height="17" fill="'+(p.liked?'var(--pink)':'none')+'" stroke="'+(p.liked?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span id="lbLikeCount">'+p.likes+'</span></button>'
@@ -2581,7 +2613,7 @@ function addLbComment(pid){
   const inp=document.getElementById('lbCommentInput');
   const txt=inp.value.trim();if(!txt)return;
   const p=posts.find(x=>String(x.id)===pid);if(!p)return;
-  const c={user:{name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt};
+  const c={user:{uid:me.uid,name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt};
   p.comments.push(c);p.showComments=true;inp.value='';
   const lbc=document.getElementById('lbComments');
   if(lbc){const d=document.createElement('div');d.innerHTML=commentHTML(c);lbc.appendChild(d.firstChild);lbc.scrollTop=lbc.scrollHeight;}
@@ -2973,18 +3005,32 @@ async function openDMWith(otherUid,otherName){
     Object.assign(otherProf,postByThem.user,{uid:otherUid});
 
   const convoId=getDMConvoId(me.uid,otherUid);
+
+  // Build last-active label for the DM header
+  function dmPresenceLabel(uid){
+    const p = onlineFriends[uid];
+    if(!p) return '<span style="color:#94a3b8;">● Offline</span>';
+    if(p.online) return '<span style="color:#22c55e;">● Active now</span>';
+    if(p.lastSeen){
+      const ms = p.lastSeen.toMillis ? p.lastSeen.toMillis() : (p.lastSeen.seconds ? p.lastSeen.seconds*1000 : 0);
+      if(ms) return '<span style="color:var(--text3);">Last active '+timeAgo(ms)+'</span>';
+    }
+    return '<span style="color:#94a3b8;">● Offline</span>';
+  }
+
   const chatArea=document.getElementById('chatArea');
   chatArea.innerHTML=`
     <div class="chat-header">
       <button class="msg-back-btn" onclick="closeChatMobile()" title="Back">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <div class="post-avatar" style="background:${otherProf.color||'var(--pink)'};width:36px;height:36px;font-size:13px;cursor:pointer;" onclick="viewProfile(_g(${_r(otherUid)}))">
+      <div class="post-avatar" style="background:${otherProf.color||'var(--pink)'};width:36px;height:36px;font-size:13px;cursor:pointer;position:relative;" onclick="viewProfile(_g(${_r(otherUid)}))">
         ${otherProf.avatar?`<img src="${otherProf.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">`:esc(otherProf.initial||(otherProf.name?otherProf.name.charAt(0):'')||'U')}
+        ${(onlineFriends[otherUid]&&onlineFriends[otherUid].online)?'<div style="position:absolute;bottom:1px;right:1px;width:10px;height:10px;background:#22c55e;border-radius:50%;border:2px solid var(--card);"></div>':''}
       </div>
-      <div style="cursor:pointer;" onclick="viewProfile(_g(${_r(otherUid)}))">
+      <div style="cursor:pointer;flex:1;" onclick="viewProfile(_g(${_r(otherUid)}))">
         <div style="font-size:14px;font-weight:600;">${esc(otherProf.name||'User')}</div>
-        <div style="font-size:11px;color:var(--text3);">@${esc(otherProf.handle||'user')}</div>
+        <div style="font-size:11px;">${dmPresenceLabel(otherUid)}</div>
       </div>
     </div>
     <div class="chat-msgs" id="chatMsgs"></div>
@@ -3074,6 +3120,8 @@ function loadDMConvos(){
       const initial=c['initial_'+me.uid]||(name?name.charAt(0):'U');
       const avatar=c['avatar_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].avatar||null;
       const lastMsg=c.lastMsg||'Say hello! 👋';
+      const lastTs = c.lastTs ? (c.lastTs.toMillis ? c.lastTs.toMillis() : c.lastTs.seconds ? c.lastTs.seconds*1000 : 0) : 0;
+      const lastTime = lastTs ? timeAgo(lastTs) : '';
       const iU=_r(otherUid); const iN=_r(name);
       const div=document.createElement('div');
       div.className='msg-conv'+(activeDMUid===otherUid?' active':'');
@@ -3081,8 +3129,11 @@ function loadDMConvos(){
         '<div class="msg-conv-av-wrap"><div class="msg-conv-av" style="background:'+color+';color:white;">'
           +(avatar?'<img src="'+avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(initial))
         +'</div></div>'
-        +'<div class="msg-conv-info">'
-          +'<div class="msg-conv-name">'+esc(name)+'</div>'
+        +'<div class="msg-conv-info" style="flex:1;min-width:0;">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+            +'<div class="msg-conv-name">'+esc(name)+'</div>'
+            +(lastTime?'<div style="font-size:10.5px;color:var(--text3);flex-shrink:0;margin-left:6px;">'+lastTime+'</div>':'')
+          +'</div>'
           +'<div class="msg-conv-last">'+esc(lastMsg.slice(0,40))+'</div>'
         +'</div>';
       div.addEventListener('click', function(){
