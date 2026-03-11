@@ -44,6 +44,11 @@
   --border:rgba(226,104,138,.12); --text:#faeef2; --text2:#c49aaa; --text3:#7a5060;
   --nav-shadow:0 1px 0 var(--border); --card-shadow:0 2px 20px rgba(0,0,0,.3);
   --nav-bg:rgba(21,13,16,.9);
+  /* Pink stays exactly the same in dark mode — never muted or overridden */
+  --pink:#e2688a; --pink-soft:#f0a0b8;
+  /* Pink-pale gets a dark-friendly version so hover states are visible */
+  --pink-pale:rgba(226,104,138,.15);
+  --pink-glow:rgba(226,104,138,.22);
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -521,6 +526,10 @@ textarea.form-input{resize:none;min-height:80px;}
 }
 
 @media(max-width:700px){
+  /* Show settings button in top nav on mobile */
+  .mob-settings-btn{display:flex !important;}
+  /* Hide desktop-only nav buttons on mobile to save space */
+  .nav-right .icon-btn:not(.mob-settings-btn){display:none;}
   /* ── Layout ── */
   .layout,.layout.profile-mode{
     grid-template-columns:1fr;
@@ -750,11 +759,22 @@ textarea.form-input{resize:none;min-height:80px;}
 .opu-empty{text-align:center;padding:50px 20px;color:var(--text3);font-size:14px;}
 
 /* ─── MOBILE BOTTOM NAV ─────────────────────────────── */
-.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:100;padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-around;align-items:center;}
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--nav-bg);backdrop-filter:blur(18px);border-top:1px solid var(--border);z-index:100;padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-evenly;align-items:center;}
 .mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 10px;cursor:pointer;color:var(--text3);position:relative;transition:color .2s;}
 .mob-nav-item.active{color:var(--pink);}
 .mob-nav-item svg{width:22px;height:22px;}
 .mob-nav-item span{font-size:9.5px;font-weight:600;}
+/* Create/Post button is a prominent pink circle in the center */
+#mob-create{
+  background:linear-gradient(135deg,var(--pink),var(--pink-soft));
+  border-radius:50%;width:46px;height:46px;
+  padding:0;margin-top:-12px;
+  box-shadow:0 4px 16px rgba(226,104,138,.45);
+  color:white;
+  align-self:center;
+}
+#mob-create svg{width:24px;height:24px;}
+#mob-create span{display:none;}
 .mob-nav-badge{position:absolute;top:0;right:6px;background:var(--pink);color:white;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
 
 /* Mobile CSS consolidated above */
@@ -1016,6 +1036,9 @@ textarea.form-input{resize:none;min-height:80px;}
     <div class="search-dropdown" id="searchDropdown"></div>
   </div>
   <div class="nav-right">
+    <button class="icon-btn mob-settings-btn" onclick="goTo('settings')" title="Settings" style="display:none;">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
     <button class="icon-btn" onclick="openModal()" title="New post">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     </button>
@@ -1189,10 +1212,10 @@ textarea.form-input{resize:none;min-height:80px;}
           <img class="banner-img" id="bannerImg" alt="cover">
           <input type="file" class="banner-upload-input" id="bannerUpload" accept="image/*" onchange="uploadBanner(this)">
           <div class="profile-banner-btns">
-            <button class="profile-banner-edit" onclick="document.getElementById('bannerUpload').click()">
+            <label for="bannerUpload" class="profile-banner-edit" style="cursor:pointer;">
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               Upload Cover
-            </button>
+            </label>
             <button class="profile-banner-edit" onclick="goSettings('appearance')">
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Edit Color
@@ -1324,26 +1347,6 @@ textarea.form-input{resize:none;min-height:80px;}
               </div>
             </div>
 
-            <!-- Fix old comments card -->
-            <div class="settings-card" style="margin-top:16px;">
-              <div class="settings-card-title">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Fix Old Comments
-              </div>
-              <div style="font-size:12.5px;color:var(--text2);margin-bottom:14px;line-height:1.6;">
-                If your past comments still show an old username, enter that old username below and tap <strong>Repair</strong>. This scans every post and updates your old comments to your current name so they are clickable.
-              </div>
-              <div class="edit-form">
-                <div class="form-group">
-                  <label class="form-label">Old username(s) — comma separated</label>
-                  <input class="form-input" id="oldHandlesInput" type="text" placeholder="e.g. old_name, another_name">
-                </div>
-                <button class="btn btn-pink" style="align-self:flex-start;" id="repairCommentsBtn" onclick="repairOldComments()">
-                  Repair My Comments
-                </button>
-                <div id="repairStatus" style="font-size:12px;color:var(--text3);margin-top:8px;display:none;"></div>
-              </div>
-            </div>
           </div>
 
           <!-- APPEARANCE -->
@@ -1359,37 +1362,43 @@ textarea.form-input{resize:none;min-height:80px;}
                 Add <strong>Kez Media</strong> to your home screen so it opens like a real app — fullscreen, no browser bar.
               </div>
 
-              <!-- Android Chrome: one-tap install button -->
-              <div id="installAndroid" style="display:none;">
-                <button class="btn btn-pink" style="width:100%;justify-content:center;gap:8px;" onclick="triggerInstall()">
-                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2v13m0 0l-4-4m4 4l4-4M2 17v2a2 2 0 002 2h16a2 2 0 002-2v-2"/></svg>
-                  Install Kez Media
-                </button>
-              </div>
-
-              <!-- iOS Safari: step-by-step guide -->
-              <div id="installIOS" style="display:none;">
-                <div style="background:var(--bg2);border-radius:12px;padding:14px;font-size:13px;color:var(--text2);line-height:1.8;">
-                  <div style="font-weight:700;color:var(--text);margin-bottom:8px;">How to install on iPhone:</div>
-                  <div>1️⃣ Tap the <strong>Share</strong> button at the bottom of Safari
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="vertical-align:middle;margin-left:3px;"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                  </div>
-                  <div>2️⃣ Scroll down and tap <strong>"Add to Home Screen"</strong></div>
-                  <div>3️⃣ Tap <strong>"Add"</strong> — done! 🎉</div>
-                </div>
-              </div>
-
-              <!-- Already installed or unknown -->
+              <!-- Already installed -->
               <div id="installDone" style="display:none;">
                 <div style="background:var(--bg2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);text-align:center;">
                   ✅ Kez Media is already installed on your device!
                 </div>
               </div>
 
-              <!-- Default (not yet detected) -->
+              <!-- Android Chrome: one-tap install button (shown when prompt is ready) -->
+              <div id="installAndroid" style="display:none;margin-bottom:12px;">
+                <button class="btn btn-pink" style="width:100%;justify-content:center;gap:8px;" onclick="triggerInstall()">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2v13m0 0l-4-4m4 4l4-4M2 17v2a2 2 0 002 2h16a2 2 0 002-2v-2"/></svg>
+                  Install Kez Media
+                </button>
+              </div>
+
+              <!-- iPhone / iPad instructions — always visible on iOS -->
+              <div id="installIOS" style="display:none;">
+                <div style="background:var(--bg2);border-radius:12px;padding:14px;font-size:13px;color:var(--text2);line-height:2;">
+                  <div style="font-weight:700;color:var(--text);margin-bottom:6px;">📲 Install on iPhone / iPad</div>
+                  <div>1️⃣ Open this page in <strong>Safari</strong></div>
+                  <div>2️⃣ Tap the <strong>Share</strong> button
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="vertical-align:middle;margin:0 2px;"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    at the bottom of the screen
+                  </div>
+                  <div>3️⃣ Scroll and tap <strong>"Add to Home Screen"</strong></div>
+                  <div>4️⃣ Tap <strong>Add</strong> — done! 🎉</div>
+                </div>
+              </div>
+
+              <!-- Android without prompt yet, or other browser -->
               <div id="installDefault">
-                <div style="background:var(--bg2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);text-align:center;">
-                  Open this page in <strong>Chrome</strong> (Android) or <strong>Safari</strong> (iPhone) to install
+                <div style="background:var(--bg2);border-radius:12px;padding:14px;font-size:13px;color:var(--text2);line-height:2;">
+                  <div style="font-weight:700;color:var(--text);margin-bottom:6px;">📲 Install on Android</div>
+                  <div>1️⃣ Open this page in <strong>Chrome</strong></div>
+                  <div>2️⃣ Tap the <strong>⋮ menu</strong> at the top right</div>
+                  <div>3️⃣ Tap <strong>"Add to Home screen"</strong></div>
+                  <div>4️⃣ Tap <strong>Add</strong> — done! 🎉</div>
                 </div>
               </div>
             </div>
@@ -4340,18 +4349,14 @@ function closeChatMobile(){
     <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     <span>Home</span>
   </div>
-  <div class="mob-nav-item" id="mob-explore" onclick="goTo('explore');updateMobNav('explore')">
-    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <span>Explore</span>
-  </div>
-  <div class="mob-nav-item" id="mob-create" onclick="openModal()">
-    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-    <span>Post</span>
-  </div>
   <div class="mob-nav-item" id="mob-notifs" onclick="goTo('notifs');updateMobNav('notifs')" style="position:relative;">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
     <span>Alerts</span>
     <span class="mob-nav-badge" id="mobNotifBadge" style="display:none">0</span>
+  </div>
+  <div class="mob-nav-item" id="mob-create" onclick="openModal()">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <span>Post</span>
   </div>
   <div class="mob-nav-item" id="mob-messages" onclick="goTo('messages');updateMobNav('messages')" style="position:relative;">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -4397,15 +4402,19 @@ function _updateInstallUI(){
   var ios      = document.getElementById('installIOS');
   var done     = document.getElementById('installDone');
   var def      = document.getElementById('installDefault');
-  if(!android) return; // settings not open yet — will re-run when opened
+  if(!done) return; // settings not open yet
   [android, ios, done, def].forEach(function(el){ if(el) el.style.display='none'; });
   if(_isInStandaloneMode){
+    // Already installed
     if(done) done.style.display='block';
-  } else if(_pwaInstallPrompt){
-    if(android) android.style.display='block';
   } else if(_isIOS){
+    // iPhone/iPad: always show Safari instructions
     if(ios) ios.style.display='block';
+  } else if(_pwaInstallPrompt){
+    // Android Chrome with install prompt ready: show one-tap button
+    if(android) android.style.display='block';
   } else {
+    // Android or other: show manual steps
     if(def) def.style.display='block';
   }
 }
