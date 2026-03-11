@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kez Media</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,900;1,900&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <!-- Firebase SDKs -->
@@ -608,7 +608,7 @@ textarea.form-input{resize:none;min-height:80px;}
   .modal-box{border-radius:18px 18px 0 0;max-height:90dvh;margin:auto 0 0;}
 }
 /* AUTH */
-#authOverlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#fff0f6,#fde8f2);display:flex;align-items:center;justify-content:center;padding:16px;}
+#authOverlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#fff0f6,#fde8f2);display:none;align-items:center;justify-content:center;padding:16px;}
 .ac{background:#fff;border-radius:22px;padding:32px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(180,100,140,.15);}
 [data-theme=dark] #authOverlay{background:linear-gradient(135deg,#150d10,#200e18);}
 [data-theme=dark] .ac{background:#1c1118;}
@@ -687,6 +687,7 @@ textarea.form-input{resize:none;min-height:80px;}
 .friend-name{font-size:12.5px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .friend-status{font-size:10.5px;color:var(--text3);}
 
+.opu-admin-badge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#d44f7a,#f4a8c0);color:white;border-radius:20px;padding:3px 9px;font-size:10.5px;font-weight:700;}
 /* ─── OTHER USER PROFILE VIEW ───────────────────────── */
 #view-other-profile .profile-card{border-radius:18px;overflow:hidden;border:1px solid var(--border);margin-bottom:20px;}
 .opu-banner{height:160px;position:relative;background:linear-gradient(135deg,#f4a8c0,#e2688a);}
@@ -732,9 +733,164 @@ textarea.form-input{resize:none;min-height:80px;}
 .mob-nav-badge{position:absolute;top:0;right:6px;background:var(--pink);color:white;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
 
 /* Mobile CSS consolidated above */
+
+/* ─── SPLASH / LOADING SCREEN ──────────────────────── */
+#splashScreen{
+  position:fixed;inset:0;z-index:99999;
+  background:#ffffff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;transition:opacity .5s ease;
+}
+[data-theme=dark] #splashScreen{background:#150d10;}
+#splashScreen.fade-out{opacity:0;pointer-events:none;}
+.splash-logo{
+  font-family:'Playfair Display',serif;
+  font-size:52px;font-weight:900;font-style:italic;
+  background:linear-gradient(130deg,#d44f7a 0%,#e8789c 40%,#f4a8c0 70%,#c93f6e 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:-1px;
+  filter:drop-shadow(0 2px 16px rgba(210,70,120,.22));
+  animation:splashLogoIn .9s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes splashLogoIn{
+  from{opacity:0;transform:translateY(22px) scale(.93);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+.splash-tagline{
+  font-family:'Jost',sans-serif;
+  font-size:15px;font-weight:500;
+  color:#c9718e;
+  margin-top:12px;letter-spacing:.06em;
+  animation:splashTagIn 1.1s .3s cubic-bezier(.22,1,.36,1) both;
+}
+[data-theme=dark] .splash-tagline{color:#c49aaa;}
+@keyframes splashTagIn{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.splash-dots{
+  display:flex;gap:7px;margin-top:36px;
+  animation:splashTagIn 1s .4s both;
+}
+.splash-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--pink);opacity:.3;
+  animation:splashDot 1.4s .5s ease-in-out infinite;
+}
+.splash-dot:nth-child(2){animation-delay:.65s;}
+.splash-dot:nth-child(3){animation-delay:.8s;}
+@keyframes splashDot{0%,80%,100%{opacity:.3;transform:scale(1);}40%{opacity:1;transform:scale(1.35);}}
+
+/* ─── MOBILE PROFILE — FULL EXPERIENCE ─────────────── */
+/* Make other-profile fill the screen properly on mobile */
+@media(max-width:700px){
+  #view-other-profile{
+    padding:0;
+    background:var(--bg);
+  }
+  #view-other-profile .profile-card{
+    border-radius:0 !important;
+    border:none !important;
+    box-shadow:none !important;
+    margin-bottom:0 !important;
+  }
+  #otherProfileContent{
+    min-height:100dvh;
+    background:var(--bg);
+  }
+  /* Banner taller on mobile for visual impact */
+  .opu-banner{height:190px !important;}
+  .opu-banner img{width:100%;height:190px !important;object-fit:cover;}
+  /* Bigger avatar for mobile */
+  .opu-av{
+    width:78px !important;
+    height:78px !important;
+    font-size:26px !important;
+    margin-top:-39px !important;
+    border:3px solid var(--card) !important;
+    box-shadow:0 4px 20px rgba(0,0,0,.15);
+  }
+  /* Buttons full-width feel */
+  .opu-actions{
+    margin-top:16px !important;
+    gap:8px !important;
+  }
+  .opu-follow-btn{
+    flex:1 !important;
+    padding:11px 0 !important;
+    font-size:14px !important;
+    border-radius:12px !important;
+    text-align:center;
+  }
+  .opu-msg-btn{
+    padding:11px 18px !important;
+    font-size:14px !important;
+    border-radius:12px !important;
+  }
+  /* Sticky tabs so you can always switch feed/grid */
+  .opu-feed-tabs{
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:var(--card);
+    border-bottom:1px solid var(--border);
+    margin-bottom:0;
+  }
+  .opu-feed-tab{
+    padding:14px !important;
+    font-size:14px !important;
+  }
+  /* Post cards inside other profile — no side border */
+  #opuFeedContent .post-card{
+    border-radius:0;
+    border-left:none;
+    border-right:none;
+    margin-bottom:6px;
+  }
+}
+
+/* ─── GENERAL MOBILE UX ─────────────────────────────── */
+@media(max-width:700px){
+  /* Bigger tap targets on nav buttons */
+  .icon-btn{width:40px;height:40px;}
+  /* Modal slides up from bottom on mobile */
+  .modal-overlay{align-items:flex-end;}
+  .modal-box{
+    border-radius:22px 22px 0 0 !important;
+    max-height:92dvh !important;
+    width:100% !important;
+    margin:0 !important;
+    padding-bottom:max(20px, env(safe-area-inset-bottom));
+  }
+  /* Auth card full width */
+  .ac{border-radius:22px 22px 0 0;width:100%;max-width:100%;position:fixed;bottom:0;left:0;right:0;box-shadow:0 -8px 40px rgba(180,100,140,.15);}
+  #authOverlay{align-items:flex-end;padding:0;}
+  /* Lightbox full screen */
+  .lightbox-inner{border-radius:0;max-height:100dvh;}
+  /* Stories horizontal scroll */
+  .stories-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .stories-wrap::-webkit-scrollbar{display:none;}
+  /* Notif items easier to tap */
+  .notif-item{padding:14px 12px;}
+  /* People cards 2 col */
+  .people-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .people-card{padding:16px 10px;}
+}
 </style>
 </head>
 <body>
+
+<!-- ── SPLASH / LOADING SCREEN ─────────────────────── -->
+<div id="splashScreen">
+  <div class="splash-logo">Kez Media</div>
+  <div class="splash-tagline">Your photos. Your story. Your space.</div>
+  <div class="splash-dots">
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+  </div>
+</div>
+
 <div id="authOverlay">
   <div class="ac">
     <div class="ac-brand">Kez Media</div>
@@ -2629,6 +2785,7 @@ function _drawOtherProfile(uid, prof){
           +'</div>'
           +'<div class="opu-name">'
             +esc(profName)
+            +(prof.isAdmin ? '<span class="opu-admin-badge"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</span>' : '')
             +(isOnline ? '<span class="opu-online-badge">● Active now</span>' : '')
           +'</div>'
           +'<div class="opu-handle">@'+esc(prof.handle||'user')+'</div>'
@@ -3067,12 +3224,37 @@ async function authGoogle(){
 }
 function doSignOut(){ if(confirm('Sign out of Kez Media?')) auth.signOut(); }
 
-// ── AUTH STATE ────────────────────────────────────────
-auth.onAuthStateChanged(async function(user){
-  const overlay = document.getElementById('authOverlay');
-  if(user){
-    overlay.style.display = 'none';
-    // Build me object from Firebase user
+// ── AUTH / SPLASH ────────────────────────────────────
+// BULLETPROOF APPROACH:
+// Splash runs on a pure 2.2s CSS timer — it never waits for Firebase.
+// Firebase auth runs in parallel. By the time splash finishes,
+// either the app is ready (show it) or we show login.
+// If Firebase is slow/offline the splash still disappears at 2.2s
+// and shows the login screen. User is NEVER stuck.
+
+var _appReady  = false;
+var _splashGone = false;
+
+function _hideSplash(){
+  if(_splashGone) return;
+  _splashGone = true;
+  var s = document.getElementById('splashScreen');
+  if(s){ s.classList.add('fade-out'); setTimeout(function(){ s.style.display='none'; },500); }
+}
+
+// After 2.2s: hide splash and show whatever is ready
+setTimeout(function(){
+  _hideSplash();
+  if(!_appReady){
+    // App not ready yet (not logged in OR Firebase still loading)
+    // Show login screen as safe fallback
+    document.getElementById('authOverlay').style.display = 'flex';
+  }
+  // If _appReady is true, app is already showing — nothing to do
+}, 2200);
+
+async function runAppInit(user){
+  try {
     me = {
       name:        user.displayName || 'Kez User',
       handle:      (user.displayName||'user').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
@@ -3083,21 +3265,37 @@ auth.onAuthStateChanged(async function(user){
       uid:         user.uid,
       email:       user.email
     };
-    // Start the app (init loads Firestore profile internally)
     await init();
-    // Show/hide admin UI based on email
-    const admin = isAdmin();
-    const badge = document.querySelector('.admin-badge');
+    // App loaded — hide auth overlay and splash
+    _appReady = true;
+    document.getElementById('authOverlay').style.display = 'none';
+    _hideSplash();
+    var admin = isAdmin();
+    var badge = document.querySelector('.admin-badge');
     if(badge) badge.style.display = admin ? 'inline-flex' : 'none';
-    const adminNav = document.getElementById('sn-admin');
+    var adminNav = document.getElementById('sn-admin');
     if(adminNav) adminNav.style.display = admin ? 'flex' : 'none';
-    const adminSideNav = document.getElementById('mn-admin');
+    var adminSideNav = document.getElementById('mn-admin');
     if(adminSideNav) adminSideNav.style.display = admin ? 'flex' : 'none';
-    const sub = document.getElementById('settingsSubtitle');
+    var sub = document.getElementById('settingsSubtitle');
     if(sub) sub.textContent = admin ? 'Manage your account — you have full admin access' : 'Manage your account and preferences';
-  } else {
-    overlay.style.display = 'flex';
+    if(admin){
+      db.collection('profiles').doc(user.uid).set({isAdmin:true},{merge:true}).catch(function(){});
+    }
+  } catch(err){
+    console.error('App init error:', err);
+    // Crash = show login, never leave user stuck
+    _hideSplash();
+    document.getElementById('authOverlay').style.display = 'flex';
   }
+}
+
+auth.onAuthStateChanged(function(user){
+  if(user){
+    // Logged in — start app immediately (runs alongside splash timer)
+    runAppInit(user);
+  }
+  // If not logged in: the 2.2s timer will show login screen
 });
 
 // ═══════════════════════════════════════════════════
