@@ -1348,6 +1348,52 @@ textarea.form-input{resize:none;min-height:80px;}
 
           <!-- APPEARANCE -->
           <div class="settings-section" id="ss-appearance">
+
+            <!-- Install App Card -->
+            <div class="settings-card" id="installAppCard">
+              <div class="settings-card-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2v13m0 0l-4-4m4 4l4-4M2 17v2a2 2 0 002 2h16a2 2 0 002-2v-2"/></svg>
+                Install App
+              </div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;">
+                Add <strong>Kez Media</strong> to your home screen so it opens like a real app — fullscreen, no browser bar.
+              </div>
+
+              <!-- Android Chrome: one-tap install button -->
+              <div id="installAndroid" style="display:none;">
+                <button class="btn btn-pink" style="width:100%;justify-content:center;gap:8px;" onclick="triggerInstall()">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2v13m0 0l-4-4m4 4l4-4M2 17v2a2 2 0 002 2h16a2 2 0 002-2v-2"/></svg>
+                  Install Kez Media
+                </button>
+              </div>
+
+              <!-- iOS Safari: step-by-step guide -->
+              <div id="installIOS" style="display:none;">
+                <div style="background:var(--bg2);border-radius:12px;padding:14px;font-size:13px;color:var(--text2);line-height:1.8;">
+                  <div style="font-weight:700;color:var(--text);margin-bottom:8px;">How to install on iPhone:</div>
+                  <div>1️⃣ Tap the <strong>Share</strong> button at the bottom of Safari
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="vertical-align:middle;margin-left:3px;"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                  </div>
+                  <div>2️⃣ Scroll down and tap <strong>"Add to Home Screen"</strong></div>
+                  <div>3️⃣ Tap <strong>"Add"</strong> — done! 🎉</div>
+                </div>
+              </div>
+
+              <!-- Already installed or unknown -->
+              <div id="installDone" style="display:none;">
+                <div style="background:var(--bg2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);text-align:center;">
+                  ✅ Kez Media is already installed on your device!
+                </div>
+              </div>
+
+              <!-- Default (not yet detected) -->
+              <div id="installDefault">
+                <div style="background:var(--bg2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);text-align:center;">
+                  Open this page in <strong>Chrome</strong> (Android) or <strong>Safari</strong> (iPhone) to install
+                </div>
+              </div>
+            </div>
+
             <div class="settings-card">
               <div class="settings-card-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
@@ -1934,7 +1980,14 @@ function applyTheme(){
   document.getElementById('themeIcon').innerHTML=isDark?MOON:SUN;
   const dt=document.getElementById('darkToggle');if(dt)dt.checked=isDark;
 }
-function toggleTheme(){isDark=!isDark;localStorage.setItem('kez_theme',isDark?'dark':'light');applyTheme();}
+function toggleTheme(){
+  isDark=!isDark;
+  localStorage.setItem('kez_theme',isDark?'dark':'light');
+  applyTheme();
+  // Keep browser tab/status bar color in sync with theme
+  var tc = document.querySelector('meta[name=theme-color]');
+  if(tc) tc.content = isDark ? '#1c1118' : '#e2688a';
+}
 applyTheme();
 
 // ── NAVIGATION ────────────────────────────────────────
@@ -2596,6 +2649,7 @@ function switchSettingsNav(sec){
   document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sn-'+sec).classList.add('active');
   document.getElementById('ss-'+sec).classList.add('active');
+  if(sec==='appearance') setTimeout(_updateInstallUI,50);
 }
 function refreshAdmin(){
   const tp=document.getElementById('adminTotalPosts');if(tp)tp.textContent=posts.length;
@@ -4324,55 +4378,62 @@ if('serviceWorker' in navigator){
   });
 }
 
-// PWA Install prompt — store it and show a custom install button if available
+// PWA Install logic
 let _pwaInstallPrompt = null;
+const _isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const _isInStandaloneMode = window.navigator.standalone === true
+  || window.matchMedia('(display-mode: standalone)').matches;
+
+// Android Chrome: capture install prompt
 window.addEventListener('beforeinstallprompt', function(e){
   e.preventDefault();
   _pwaInstallPrompt = e;
-  // Show install banner after 3 seconds if not already installed
-  setTimeout(showInstallBanner, 3000);
+  _updateInstallUI();
 });
 
-function showInstallBanner(){
-  if(!_pwaInstallPrompt) return;
-  if(document.getElementById('pwaInstallBanner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'pwaInstallBanner';
-  banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;'
-    +'background:var(--card);border:1px solid var(--pink);border-radius:18px;'
-    +'padding:12px 18px;display:flex;align-items:center;gap:12px;'
-    +'box-shadow:0 8px 32px rgba(226,104,138,.25);max-width:320px;width:90%;';
-  banner.innerHTML =
-    '<img src="/icon-192.png" style="width:36px;height:36px;border-radius:10px;" alt="">'
-    +'<div style="flex:1;min-width:0;">'
-      +'<div style="font-size:13px;font-weight:700;color:var(--text);">Install Kez Media</div>'
-      +'<div style="font-size:11.5px;color:var(--text2);">Add to your home screen</div>'
-    +'</div>'
-    +'<button onclick="triggerInstall()" style="background:var(--pink);color:white;border:none;'
-      +'border-radius:12px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">Install</button>'
-    +'<button onclick="dismissInstallBanner()" style="background:none;border:none;cursor:pointer;'
-      +'color:var(--text3);font-size:18px;padding:0 2px;line-height:1;">×</button>';
-  document.body.appendChild(banner);
+// Called whenever the Install App card in Settings is visible
+function _updateInstallUI(){
+  var android  = document.getElementById('installAndroid');
+  var ios      = document.getElementById('installIOS');
+  var done     = document.getElementById('installDone');
+  var def      = document.getElementById('installDefault');
+  if(!android) return; // settings not open yet — will re-run when opened
+  [android, ios, done, def].forEach(function(el){ if(el) el.style.display='none'; });
+  if(_isInStandaloneMode){
+    if(done) done.style.display='block';
+  } else if(_pwaInstallPrompt){
+    if(android) android.style.display='block';
+  } else if(_isIOS){
+    if(ios) ios.style.display='block';
+  } else {
+    if(def) def.style.display='block';
+  }
 }
+
+// Patch goTo / switchSettingsNav so install UI refreshes when settings opens
+var _origSwitchNav = null;
+window.addEventListener('DOMContentLoaded', function(){
+  _updateInstallUI();
+});
 
 function triggerInstall(){
   if(!_pwaInstallPrompt) return;
   _pwaInstallPrompt.prompt();
   _pwaInstallPrompt.userChoice.then(function(r){
-    if(r.outcome === 'accepted') dismissInstallBanner();
     _pwaInstallPrompt = null;
+    _updateInstallUI();
   });
 }
 
 function dismissInstallBanner(){
-  const b = document.getElementById('pwaInstallBanner');
+  var b = document.getElementById('pwaInstallBanner');
   if(b) b.remove();
 }
 
-// Hide the install banner once app is installed
 window.addEventListener('appinstalled', function(){
   dismissInstallBanner();
   _pwaInstallPrompt = null;
+  _updateInstallUI();
 });
 </script>
 
