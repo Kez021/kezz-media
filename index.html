@@ -519,6 +519,119 @@ textarea.form-input{resize:none;min-height:80px;}
 
 .msg-back-btn{display:none;background:none;border:none;cursor:pointer;color:var(--text2);padding:4px 6px;margin-right:2px;align-items:center;}
 
+/* ── SKELETON LOADERS ───────────────────────────────── */
+@keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+.skeleton{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg2) 50%,var(--bg3) 75%);background-size:1200px 100%;animation:shimmer 1.5s infinite linear;border-radius:8px;}
+.skel-card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:16px;padding:16px;overflow:hidden;}
+.skel-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.skel-av{width:38px;height:38px;border-radius:50%;}
+.skel-line{height:12px;border-radius:6px;margin-bottom:6px;}
+.skel-img{width:100%;height:280px;border-radius:10px;margin-bottom:12px;}
+
+/* ── LIKE POP ANIMATION ─────────────────────────────── */
+@keyframes likePop{0%{transform:scale(1)}30%{transform:scale(1.45)}60%{transform:scale(.9)}80%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes likeFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.5)}}
+.like-pop-anim svg{animation:likePop .45s cubic-bezier(.36,.07,.19,.97) both;}
+.floating-heart{position:fixed;pointer-events:none;z-index:9999;font-size:24px;animation:likeFloat .8s ease forwards;}
+
+/* ── PAGE TRANSITIONS ───────────────────────────────── */
+.view{display:none;}
+.view.active{display:block;}
+.view.slide-in{animation:slideIn .32s cubic-bezier(.22,1,.36,1) both;}
+.view.slide-out{animation:slideOut .22s ease forwards;}
+@keyframes slideIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(-18px)}}
+
+/* ── STORY VIEWER ───────────────────────────────────── */
+#storyViewer{display:none;position:fixed;inset:0;z-index:5000;background:#000;flex-direction:column;}
+#storyViewer.open{display:flex;}
+.sv-progress-bar{display:flex;gap:3px;padding:10px 12px 0;position:absolute;top:0;left:0;right:0;z-index:10;}
+.sv-seg{flex:1;height:3px;background:rgba(255,255,255,.3);border-radius:3px;overflow:hidden;}
+.sv-seg-fill{height:100%;background:white;width:0%;transition:width linear;}
+.sv-header{position:absolute;top:20px;left:0;right:0;display:flex;align-items:center;gap:10px;padding:0 14px;z-index:10;}
+.sv-av{width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;}
+.sv-av img{width:100%;height:100%;object-fit:cover;}
+.sv-name{font-size:14px;font-weight:600;color:white;}
+.sv-time{font-size:11.5px;color:rgba(255,255,255,.7);margin-top:1px;}
+.sv-close{margin-left:auto;background:none;border:none;color:white;font-size:26px;cursor:pointer;line-height:1;padding:4px;}
+.sv-media{flex:1;display:flex;align-items:center;justify-content:center;position:relative;}
+.sv-media img,.sv-media video{max-width:100%;max-height:100%;object-fit:contain;}
+.sv-text-story{color:white;font-size:22px;font-weight:700;text-align:center;padding:40px 24px;text-shadow:0 2px 8px rgba(0,0,0,.4);}
+.sv-tap-prev{position:absolute;left:0;top:0;bottom:0;width:40%;cursor:pointer;}
+.sv-tap-next{position:absolute;right:0;top:0;bottom:0;width:40%;cursor:pointer;}
+.sv-caption{position:absolute;bottom:0;left:0;right:0;padding:20px 16px;background:linear-gradient(transparent,rgba(0,0,0,.7));color:white;font-size:14px;}
+.sv-view-archive{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.18);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3);color:white;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;}
+
+/* ── STORY ARCHIVE (user's past stories) ────────────── */
+#storyArchive{display:none;position:fixed;inset:0;z-index:5001;background:rgba(0,0,0,.85);align-items:flex-end;justify-content:center;}
+#storyArchive.open{display:flex;}
+.sa-sheet{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:540px;max-height:75vh;overflow-y:auto;padding:20px;}
+.sa-handle{width:40px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 16px;}
+.sa-title{font-size:15px;font-weight:700;margin-bottom:14px;}
+.sa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.sa-item{aspect-ratio:9/16;border-radius:10px;overflow:hidden;cursor:pointer;position:relative;background:var(--bg3);}
+.sa-item img{width:100%;height:100%;object-fit:cover;}
+.sa-item-date{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:10px;font-weight:600;color:white;text-shadow:0 1px 4px rgba(0,0,0,.6);}
+.sa-item-text{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:8px;text-align:center;font-size:13px;font-weight:700;color:white;}
+
+/* ── STORY UPLOAD MODAL ─────────────────────────────── */
+#storyModal{display:none;position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.6);align-items:flex-end;justify-content:center;}
+#storyModal.open{display:flex;}
+.sm-box{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:540px;padding:20px 20px max(20px,env(safe-area-inset-bottom));}
+.sm-handle{width:40px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 16px;}
+.sm-title{font-size:15px;font-weight:700;margin-bottom:14px;}
+.sm-preview{width:100%;aspect-ratio:9/16;max-height:280px;background:var(--bg3);border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:14px;position:relative;}
+.sm-preview img{width:100%;height:100%;object-fit:cover;}
+.sm-text-bg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:20px;}
+.sm-options{display:flex;gap:10px;margin-bottom:14px;}
+.sm-opt-btn{flex:1;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);font-size:13px;font-weight:600;cursor:pointer;color:var(--text);text-align:center;transition:all .15s;}
+.sm-opt-btn.on{background:var(--pink);color:white;border-color:var(--pink);}
+.sm-bg-colors{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.sm-bg-swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border .15s;}
+.sm-bg-swatch.on{border-color:var(--pink);}
+.sm-text-input{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-family:Jost,sans-serif;font-size:14px;outline:none;resize:none;min-height:80px;margin-bottom:14px;}
+.sm-text-input:focus{border-color:var(--pink);}
+
+/* ── GRADIENT STORY RINGS ───────────────────────────── */
+.story-ring{padding:3px;border-radius:50%;background:linear-gradient(135deg,#f093fb,#e2688a,#fc466b,#ff9a8b);}
+.story-ring.seen{background:var(--bg3);}
+.story-ring.add-ring{background:transparent;border:2px dashed var(--pink);}
+.story-ring.my-ring{background:linear-gradient(135deg,#e2688a,#f0a0b8);}
+.story-ring.unseen{background:linear-gradient(135deg,#f093fb 0%,#f5576c 25%,#e2688a 50%,#fc466b 75%,#ff9a8b 100%);animation:ringPulse 2.5s ease infinite;}
+@keyframes ringPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+
+/* ── HASHTAG & MENTION ──────────────────────────────── */
+.hashtag{color:var(--pink);font-weight:600;cursor:pointer;}
+.hashtag:hover{text-decoration:underline;}
+.mention{color:var(--blue,#3b82f6);font-weight:600;cursor:pointer;}
+.mention:hover{text-decoration:underline;}
+.mention-dropdown{position:absolute;bottom:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:12px;max-height:160px;overflow-y:auto;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.1);}
+.mention-item{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:13px;}
+.mention-item:hover{background:var(--pink-pale);}
+.mention-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;}
+.c-input-wrap{position:relative;}
+
+/* ── POST EDIT MODAL ────────────────────────────────── */
+#editPostModal{display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px;}
+#editPostModal.open{display:flex;}
+.epm-box{background:var(--card);border-radius:20px;padding:24px;max-width:440px;width:100%;}
+.epm-title{font-size:15px;font-weight:700;margin-bottom:14px;}
+.epm-textarea{width:100%;min-height:100px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-family:Jost,sans-serif;font-size:14px;outline:none;resize:vertical;margin-bottom:14px;}
+.epm-textarea:focus{border-color:var(--pink);}
+.epm-actions{display:flex;gap:10px;}
+.epm-cancel{flex:1;padding:10px;border-radius:12px;border:1px solid var(--border);background:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;}
+.epm-save{flex:1;padding:10px;border-radius:12px;border:none;background:var(--pink);color:white;font-size:13px;font-weight:600;cursor:pointer;}
+
+/* ── PINNED POST ────────────────────────────────────── */
+.pinned-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--pink);background:var(--pink-pale);border-radius:20px;padding:2px 8px;margin-bottom:6px;}
+
+/* ── READ RECEIPTS ──────────────────────────────────── */
+.dm-seen{font-size:10px;color:var(--pink);text-align:right;margin-top:2px;}
+
+/* ── HASHTAG SEARCH VIEW ────────────────────────────── */
+#view-hashtag .page-header{padding:16px;}
+#hashtagFeed{padding:0;}
+
 /* ─── RESPONSIVE ───────────────────────────────────── */
 @media(max-width:1000px){
   .layout{grid-template-columns:200px 1fr;}
@@ -1119,7 +1232,7 @@ textarea.form-input{resize:none;min-height:80px;}
     <div class="view active" id="view-home">
       <div class="stories-wrap">
         <div class="stories-row" id="storiesRow">
-          <div class="story-item" onclick="openModal()">
+          <div class="story-item" onclick="openStoryModal()">
             <div class="story-ring add-ring">
               <div class="story-avatar" style="background:var(--pink-pale);color:var(--pink)">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1275,9 +1388,9 @@ textarea.form-input{resize:none;min-height:80px;}
 
       <!-- tabs + grid -->
       <div class="profile-card" style="overflow:hidden;">
-        <div style="padding:12px 16px 0;display:flex;justify-content:flex-end;">
-          <button class="btn btn-pink" style="font-size:12.5px;padding:8px 16px;gap:6px;" onclick="openModal()">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <div style="padding:14px 16px 0;display:flex;justify-content:center;">
+          <button class="btn btn-pink" style="font-size:13px;padding:10px 28px;gap:7px;border-radius:30px;" onclick="openModal()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New Post
           </button>
         </div>
@@ -1532,6 +1645,18 @@ textarea.form-input{resize:none;min-height:80px;}
 
   </main>
 
+  <!-- HASHTAG VIEW -->
+  <div class="view" id="view-hashtag">
+    <div class="page-header">
+      <button style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:20px;padding:0 8px 0 0;" onclick="goTo('home')">←</button>
+      <div>
+        <div class="page-title" id="hashtagTitle">#tag</div>
+        <div class="page-sub" id="hashtagCount">Loading...</div>
+      </div>
+    </div>
+    <div id="hashtagFeed"></div>
+  </div>
+
   <!-- RIGHT SIDEBAR -->
   <aside class="sidebar-right">
     <div class="s-card">
@@ -1716,6 +1841,7 @@ async function seedDummyPosts() {
 }
 
 function startPostsListener() {
+  showSkeletons('feed',4);
   postsCol().orderBy('createdAt','desc').onSnapshot(snap => {
     posts = snap.docs.map(d => {
       const data = d.data();
@@ -2056,7 +2182,7 @@ async function init(){
   await loadProfile(me.uid);
   applyTheme();
   applyUserProfile();
-  renderStories();
+  loadStories();
   renderSuggested();
   renderTrending();
   renderColorSwatches();
@@ -2242,6 +2368,38 @@ function renderStories(){
 }
 
 // ── FEED ──────────────────────────────────────────────
+function showSkeletons(containerId,count){
+  count=count||3;
+  var el=document.getElementById(containerId);
+  if(!el)return;
+  var h='';
+  for(var i=0;i<count;i++){
+    h+='<div class="skel-card"><div class="skel-header"><div class="skel-av skeleton"></div><div style="flex:1"><div class="skel-line skeleton" style="width:40%"></div><div class="skel-line skeleton" style="width:25%;margin-top:4px"></div></div></div><div class="skel-img skeleton"></div><div class="skel-line skeleton" style="width:70%"></div><div class="skel-line skeleton" style="width:50%"></div></div>';
+  }
+  el.innerHTML=h;
+}
+
+function linkifyCaption(txt){
+  if(!txt)return '';
+  return esc(txt)
+    .replace(/#(\w+)/g,'<span class="hashtag" onclick="showHashtag(\'$1\')">#$1</span>')
+    .replace(/@(\w+)/g,'<span class="mention" onclick="viewProfileByHandle(\'$1\')">@$1</span>');
+}
+function viewProfileByHandle(handle){
+  var u=Object.values(allUsers).find(function(x){return x.handle===handle;});
+  if(u) viewProfile(u.uid||u.id);
+}
+function showHashtag(tag){
+  var tagged=posts.filter(function(p){return p.caption&&p.caption.toLowerCase().indexOf('#'+tag.toLowerCase())>-1;});
+  document.getElementById('hashtagTitle').textContent='#'+tag;
+  document.getElementById('hashtagCount').textContent=tagged.length+' post'+(tagged.length!==1?'s':'');
+  var feed=document.getElementById('hashtagFeed');
+  feed.innerHTML='';
+  if(!tagged.length){feed.innerHTML='<div class="empty">No posts with #'+esc(tag)+'</div>';return;}
+  tagged.forEach(function(p,i){feed.appendChild(buildCard(p,i));});
+  goTo('hashtag');
+}
+
 function renderFeed(){
   const feed=document.getElementById('feed');feed.innerHTML='';
   if(!posts.length){feed.innerHTML='<div class="empty"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><p>No posts yet!</p></div>';return;}
@@ -2288,7 +2446,7 @@ function buildCard(p,i){
     setTimeout(function(){startFeedAutoSlide(pid,imgs.length);},600+i*80);
   }
 
-  const captionRow=(!p.isStatus&&p.caption)?'<div class="post-content"><div class="post-caption"><span class="uname">@'+userHandle+'</span>'+esc(p.caption)+'</div></div>':'';
+  const pinnedBadge=p.pinned?'<div class="pinned-badge">📌 Pinned</div>':''; const captionRow=(!p.isStatus&&p.caption)?'<div class="post-content"><div class="post-caption"><span class="uname">@'+userHandle+'</span>'+linkifyCaption(p.caption)+'</div></div>':'';
   const commentList=(p.showComments?p.comments:p.comments.slice(-1)).map(commentHTML).join('');
   const viewAll=p.comments.length>2&&!p.showComments?'<div class="view-all" data-pid="'+pid+'">View all '+p.comments.length+' comments</div>':'';
 
@@ -2303,7 +2461,7 @@ function buildCard(p,i){
         +'<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>'
       +'</button>'
       +'<div class="post-menu" id="pm-'+pid+'">'
-        +(own?'<div class="pm-item danger" data-delete="'+pid+'">🗑 Delete</div>':'')
+        +(own?'<div class="pm-item" data-editpost="'+pid+'">✏️ Edit Caption</div><div class="pm-item" data-pinpost="'+pid+'">'+(p.pinned?'📌 Unpin Post':'📌 Pin to Top')+'</div><div class="pm-item danger" data-delete="'+pid+'">🗑 Delete</div>':'')
         +(!own?'<div class="pm-item card-dm" data-uid="'+(p.uid||'')+'" data-name="'+esc((p.user&&p.user.name)||userHandle||'User')+'">💬 Message</div>':'')
         +'<div class="pm-item" data-action="copylink">🔗 Copy link</div>'
         +'<div class="pm-item" data-action="report">🚩 Report</div>'
@@ -2326,6 +2484,7 @@ function buildCard(p,i){
         +'<svg width="17" height="17" fill="'+(p.saved?'var(--pink)':'none')+'" stroke="'+(p.saved?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
       +'</button>'
     +'</div>'
+    +(pinnedBadge?'<div style="padding:0 14px 4px;">'+pinnedBadge+'</div>':'')
     +captionRow
     +'<div class="comments-wrap" id="cw-'+pid+'">'
       +viewAll
@@ -2354,9 +2513,23 @@ function buildCard(p,i){
     el.addEventListener('click',function(){addComment(el.dataset.comment);});
   });
   var inp=card.querySelector('.c-input');
-  if(inp) inp.addEventListener('keydown',function(e){if(e.key==='Enter')addComment(pid);});
+  if(inp){
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter')addComment(pid);});
+    inp.addEventListener('input',function(){handleMentionInput(inp,pid);});
+  }
+  // Wrap in relative div for mention dropdown
+  if(inp&&!inp.parentElement.classList.contains('c-input-wrap')){
+    var wrap2=document.createElement('div');wrap2.className='c-input-wrap';
+    inp.parentNode.insertBefore(wrap2,inp);wrap2.appendChild(inp);
+  }
   card.querySelectorAll('[data-delete]').forEach(function(el){
     el.addEventListener('click',function(){deletePost(el.dataset.delete);});
+  });
+  card.querySelectorAll('[data-editpost]').forEach(function(el){
+    el.addEventListener('click',function(){openEditPost(el.dataset.editpost);});
+  });
+  card.querySelectorAll('[data-pinpost]').forEach(function(el){
+    el.addEventListener('click',function(){togglePin(el.dataset.pinpost);});
   });
   card.querySelectorAll('.card-dm').forEach(function(el){
     el.addEventListener('click',function(){openDMFromPost(el.dataset.uid,el.dataset.name);closeMenus();});
@@ -2437,6 +2610,22 @@ function commentHTML(c){
 function doLike(id){
   id=String(id);
   const p=posts.find(x=>String(x.id)===id);if(!p)return;
+  // Floating heart animation
+  if(!p.liked){
+    const btn=document.querySelector('#pc-'+id+' [data-like]');
+    if(btn){
+      const rect=btn.getBoundingClientRect();
+      const heart=document.createElement('div');
+      heart.className='floating-heart';
+      heart.textContent='❤️';
+      heart.style.left=(rect.left+rect.width/2-12)+'px';
+      heart.style.top=(rect.top)+'px';
+      document.body.appendChild(heart);
+      setTimeout(()=>heart.remove(),800);
+      btn.classList.add('like-pop-anim');
+      setTimeout(()=>btn.classList.remove('like-pop-anim'),500);
+    }
+  }
   // ONE like per account — stored as array of UIDs in Firestore
   const likedBy = Array.isArray(p.likedBy) ? p.likedBy : [];
   const alreadyLiked = likedBy.includes(me.uid);
@@ -3906,6 +4095,316 @@ function uploadBanner(inp){
   r.readAsDataURL(f);
 }
 
+// ── STORIES ───────────────────────────────────────────
+const STORY_BG_COLORS=['linear-gradient(135deg,#e2688a,#f0a0b8)','linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#f093fb,#f5576c)','linear-gradient(135deg,#4facfe,#00f2fe)','linear-gradient(135deg,#43e97b,#38f9d7)','linear-gradient(135deg,#fa709a,#fee140)','linear-gradient(135deg,#30cfd0,#330867)','linear-gradient(135deg,#f7971e,#ffd200)'];
+let _storyType='photo';
+let _storyFileData=null;
+let _storyBgColor=STORY_BG_COLORS[0];
+let _svStories=[];
+let _svIdx=0;
+let _svTimer=null;
+let _svCurrentUid=null;
+
+function openStoryModal(){
+  _storyFileData=null;_storyType='photo';
+  document.getElementById('smPreview').innerHTML='<span style="color:var(--text3);font-size:13px;">Tap to select photo</span>';
+  document.getElementById('storyModal').classList.add('open');
+  // Build bg swatches
+  var sw=document.getElementById('smBgColors');
+  if(!sw.children.length){
+    STORY_BG_COLORS.forEach(function(c,i){
+      var s=document.createElement('div');s.className='sm-bg-swatch'+(i===0?' on':'');
+      s.style.background=c;
+      s.onclick=function(){_storyBgColor=c;document.querySelectorAll('.sm-bg-swatch').forEach(x=>x.classList.remove('on'));s.classList.add('on');updateTextStoryPreview();};
+      sw.appendChild(s);
+    });
+  }
+}
+function closeStoryModal(){ document.getElementById('storyModal').classList.remove('open'); }
+function setStoryType(t){
+  _storyType=t;
+  document.getElementById('smOptPhoto').classList.toggle('on',t==='photo');
+  document.getElementById('smOptText').classList.toggle('on',t==='text');
+  document.getElementById('smPhotoArea').style.display=t==='photo'?'':'none';
+  document.getElementById('smTextArea').style.display=t==='text'?'':'none';
+  if(t==='text') updateTextStoryPreview();
+  else document.getElementById('smPreview').innerHTML='<span style="color:var(--text3);font-size:13px;">Tap to select photo</span>';
+}
+function updateTextStoryPreview(){
+  var txt=document.getElementById('smTextInput').value||'Your story...';
+  var prev=document.getElementById('smPreview');
+  prev.style.background=_storyBgColor;
+  prev.innerHTML='<div class="sm-text-bg"><div style="color:white;font-size:20px;font-weight:700;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.3);">'+esc(txt)+'</div></div>';
+}
+function handleStoryFile(inp){
+  var f=inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    _storyFileData=e.target.result;
+    var prev=document.getElementById('smPreview');
+    if(f.type.startsWith('video/')){
+      prev.innerHTML='<video src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;" muted loop autoplay></video>';
+    } else {
+      prev.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;">';
+    }
+    prev.style.background='none';
+  };
+  r.readAsDataURL(f);
+}
+async function publishStory(){
+  if(_storyType==='photo'&&!_storyFileData){toast('Please select a photo first');return;}
+  if(_storyType==='text'&&!document.getElementById('smTextInput').value.trim()){toast('Write something first');return;}
+  toast('Uploading story...');
+  var storyData={
+    uid: me.uid, userName: me.name, userHandle: me.handle, userColor: me.color, userInitial: me.initial, userAvatar: me.avatar||null,
+    type: _storyType, text: _storyType==='text'?(document.getElementById('smTextInput').value.trim()):'',
+    bgColor: _storyType==='text'?_storyBgColor:'',
+    mediaUrl: '', caption: '', seen: [],
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    expiresAt: new Date(Date.now()+24*60*60*1000).toISOString()
+  };
+  if(_storyType==='photo'&&_storyFileData){
+    try{
+      var url=await uploadToStorage(_storyFileData,'stories/'+me.uid+'/'+Date.now());
+      storyData.mediaUrl=url;
+    }catch(e){}
+  }
+  await db.collection('stories').add(storyData);
+  closeStoryModal();
+  toast('Story shared! 🌸 Disappears in 24h');
+  loadStories();
+}
+
+async function loadStories(){
+  var row=document.getElementById('storiesRow');
+  // Remove old story items except the "add" item
+  Array.from(row.children).forEach(function(c){ if(!c.querySelector('.add-ring')) c.remove(); });
+  var now=new Date();
+  var snap=await db.collection('stories').where('expiresAt','>',now.toISOString()).get().catch(()=>({docs:[]}));
+  // Group by uid
+  var byUser={};
+  snap.docs.forEach(function(d){
+    var s={id:d.id,...d.data()};
+    if(!byUser[s.uid]) byUser[s.uid]={uid:s.uid,stories:[],user:s};
+    byUser[s.uid].stories.push(s);
+  });
+  // My story first
+  var myEntry=byUser[me.uid];
+  var others=Object.values(byUser).filter(function(u){return u.uid!==me.uid;});
+  var ordered=(myEntry?[myEntry]:[]).concat(others);
+  ordered.forEach(function(entry){
+    var u=entry.user;
+    var isMine=entry.uid===me.uid;
+    var seenAll=entry.stories.every(function(s){return s.seen&&s.seen.includes(me.uid);});
+    var d=document.createElement('div');d.className='story-item';
+    var ringClass=seenAll?'story-ring seen':(isMine?'story-ring my-ring':'story-ring unseen');
+    var avHTML=u.userAvatar?('<img src="'+esc(u.userAvatar)+'" alt="">'):esc(u.userInitial||'?');
+    d.innerHTML='<div class="'+ringClass+'"><div class="story-avatar" style="background:'+esc(u.userColor||'var(--pink)')+';color:white;">'+avHTML+'</div></div>'
+      +'<div class="story-name">'+esc((u.userName||'?').split(' ')[0])+'</div>';
+    d.onclick=function(){openStoryViewer(entry.stories,0);};
+    row.appendChild(d);
+  });
+}
+
+function openStoryViewer(stories,startIdx){
+  _svStories=stories; _svIdx=startIdx;
+  document.getElementById('storyViewer').classList.add('open');
+  renderStorySlide();
+}
+function closeStoryViewer(){
+  clearTimeout(_svTimer);
+  document.getElementById('storyViewer').classList.remove('open');
+}
+function renderStorySlide(){
+  clearTimeout(_svTimer);
+  var s=_svStories[_svIdx];if(!s)return closeStoryViewer();
+  var isMine=s.uid===me.uid;
+  // Mark as seen
+  if(!isMine&&s.seen&&!s.seen.includes(me.uid)){
+    db.collection('stories').doc(s.id).update({seen:firebase.firestore.FieldValue.arrayUnion(me.uid)}).catch(()=>{});
+  }
+  // Header
+  var avEl=document.getElementById('svAv');
+  avEl.style.background=s.userColor||'var(--pink)';
+  avEl.innerHTML=s.userAvatar?('<img src="'+esc(s.userAvatar)+'" alt="">'):esc(s.userInitial||'?');
+  document.getElementById('svName').textContent=s.userName||'';
+  document.getElementById('svTime').textContent=timeAgo(s.createdAt)+' · '+(_svIdx+1)+' of '+_svStories.length;
+  // Media
+  var media=document.getElementById('svMedia');
+  var tapPrev='<div class="sv-tap-prev" onclick="storyNav(-1)"></div>';
+  var tapNext='<div class="sv-tap-next" onclick="storyNav(1)"></div>';
+  if(s.type==='text'){
+    media.innerHTML=tapPrev+'<div class="sv-text-story" style="background:'+esc(s.bgColor||'linear-gradient(135deg,#e2688a,#f0a0b8)')+';width:100%;height:100%;display:flex;align-items:center;justify-content:center;">'+esc(s.text)+'</div>'+tapNext;
+  } else if(s.mediaUrl){
+    var isVid=s.mediaUrl.includes('.mp4')||s.mediaUrl.includes('video');
+    media.innerHTML=tapPrev+(isVid?'<video src="'+esc(s.mediaUrl)+'" style="max-width:100%;max-height:85vh;object-fit:contain;" autoplay muted loop></video>':'<img src="'+esc(s.mediaUrl)+'" style="max-width:100%;max-height:85vh;object-fit:contain;">')+tapNext;
+  }
+  if(isMine){
+    var archBtn=document.createElement('button');archBtn.className='sv-view-archive';archBtn.textContent='📚 Your Archive';
+    archBtn.onclick=function(){closeStoryViewer();openStoryArchive();};
+    media.appendChild(archBtn);
+  }
+  // Caption
+  var cap=document.getElementById('svCaption');
+  if(s.caption){cap.style.display='';cap.textContent=s.caption;}else{cap.style.display='none';}
+  // Progress bars
+  var pb=document.getElementById('svProgressBar');pb.innerHTML='';
+  _svStories.forEach(function(st,i){
+    var seg=document.createElement('div');seg.className='sv-seg';
+    var fill=document.createElement('div');fill.className='sv-seg-fill';
+    if(i<_svIdx) fill.style.width='100%';
+    seg.appendChild(fill);pb.appendChild(seg);
+  });
+  // Animate current segment (5s per story)
+  var dur=5000;
+  var fillEl=pb.children[_svIdx]&&pb.children[_svIdx].firstChild;
+  if(fillEl){
+    fillEl.style.transition='width '+dur+'ms linear';
+    setTimeout(()=>fillEl.style.width='100%',50);
+  }
+  _svTimer=setTimeout(()=>storyNav(1),dur);
+}
+function storyNav(dir){
+  _svIdx+=dir;
+  if(_svIdx<0) return closeStoryViewer();
+  if(_svIdx>=_svStories.length) return closeStoryViewer();
+  renderStorySlide();
+}
+
+async function openStoryArchive(){
+  document.getElementById('storyArchive').classList.add('open');
+  var grid=document.getElementById('archiveGrid');
+  grid.innerHTML='<div style="color:var(--text3);font-size:13px;grid-column:1/-1;padding:20px;">Loading...</div>';
+  var snap=await db.collection('stories').where('uid','==',me.uid).get().catch(()=>({docs:[]}));
+  var stories=snap.docs.map(d=>({id:d.id,...d.data()}));
+  stories.sort(function(a,b){
+    var ta=a.createdAt?(a.createdAt.toMillis?a.createdAt.toMillis():a.createdAt.seconds*1000):0;
+    var tb=b.createdAt?(b.createdAt.toMillis?b.createdAt.toMillis():b.createdAt.seconds*1000):0;
+    return tb-ta;
+  });
+  var now=new Date().toISOString();
+  if(!stories.length){grid.innerHTML='<div style="color:var(--text3);font-size:13px;grid-column:1/-1;padding:20px;text-align:center;">You haven't posted any stories yet.</div>';return;}
+  grid.innerHTML='';
+  stories.forEach(function(s){
+    var expired=s.expiresAt&&s.expiresAt<now;
+    var item=document.createElement('div');item.className='sa-item';
+    if(s.type==='text'){
+      item.style.background=s.bgColor||'linear-gradient(135deg,#e2688a,#f0a0b8)';
+      item.innerHTML='<div class="sa-item-text">'+esc(s.text)+'</div>';
+    } else if(s.mediaUrl){
+      item.innerHTML='<img src="'+esc(s.mediaUrl)+'" alt="">';
+    }
+    item.innerHTML+='<div class="sa-item-date">'+(expired?'Expired · ':'Active · ')+timeAgo(s.createdAt)+'</div>';
+    item.onclick=function(){closeStoryArchive();openStoryViewer([s],0);};
+    grid.appendChild(item);
+  });
+}
+function closeStoryArchive(){ document.getElementById('storyArchive').classList.remove('open'); }
+
+// ── STORY CLICK FROM "Your story" item ────────────────
+// Override the existing story row "Your story" click
+document.addEventListener('DOMContentLoaded',function(){
+  var addStoryBtn=document.querySelector('.story-ring.add-ring');
+  if(addStoryBtn&&addStoryBtn.parentElement){
+    addStoryBtn.parentElement.onclick=function(){openStoryModal();};
+  }
+});
+
+// ── POST EDITING ───────────────────────────────────────
+var _editPostId=null;
+function openEditPost(id){
+  _editPostId=String(id);
+  var p=posts.find(function(x){return String(x.id)===_editPostId;});
+  if(!p)return;
+  document.getElementById('epmText').value=p.caption||'';
+  document.getElementById('editPostModal').classList.add('open');
+}
+function closeEditPost(){ document.getElementById('editPostModal').classList.remove('open'); }
+async function saveEditPost(){
+  if(!_editPostId)return;
+  var txt=document.getElementById('epmText').value.trim();
+  var p=posts.find(function(x){return String(x.id)===_editPostId;});
+  if(!p)return;
+  p.caption=txt;
+  await updatePostField(_editPostId,{caption:txt});
+  closeEditPost();
+  renderFeed();renderExploreFeed();
+  toast('Caption updated ✓');
+}
+
+// ── PINNED POST ────────────────────────────────────────
+async function togglePin(id){
+  id=String(id);
+  var p=posts.find(function(x){return String(x.id)===id;});if(!p)return;
+  // Unpin any other pinned post first
+  if(!p.pinned){
+    posts.filter(function(x){return x.uid===me.uid&&x.pinned&&String(x.id)!==id;}).forEach(function(x){
+      x.pinned=false;updatePostField(String(x.id),{pinned:false});
+    });
+  }
+  p.pinned=!p.pinned;
+  await updatePostField(id,{pinned:p.pinned});
+  renderFeed();refreshProfile();
+  toast(p.pinned?'Post pinned 📌':'Post unpinned');
+}
+
+// ── MENTION DROPDOWN ───────────────────────────────────
+var _mentionDropdown=null;
+var _mentionPostId=null;
+function handleMentionInput(inp,pid){
+  var val=inp.value;
+  var atIdx=val.lastIndexOf('@');
+  if(atIdx===-1||val[atIdx-1]===' '||atIdx===val.length-1){
+    hideMentionDropdown();return;
+  }
+  var query=val.slice(atIdx+1).toLowerCase();
+  var matches=Object.values(allUsers).filter(function(u){
+    return u.handle&&u.handle.toLowerCase().startsWith(query)&&u.uid!==me.uid;
+  }).slice(0,5);
+  if(!matches.length){hideMentionDropdown();return;}
+  showMentionDropdown(inp,matches,atIdx,pid);
+}
+function showMentionDropdown(inp,users,atIdx,pid){
+  hideMentionDropdown();
+  var wrap=inp.closest('.c-input-wrap')||inp.parentElement;
+  var dd=document.createElement('div');dd.className='mention-dropdown';
+  users.forEach(function(u){
+    var item=document.createElement('div');item.className='mention-item';
+    item.innerHTML='<div class="mention-av" style="background:'+esc(u.color||'var(--pink)')+'">'+esc(u.initial||'?')+'</div><strong>@'+esc(u.handle)+'</strong>';
+    item.onmousedown=function(e){
+      e.preventDefault();
+      var val=inp.value;var atIdx2=val.lastIndexOf('@');
+      inp.value=val.slice(0,atIdx2)+'@'+u.handle+' ';
+      hideMentionDropdown();inp.focus();
+    };
+    dd.appendChild(item);
+  });
+  wrap.appendChild(dd);_mentionDropdown=dd;_mentionPostId=pid;
+}
+function hideMentionDropdown(){
+  if(_mentionDropdown){_mentionDropdown.remove();_mentionDropdown=null;}
+}
+document.addEventListener('click',function(e){
+  if(_mentionDropdown&&!_mentionDropdown.contains(e.target))hideMentionDropdown();
+});
+
+// ── READ RECEIPTS ON DMs ───────────────────────────────
+function markDMSeen(convoId){
+  if(!convoId||!me.uid)return;
+  db.collection('dms').doc(convoId).update({['lastSeen_'+me.uid]:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+}
+function getDMSeenStatus(msg,convoId,otherUid){
+  // Returns 'Seen' if the other person has seen past this message's timestamp
+  return ''; // Simplified — real read receipts need per-message seen tracking
+}
+
+// ── HASHTAG VIEW HELPER ────────────────────────────────
+// goTo needs to handle 'hashtag' view
+var _origGoTo=goTo;
+goTo=function(view){
+  _origGoTo(view);
+};
+
 // ── INLINE BANNER COLOR PICKER ────────────────────────
 function toggleBannerColorPicker(e){
   e.stopPropagation();
@@ -3983,7 +4482,8 @@ async function submitFeedback(){
     closeFeedbackModal();
     toast('Sent! Thanks for your feedback 💌');
   }catch(e){
-    toast('Could not send — try again');
+    console.error('Feedback error:',e);
+    toast('Error: ' + (e.code||e.message||'unknown') + ' — check Firestore rules allow writes');
   }
 }
 
@@ -4493,6 +4993,79 @@ function closeChatMobile(){
 }
 
 </script>
+
+<!-- ── STORY VIEWER ──────────────────────────────── -->
+<div id="storyViewer">
+  <div class="sv-progress-bar" id="svProgressBar"></div>
+  <div class="sv-header">
+    <div class="sv-av" id="svAv"></div>
+    <div>
+      <div class="sv-name" id="svName"></div>
+      <div class="sv-time" id="svTime"></div>
+    </div>
+    <button class="sv-close" onclick="closeStoryViewer()">×</button>
+  </div>
+  <div class="sv-media" id="svMedia">
+    <div class="sv-tap-prev" onclick="storyNav(-1)"></div>
+    <div class="sv-tap-next" onclick="storyNav(1)"></div>
+  </div>
+  <div class="sv-caption" id="svCaption" style="display:none;"></div>
+</div>
+
+<!-- ── STORY ARCHIVE ──────────────────────────────── -->
+<div id="storyArchive" onclick="if(event.target===this)closeStoryArchive()">
+  <div class="sa-sheet">
+    <div class="sa-handle"></div>
+    <div class="sa-title">📚 Your Past Stories</div>
+    <div class="sa-grid" id="archiveGrid"></div>
+  </div>
+</div>
+
+<!-- ── STORY UPLOAD MODAL ─────────────────────────── -->
+<div id="storyModal" onclick="if(event.target===this)closeStoryModal()">
+  <div class="sm-box">
+    <div class="sm-handle"></div>
+    <div class="sm-title">📸 Add to Your Story</div>
+    <div class="sm-options">
+      <div class="sm-opt-btn on" id="smOptPhoto" onclick="setStoryType('photo')">📷 Photo</div>
+      <div class="sm-opt-btn" id="smOptText" onclick="setStoryType('text')">✍️ Text</div>
+    </div>
+    <div class="sm-preview" id="smPreview">
+      <span style="color:var(--text3);font-size:13px;">Tap to select photo</span>
+    </div>
+    <input type="file" id="storyFileInput" accept="image/*,video/*" style="display:none;" onchange="handleStoryFile(this)">
+    <div id="smPhotoArea">
+      <button class="btn btn-pink" style="width:100%;justify-content:center;margin-bottom:10px;" onclick="document.getElementById('storyFileInput').click()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Choose Photo / Video
+      </button>
+    </div>
+    <div id="smTextArea" style="display:none;">
+      <div class="sm-bg-colors" id="smBgColors"></div>
+      <textarea class="sm-text-input" id="smTextInput" placeholder="What's on your mind...?" oninput="updateTextStoryPreview()"></textarea>
+    </div>
+    <button class="btn btn-pink" style="width:100%;justify-content:center;" onclick="publishStory()" id="smPublishBtn">
+      Share to Story · Disappears in 24h
+    </button>
+    <button style="width:100%;text-align:center;padding:10px;color:var(--text3);font-size:13px;background:none;border:none;cursor:pointer;" onclick="openStoryArchive()">
+      📚 View Your Past Stories
+    </button>
+  </div>
+</div>
+
+<!-- ── POST EDIT MODAL ────────────────────────────── -->
+<div id="editPostModal" onclick="if(event.target===this)closeEditPost()">
+  <div class="epm-box">
+    <div class="epm-title">✏️ Edit Caption</div>
+    <textarea class="epm-textarea" id="epmText" placeholder="Write a caption..."></textarea>
+    <div class="epm-actions">
+      <button class="epm-cancel" onclick="closeEditPost()">Cancel</button>
+      <button class="epm-save" onclick="saveEditPost()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── HASHTAG VIEW (injected into main) ─────────── -->
 
 <!-- FEEDBACK / SUGGEST / REPORT MODAL -->
 <div id="feedbackModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
