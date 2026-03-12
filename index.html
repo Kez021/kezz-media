@@ -3519,7 +3519,10 @@ const _watchUsersReady = new Promise(function(res){ _watchUsersResolve = res; })
 
 function watchUsersAndWait(){
   watchUsers();
-  return _watchUsersReady;
+  // Safety timeout: if Firestore never responds (rules block, offline, etc.)
+  // resolve after 5s so the app proceeds instead of hanging forever.
+  var timeout = new Promise(function(res){ setTimeout(res, 5000); });
+  return Promise.race([_watchUsersReady, timeout]);
 }
 
 function watchUsers(){
