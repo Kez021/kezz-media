@@ -55,7 +55,13 @@ html{scroll-behavior:smooth;}
 body{font-family:'Jost',sans-serif;background:linear-gradient(145deg,#fff0f6 0%,#fde8f2 30%,#fdf3f8 60%,#fce8f0 100%);background-attachment:fixed;color:var(--text);min-height:100vh;transition:background .3s,color .3s;overflow-x:hidden;position:relative;}
 [data-theme="dark"] body{background:linear-gradient(145deg,#1a0912 0%,#200e18 35%,#18080f 65%,#1e0d16 100%);background-attachment:fixed;}
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 0% 0%,rgba(255,150,200,.35) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 100% 0%,rgba(240,100,170,.28) 0%,transparent 60%),radial-gradient(ellipse 45% 55% at 100% 100%,rgba(255,170,210,.3) 0%,transparent 65%),radial-gradient(ellipse 55% 35% at 0% 100%,rgba(230,110,170,.25) 0%,transparent 60%),radial-gradient(ellipse 35% 40% at 50% 50%,rgba(255,190,220,.15) 0%,transparent 65%);transition:opacity .3s;}
-[data-theme="dark"] body::before{background:radial-gradient(ellipse 60% 50% at 0% 0%,rgba(180,30,90,.22) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 100% 0%,rgba(160,20,80,.18) 0%,transparent 60%),radial-gradient(ellipse 45% 55% at 100% 100%,rgba(190,40,100,.2) 0%,transparent 65%),radial-gradient(ellipse 55% 35% at 0% 100%,rgba(170,25,85,.16) 0%,transparent 60%),radial-gradient(ellipse 35% 40% at 50% 50%,rgba(200,50,110,.1) 0%,transparent 65%);}
+[data-theme="dark"] body::before{background:radial-gradient(ellipse 70% 60% at 0% 0%,rgba(200,40,100,.28) 0%,transparent 65%),radial-gradient(ellipse 55% 45% at 100% 0%,rgba(180,25,90,.22) 0%,transparent 60%),radial-gradient(ellipse 50% 60% at 100% 100%,rgba(210,50,110,.24) 0%,transparent 65%),radial-gradient(ellipse 60% 40% at 0% 100%,rgba(190,30,95,.2) 0%,transparent 60%),radial-gradient(ellipse 40% 45% at 50% 50%,rgba(220,60,120,.14) 0%,transparent 65%),radial-gradient(ellipse 30% 30% at 75% 50%,rgba(150,20,80,.18) 0%,transparent 50%);}
+/* Floating animated orbs in dark mode */
+[data-theme="dark"] body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(circle 200px at 20% 30%,rgba(226,104,138,.07) 0%,transparent 70%),
+             radial-gradient(circle 150px at 80% 70%,rgba(180,30,120,.06) 0%,transparent 70%);
+  animation:orbDrift 12s ease-in-out infinite alternate;}
+@keyframes orbDrift{0%{transform:translate(0,0)}100%{transform:translate(20px,-15px)}}
 ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
 
 /* ─── NAV ──────────────────────────────────────────── */
@@ -535,10 +541,7 @@ textarea.form-input{resize:none;min-height:80px;}
 .floating-heart{position:fixed;pointer-events:none;z-index:9999;font-size:24px;animation:likeFloat .8s ease forwards;}
 
 /* ── PAGE TRANSITIONS ───────────────────────────────── */
-.view{display:none;}
-.view.active{display:block;}
-.view.slide-in{animation:slideIn .32s cubic-bezier(.22,1,.36,1) both;}
-.view.slide-out{animation:slideOut .22s ease forwards;}
+/* (kept original .view rules — only adding slide animation keyframes) */
 @keyframes slideIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
 @keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(-18px)}}
 
@@ -631,6 +634,45 @@ textarea.form-input{resize:none;min-height:80px;}
 /* ── HASHTAG SEARCH VIEW ────────────────────────────── */
 #view-hashtag .page-header{padding:16px;}
 #hashtagFeed{padding:0;}
+
+/* ── PROFILE THEME CUSTOMIZATION ───────────────────── */
+.profile-theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;}
+.profile-theme-swatch{height:52px;border-radius:12px;cursor:pointer;border:2.5px solid transparent;transition:all .18s;position:relative;overflow:hidden;}
+.profile-theme-swatch.on{border-color:var(--pink);box-shadow:0 0 0 2px var(--pink-glow);}
+.profile-theme-swatch.on::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.4);}
+
+.profile-layout-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.profile-layout-btn{padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;text-align:center;font-size:11.5px;font-weight:600;color:var(--text2);transition:all .15s;}
+.profile-layout-btn.on{border-color:var(--pink);color:var(--pink);background:var(--pink-pale);}
+
+/* Profile layout: grid, list, magazine */
+.post-grid.layout-list{grid-template-columns:1fr;gap:0;}
+.post-grid.layout-list .grid-item{aspect-ratio:16/9;}
+.post-grid.layout-magazine{grid-template-columns:1fr 1fr;gap:2px;}
+.post-grid.layout-magazine .grid-item:first-child{grid-column:1/-1;aspect-ratio:16/9;}
+
+/* ── SEARCH BAR ENHANCEMENTS ────────────────────────── */
+.search-type-tabs{display:flex;gap:6px;padding:0 16px 12px;}
+.search-type-tab{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text2);transition:all .15s;}
+.search-type-tab.on{background:var(--pink);color:white;border-color:var(--pink);}
+
+/* ── ADMIN ENHANCEMENTS ─────────────────────────────── */
+.admin-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+.admin-stat-card{background:var(--bg2);border-radius:12px;padding:14px;text-align:center;}
+.admin-stat-num{font-size:22px;font-weight:800;color:var(--pink);}
+.admin-stat-label{font-size:11.5px;color:var(--text3);margin-top:3px;}
+.admin-chart-bar{height:6px;background:linear-gradient(90deg,var(--pink),var(--pink-soft));border-radius:3px;margin-top:4px;transition:width .4s ease;}
+.ban-btn{padding:5px 12px;border-radius:8px;border:1px solid #e05577;background:none;color:#e05577;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.ban-btn:hover,.ban-btn.banned{background:#e05577;color:white;}
+.unban-btn{padding:5px 12px;border-radius:8px;border:1px solid var(--pink);background:var(--pink);color:white;font-size:12px;font-weight:600;cursor:pointer;}
+
+/* ── DM READ RECEIPTS ───────────────────────────────── */
+.chat-seen{font-size:10px;color:var(--pink);margin-top:2px;text-align:right;padding-right:4px;}
+
+/* ── BODY BOTTOM PADDING (mobile nav breathing room) ── */
+@media(max-width:700px){
+  .main-content{padding-bottom:80px;}
+}
 
 /* ─── RESPONSIVE ───────────────────────────────────── */
 @media(max-width:1000px){
@@ -1145,7 +1187,7 @@ textarea.form-input{resize:none;min-height:80px;}
   <div class="brand" onclick="goTo('home')">Kez Media</div>
   <div class="nav-search">
     <span class="si"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-    <input type="text" placeholder="Search users..." id="navSearchInput" oninput="searchUsers(this.value)" onblur="setTimeout(()=>closeSearch(),200)" onfocus="if(this.value)searchUsers(this.value)">
+    <input type="text" placeholder="Search users, posts, tags..." id="navSearchInput" oninput="searchAll(this.value)" onblur="setTimeout(()=>closeSearch(),200)" onfocus="if(this.value)searchAll(this.value)">
     <div class="search-dropdown" id="searchDropdown"></div>
   </div>
   <div class="nav-right">
@@ -1271,12 +1313,17 @@ textarea.form-input{resize:none;min-height:80px;}
     <!-- SEARCH VIEW -->
     <div class="view" id="view-search">
       <div class="page-header">
-        <div class="page-title">Search People</div>
-        <div class="page-sub">Find and connect with anyone on Kez Media</div>
+        <div class="page-title">Search</div>
+        <div class="page-sub">Find users, posts, and hashtags</div>
+      </div>
+      <div class="search-type-tabs">
+        <button class="search-type-tab on" id="stab-users" onclick="setSearchTab('users')">👤 Users</button>
+        <button class="search-type-tab" id="stab-posts" onclick="setSearchTab('posts')">📸 Posts</button>
+        <button class="search-type-tab" id="stab-tags" onclick="setSearchTab('tags')"># Tags</button>
       </div>
       <div class="search-page-bar">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="searchPageInput" placeholder="Search by name or @username..." oninput="searchPageUsers(this.value)">
+        <input type="text" id="searchPageInput" placeholder="Search users, posts, #tags..." oninput="searchPageAll(this.value)">
       </div>
       <div id="searchPageResults"></div>
     </div>
@@ -1551,6 +1598,37 @@ textarea.form-input{resize:none;min-height:80px;}
               </div>
               <div class="color-swatches" id="bannerSwatches" style="padding-top:10px;"></div>
             </div>
+
+            <!-- Profile Color Theme -->
+            <div class="settings-card">
+              <div class="settings-card-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                Profile Color Theme
+              </div>
+              <div style="font-size:12.5px;color:var(--text3);margin-bottom:8px;">Choose your profile's accent color theme</div>
+              <div class="profile-theme-grid" id="profileThemeGrid"></div>
+            </div>
+
+            <!-- Profile Grid Layout -->
+            <div class="settings-card">
+              <div class="settings-card-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Profile Grid Layout
+              </div>
+              <div style="font-size:12.5px;color:var(--text3);margin-bottom:8px;">How your posts are displayed on your profile</div>
+              <div class="profile-layout-grid">
+                <div class="profile-layout-btn on" id="layout-grid" onclick="setProfileLayout('grid')">
+                  ⊞ Grid<br><span style="font-weight:400;font-size:10.5px;">3 columns</span>
+                </div>
+                <div class="profile-layout-btn" id="layout-list" onclick="setProfileLayout('list')">
+                  ☰ List<br><span style="font-weight:400;font-size:10.5px;">Full width</span>
+                </div>
+                <div class="profile-layout-btn" id="layout-magazine" onclick="setProfileLayout('magazine')">
+                  ⊟ Magazine<br><span style="font-weight:400;font-size:10.5px;">2 col + hero</span>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <!-- NOTIFICATIONS SETTINGS -->
@@ -1610,23 +1688,36 @@ textarea.form-input{resize:none;min-height:80px;}
                 Admin Panel — Full Control
               </div>
               <div style="background:var(--pink-pale);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--text2);">
-                👑 You are the admin of <strong>Kez Media</strong>. You can see and manage all posts, users, and content.
+                👑 You are the admin of <strong>Kez Media</strong>. Full control over users, posts, and content.
               </div>
-              <div class="settings-row">
-                <div class="settings-row-info"><div class="settings-row-label">Total Posts on Platform</div><div class="settings-row-sub">All posts including other users</div></div>
-                <span style="font-weight:700;color:var(--pink);" id="adminTotalPosts">—</span>
+              <!-- Analytics stats grid -->
+              <div class="admin-stat-grid">
+                <div class="admin-stat-card"><div class="admin-stat-num" id="adminTotalPosts">—</div><div class="admin-stat-label">Total Posts</div></div>
+                <div class="admin-stat-card"><div class="admin-stat-num" id="adminTotalUsers">—</div><div class="admin-stat-label">Total Users</div></div>
+                <div class="admin-stat-card"><div class="admin-stat-num" id="adminTotalLikes">—</div><div class="admin-stat-label">Total Likes</div></div>
+                <div class="admin-stat-card"><div class="admin-stat-num" id="adminTodayPosts">—</div><div class="admin-stat-label">Posts Today</div></div>
               </div>
-              <div class="settings-row">
-                <div class="settings-row-info"><div class="settings-row-label">Total Users</div><div class="settings-row-sub">Active accounts on Kez Media</div></div>
-                <span style="font-weight:700;color:var(--pink);">6</span>
-              </div>
-              <div class="settings-row">
-                <div class="settings-row-info"><div class="settings-row-label">Total Likes Given</div><div class="settings-row-sub">Across all posts</div></div>
-                <span style="font-weight:700;color:var(--pink);" id="adminTotalLikes">—</span>
-              </div>
+              <!-- Activity chart -->
+              <div style="font-size:12px;color:var(--text3);font-weight:600;margin-bottom:8px;">📊 Posts Per Day (last 7 days)</div>
+              <div id="adminActivityChart" style="display:flex;gap:6px;align-items:flex-end;height:60px;"></div>
             </div>
+
+            <!-- User Management (ban/suspend) -->
             <div class="settings-card">
-              <div class="settings-card-title">Manage All Posts</div>
+              <div class="settings-card-title">👥 User Management</div>
+              <div style="font-size:12.5px;color:var(--text3);margin-bottom:10px;">Ban or suspend accounts. Banned users cannot log in.</div>
+              <div id="adminUserList"><div style="color:var(--text3);font-size:13px;">Loading users...</div></div>
+            </div>
+
+            <!-- Post Moderation Queue -->
+            <div class="settings-card">
+              <div class="settings-card-title">🚦 Post Moderation Queue</div>
+              <div style="font-size:12.5px;color:var(--text3);margin-bottom:10px;">Reported posts awaiting review.</div>
+              <div id="adminModerationList"><div style="color:var(--text3);font-size:13px;">Loading...</div></div>
+            </div>
+
+            <div class="settings-card">
+              <div class="settings-card-title">📋 All Posts</div>
               <div id="adminPostList"></div>
             </div>
             <!-- Reports & Suggestions inbox — admin only -->
@@ -2180,6 +2271,7 @@ function goSettings(section){goTo('settings');setTimeout(()=>switchSettingsNav(s
 // ── INIT ──────────────────────────────────────────────
 async function init(){
   await loadProfile(me.uid);
+  if(me.banned){ auth.signOut(); toast('Your account has been suspended.'); return; }
   applyTheme();
   applyUserProfile();
   loadStories();
@@ -2187,6 +2279,10 @@ async function init(){
   renderTrending();
   renderColorSwatches();
   renderBannerSwatches();
+  renderProfileThemeGrid();
+  // Restore saved profile theme and layout
+  if(me.profileTheme !== undefined) applyProfileTheme(me.profileTheme);
+  if(me.profileLayout) setProfileLayout(me.profileLayout);
   updateNotifBadges();
   updateMsgBadges();
   // Wait for allUsers to be populated BEFORE starting the posts listener.
@@ -2380,10 +2476,17 @@ function showSkeletons(containerId,count){
 }
 
 function linkifyCaption(txt){
-  if(!txt)return '';
-  return esc(txt)
-    .replace(/#(\w+)/g,'<span class="hashtag" onclick="showHashtag(\'$1\')">#$1</span>')
-    .replace(/@(\w+)/g,'<span class="mention" onclick="viewProfileByHandle(\'$1\')">@$1</span>');
+  if(!txt) return '';
+  var escaped = esc(txt);
+  // Hashtags: #word → clickable pink span
+  escaped = escaped.replace(/(#)(\w+)/g, function(match, hash, tag){
+    return '<span class="hashtag" onclick="showHashtag(this.dataset.tag)" data-tag="' + tag + '">' + hash + tag + '</span>';
+  });
+  // Mentions: @handle → clickable blue span
+  escaped = escaped.replace(/(@)(\w+)/g, function(match, at, handle){
+    return '<span class="mention" onclick="viewProfileByHandle(this.dataset.handle)" data-handle="' + handle + '">' + at + handle + '</span>';
+  });
+  return escaped;
 }
 function viewProfileByHandle(handle){
   var u=Object.values(allUsers).find(function(x){return x.handle===handle;});
@@ -2537,7 +2640,7 @@ function buildCard(p,i){
   card.querySelectorAll('[data-action]').forEach(function(el){
     el.addEventListener('click',function(){
       if(el.dataset.action==='copylink')toast('Link copied!');
-      else if(el.dataset.action==='report')toast('Reported');
+      else if(el.dataset.action==='report') reportPost(el.closest('[id^="pc-"]') ? el.closest('[id^="pc-"]').id.replace('pc-','') : '');
       else if(el.dataset.action==='share')toast('Post shared!');
       closeMenus();
     });
@@ -2695,6 +2798,15 @@ function addComment(id){
   // notify post owner
   if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'comment',me,txt.slice(0,60));
 }
+function reportPost(id){
+  id=String(id);
+  var p=posts.find(function(x){return String(x.id)===id;});if(!p)return;
+  var count=(p.reportCount||0)+1;
+  p.reported=true; p.reportCount=count;
+  updatePostField(id,{reported:true,reportCount:count});
+  toast('Post reported to admin 🚩');
+  closeMenus();
+}
 function deletePost(id){
   id=String(id);
   closeMenus();
@@ -2715,7 +2827,15 @@ function refreshProfile(){
 }
 function renderPostGrid(){
   const grid=document.getElementById('grid');grid.innerHTML='';
-  const myPosts=posts.filter(p=>p.uid===me.uid && !p.isStatus);
+  // Apply saved layout class
+  grid.className='post-grid' + (_profileLayout&&_profileLayout!=='grid'?' layout-'+_profileLayout:'');
+  var myPosts=posts.filter(p=>p.uid===me.uid && !p.isStatus);
+  // Pinned post first
+  myPosts.sort(function(a,b){
+    if(a.pinned&&!b.pinned) return -1;
+    if(!a.pinned&&b.pinned) return 1;
+    return 0;
+  });
   if(!myPosts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No photo posts yet. Share your first photo!</div>';return;}
   myPosts.slice().reverse().forEach(p=>{
     const imgs=p.images||(p.image?[p.image]:[]);
@@ -2871,11 +2991,11 @@ function switchSettingsNav(sec){
   document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sn-'+sec).classList.add('active');
   document.getElementById('ss-'+sec).classList.add('active');
-  if(sec==='appearance') setTimeout(_updateInstallUI,50);
-  if(sec==='admin') setTimeout(loadAdminFeedback,100);
+  if(sec==='appearance'){ setTimeout(_updateInstallUI,50); setTimeout(renderProfileThemeGrid,80); }
+  if(sec==='admin'){ setTimeout(loadAdminFeedback,100); setTimeout(renderAdminAnalytics,150); }
 }
 function refreshAdmin(){
-  const tp=document.getElementById('adminTotalPosts');if(tp)tp.textContent=posts.length;
+  renderAdminAnalytics();
   const tl=document.getElementById('adminTotalLikes');if(tl)tl.textContent=posts.reduce((a,p)=>a+p.likes,0);
   const apl=document.getElementById('adminPostList');if(!apl)return;
   apl.innerHTML='';
@@ -3519,10 +3639,7 @@ const _watchUsersReady = new Promise(function(res){ _watchUsersResolve = res; })
 
 function watchUsersAndWait(){
   watchUsers();
-  // Safety timeout: if Firestore never responds (rules block, offline, etc.)
-  // resolve after 5s so the app proceeds instead of hanging forever.
-  var timeout = new Promise(function(res){ setTimeout(res, 5000); });
-  return Promise.race([_watchUsersReady, timeout]);
+  return _watchUsersReady;
 }
 
 function watchUsers(){
@@ -3953,8 +4070,36 @@ async function openDMWith(otherUid,otherName){
           + (timeStr ? '<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;'+(mine?'text-align:right;':'')+'">'+timeStr+'</div>' : '');
         msgs.appendChild(div);
       });
+
+      // Show "Seen" under last MY message if recipient has read it
+      try {
+        var convoDoc = await db.collection('dms').doc(convoId).get();
+        if(convoDoc.exists) {
+          var cdata = convoDoc.data();
+          var theirSeenTs = cdata['lastSeen_'+otherUid];
+          if(theirSeenTs) {
+            // find last .mine div and add seen label
+            var mineDivs = msgs.querySelectorAll('.chat-msg.mine');
+            if(mineDivs.length) {
+              var lastMine = mineDivs[mineDivs.length-1];
+              if(!lastMine.querySelector('.chat-seen')) {
+                var seen = document.createElement('div');
+                seen.className = 'chat-seen';
+                seen.textContent = '✓✓ Seen';
+                lastMine.appendChild(seen);
+              }
+            }
+          }
+        }
+      } catch(e){}
+
       msgs.scrollTop = msgs.scrollHeight;
     }, function(err){ console.warn('DM msg listener:', err.message); });
+
+  // Mark convo as read by me (for read receipts)
+  db.collection('dms').doc(convoId).update({
+    ['lastSeen_'+me.uid]: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(){});
 
   // On mobile: slide chat panel open
   var chatEl = document.getElementById('chatArea');
@@ -4179,6 +4324,7 @@ async function publishStory(){
 }
 
 async function loadStories(){
+  try{
   var row=document.getElementById('storiesRow');
   // Remove old story items except the "add" item
   Array.from(row.children).forEach(function(c){ if(!c.querySelector('.add-ring')) c.remove(); });
@@ -4207,6 +4353,7 @@ async function loadStories(){
     d.onclick=function(){openStoryViewer(entry.stories,0);};
     row.appendChild(d);
   });
+  }catch(e){ console.warn('loadStories error:',e); }
 }
 
 function openStoryViewer(stories,startIdx){
@@ -4304,15 +4451,6 @@ async function openStoryArchive(){
 }
 function closeStoryArchive(){ document.getElementById('storyArchive').classList.remove('open'); }
 
-// ── STORY CLICK FROM "Your story" item ────────────────
-// Override the existing story row "Your story" click
-document.addEventListener('DOMContentLoaded',function(){
-  var addStoryBtn=document.querySelector('.story-ring.add-ring');
-  if(addStoryBtn&&addStoryBtn.parentElement){
-    addStoryBtn.parentElement.onclick=function(){openStoryModal();};
-  }
-});
-
 // ── POST EDITING ───────────────────────────────────────
 var _editPostId=null;
 function openEditPost(id){
@@ -4401,13 +4539,6 @@ function getDMSeenStatus(msg,convoId,otherUid){
   return ''; // Simplified — real read receipts need per-message seen tracking
 }
 
-// ── HASHTAG VIEW HELPER ────────────────────────────────
-// goTo needs to handle 'hashtag' view
-var _origGoTo=goTo;
-goTo=function(view){
-  _origGoTo(view);
-};
-
 // ── INLINE BANNER COLOR PICKER ────────────────────────
 function toggleBannerColorPicker(e){
   e.stopPropagation();
@@ -4488,6 +4619,257 @@ async function submitFeedback(){
     console.error('Feedback error:',e);
     toast('Error: ' + (e.code||e.message||'unknown') + ' — check Firestore rules allow writes');
   }
+}
+
+// ── PROFILE THEMES ────────────────────────────────────
+const PROFILE_THEMES = [
+  {name:'Rose',     pink:'#e2688a', soft:'#f0a0b8', pale:'rgba(226,104,138,.13)', bg:'linear-gradient(145deg,#fff0f6,#fde8f2,#fdf3f8)'},
+  {name:'Violet',   pink:'#8b5cf6', soft:'#a78bfa', pale:'rgba(139,92,246,.13)',  bg:'linear-gradient(145deg,#f5f0ff,#ede8fe,#f8f5ff)'},
+  {name:'Coral',    pink:'#f97316', soft:'#fb923c', pale:'rgba(249,115,22,.13)',   bg:'linear-gradient(145deg,#fff7f0,#fee8d8,#fff5ee)'},
+  {name:'Ocean',    pink:'#0ea5e9', soft:'#38bdf8', pale:'rgba(14,165,233,.13)',   bg:'linear-gradient(145deg,#f0f9ff,#e0f2fe,#f5fbff)'},
+  {name:'Mint',     pink:'#10b981', soft:'#34d399', pale:'rgba(16,185,129,.13)',   bg:'linear-gradient(145deg,#f0fdf4,#dcfce7,#f5fdf8)'},
+  {name:'Gold',     pink:'#f59e0b', soft:'#fbbf24', pale:'rgba(245,158,11,.13)',   bg:'linear-gradient(145deg,#fffbf0,#fef3c7,#fffdf5)'},
+  {name:'Cherry',   pink:'#e11d48', soft:'#fb7185', pale:'rgba(225,29,72,.13)',    bg:'linear-gradient(145deg,#fff0f3,#ffe4e9,#fff5f7)'},
+  {name:'Slate',    pink:'#64748b', soft:'#94a3b8', pale:'rgba(100,116,139,.13)',  bg:'linear-gradient(145deg,#f8fafc,#f1f5f9,#fafcff)'},
+];
+let _currentThemeIdx = 0;
+
+function renderProfileThemeGrid(){
+  var grid = document.getElementById('profileThemeGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  PROFILE_THEMES.forEach(function(t, i){
+    var s = document.createElement('div');
+    s.className = 'profile-theme-swatch' + (i===_currentThemeIdx?' on':'');
+    s.style.background = t.bg;
+    s.style.border = '2.5px solid ' + (i===_currentThemeIdx?t.pink:'transparent');
+    s.title = t.name;
+    s.onclick = function(){ applyProfileTheme(i); };
+    // Mini preview dot
+    s.innerHTML = '<div style="position:absolute;bottom:6px;right:6px;width:12px;height:12px;border-radius:50%;background:'+t.pink+'"></div>';
+    grid.appendChild(s);
+  });
+}
+
+function applyProfileTheme(idx){
+  _currentThemeIdx = idx;
+  var t = PROFILE_THEMES[idx];
+  var root = document.documentElement;
+  var isDark = document.documentElement.dataset.theme === 'dark';
+  root.style.setProperty('--pink', t.pink);
+  root.style.setProperty('--pink-soft', t.soft);
+  root.style.setProperty('--pink-pale', t.pale);
+  root.style.setProperty('--pink-glow', t.pale.replace('.13)','.18)'));
+  if(!isDark){
+    // update body bg inline for light mode
+    document.body.style.background = t.bg;
+    document.body.style.backgroundAttachment = 'fixed';
+  }
+  // persist
+  me.profileTheme = idx;
+  saveProfileToFirestore();
+  renderProfileThemeGrid();
+  toast('Theme: ' + t.name + ' 🎨');
+}
+
+// ── PROFILE GRID LAYOUT ────────────────────────────────
+var _profileLayout = 'grid';
+function setProfileLayout(layout){
+  _profileLayout = layout;
+  ['grid','list','magazine'].forEach(function(l){
+    var btn = document.getElementById('layout-'+l);
+    if(btn) btn.classList.toggle('on', l===layout);
+  });
+  var grid = document.getElementById('grid');
+  if(grid){
+    grid.classList.remove('layout-list','layout-magazine');
+    if(layout!=='grid') grid.classList.add('layout-'+layout);
+  }
+  me.profileLayout = layout;
+  saveProfileToFirestore();
+  toast('Layout: ' + layout.charAt(0).toUpperCase()+layout.slice(1));
+}
+
+// ── SEARCH — USERS + POSTS + HASHTAGS ────────────────────
+var _searchTab = 'users';
+function setSearchTab(tab){
+  _searchTab = tab;
+  ['users','posts','tags'].forEach(function(t){
+    var el = document.getElementById('stab-'+t);
+    if(el) el.classList.toggle('on', t===tab);
+  });
+  var inp = document.getElementById('searchPageInput');
+  if(inp && inp.value.trim()) searchPageAll(inp.value);
+  else {
+    var res = document.getElementById('searchPageResults');
+    if(res) res.innerHTML = '<div class="search-empty">Type to search ' + tab + '...</div>';
+  }
+}
+
+function searchPageAll(q){
+  q = q.trim().toLowerCase();
+  var res = document.getElementById('searchPageResults');
+  if(!res) return;
+  if(!q){ res.innerHTML=''; return; }
+  if(_searchTab === 'users'){
+    searchPageUsers(q);
+  } else if(_searchTab === 'posts'){
+    var matched = posts.filter(function(p){
+      return p.caption && p.caption.toLowerCase().indexOf(q) > -1;
+    });
+    if(!matched.length){ res.innerHTML='<div class="search-empty">No posts matching "'+esc(q)+'"</div>'; return; }
+    res.innerHTML = '';
+    matched.slice(0,20).forEach(function(p,i){ res.appendChild(buildCard(p,i)); });
+  } else if(_searchTab === 'tags'){
+    // Find all hashtags matching query
+    var tagQ = q.replace(/^#/,'');
+    var tagCounts = {};
+    posts.forEach(function(p){
+      if(!p.caption) return;
+      var tags = p.caption.match(/#(\w+)/g) || [];
+      tags.forEach(function(t){
+        var tag = t.slice(1).toLowerCase();
+        if(tag.indexOf(tagQ) > -1) tagCounts[tag] = (tagCounts[tag]||0) + 1;
+      });
+    });
+    var tagList = Object.entries(tagCounts).sort(function(a,b){return b[1]-a[1];});
+    if(!tagList.length){ res.innerHTML='<div class="search-empty">No tags matching "#'+esc(tagQ)+'"</div>'; return; }
+    res.innerHTML = '';
+    tagList.slice(0,20).forEach(function(entry){
+      var tag=entry[0], count=entry[1];
+      var d = document.createElement('div');
+      d.className = 'search-result';
+      d.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;';
+      d.innerHTML = '<div style="width:42px;height:42px;border-radius:50%;background:var(--pink-pale);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">#</div>'
+        + '<div><div style="font-weight:700;color:var(--pink)">#'+esc(tag)+'</div><div style="font-size:12px;color:var(--text3)">'+count+' post'+(count!==1?'s':'')+'</div></div>';
+      d.onclick = function(){ showHashtag(tag); };
+      res.appendChild(d);
+    });
+  }
+}
+
+function searchAll(q){
+  // Nav bar search — shows user dropdown
+  searchUsers(q);
+}
+
+// ── ADMIN: USER MANAGEMENT (ban/suspend) ─────────────────
+async function loadAdminUsers(){
+  var list = document.getElementById('adminUserList');
+  if(!list || !isAdmin()) return;
+  list.innerHTML = '<div style="color:var(--text3);font-size:13px;">Loading...</div>';
+  var snap = await db.collection('profiles').get().catch(function(){ return {docs:[]}; });
+  if(!snap.docs.length){ list.innerHTML='<div style="color:var(--text3);font-size:13px;">No users found.</div>'; return; }
+  list.innerHTML = '';
+  snap.docs.forEach(function(d){
+    var u = d.data();
+    var uid = d.id;
+    if(uid === me.uid) return; // skip self
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);';
+    var avBg = u.color||'var(--pink)';
+    var avHTML = u.avatar ? '<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : esc(u.initial||'?');
+    var isBanned = u.banned === true;
+    row.innerHTML = '<div class="admin-user-av" style="background:'+esc(avBg)+';min-width:36px;">'+avHTML+'</div>'
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-weight:600;font-size:13px;">'+esc(u.name||'Unknown')+'</div>'
+        + '<div style="font-size:12px;color:var(--text3);">@'+esc(u.handle||uid)+(isBanned?' · <span style="color:#e05577">Banned</span>':'')+'</div>'
+      + '</div>'
+      + '<button class="'+(isBanned?'unban-btn':'ban-btn')+'" onclick="toggleBanUser(\''+uid+'\','+isBanned+')">'+(isBanned?'Unban':'Ban')+'</button>';
+    list.appendChild(row);
+  });
+}
+
+async function toggleBanUser(uid, currentlyBanned){
+  if(!isAdmin()) return;
+  var newVal = !currentlyBanned;
+  await db.collection('profiles').doc(uid).update({banned: newVal}).catch(function(e){ toast('Error: '+e.message); return; });
+  toast(newVal ? 'User banned 🚫' : 'User unbanned ✅');
+  loadAdminUsers();
+}
+
+// ── ADMIN: POST MODERATION QUEUE ─────────────────────────
+async function loadAdminModeration(){
+  var list = document.getElementById('adminModerationList');
+  if(!list || !isAdmin()) return;
+  // Posts that have been reported (have a 'reported' flag or report count)
+  var reported = posts.filter(function(p){ return p.reported || (p.reportCount && p.reportCount > 0); });
+  if(!reported.length){
+    list.innerHTML = '<div style="color:var(--text3);font-size:13px;">✅ No flagged posts.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  reported.forEach(function(p){
+    var d = document.createElement('div');
+    d.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--border);';
+    var thumb = (p.images&&p.images[0]) ? '<img src="'+esc(p.images[0])+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;">' : '';
+    d.innerHTML = '<div style="display:flex;align-items:center;gap:10px;">'
+      + (thumb||'<div style="width:48px;height:48px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">📝</div>')
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:12.5px;font-weight:600;">@'+(p.user&&p.user.handle?esc(p.user.handle):esc(p.uid))+'</div>'
+        + '<div style="font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc((p.caption||'').slice(0,60))+'</div>'
+        + '<div style="font-size:11px;color:#e05577;margin-top:2px;">⚠️ Reported '+(p.reportCount||1)+' time'+(p.reportCount>1?'s':'')+'</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;">'
+        + '<button onclick="adminApprovePost(\''+String(p.id)+'\')" style="padding:4px 10px;border-radius:8px;border:1px solid #22c55e;background:none;color:#22c55e;font-size:12px;cursor:pointer;">Keep</button>'
+        + '<button onclick="deletePost(\''+String(p.id)+'\')" style="padding:4px 10px;border-radius:8px;border:none;background:#e05577;color:white;font-size:12px;cursor:pointer;">Delete</button>'
+      + '</div>'
+      + '</div>';
+    list.appendChild(d);
+  });
+}
+
+function adminApprovePost(id){
+  updatePostField(String(id), {reported:false, reportCount:0});
+  toast('Post cleared ✅');
+  loadAdminModeration();
+}
+
+// ── ADMIN: ANALYTICS CHART ────────────────────────────────
+function renderAdminAnalytics(){
+  if(!isAdmin()) return;
+  // Stats
+  var totalLikes = posts.reduce(function(s,p){return s+(p.likes||0);},0);
+  var today = new Date().toDateString();
+  var todayPosts = posts.filter(function(p){
+    if(!p.createdAt) return false;
+    var d = p.createdAt.toDate ? p.createdAt.toDate() : new Date(p.createdAt.seconds*1000);
+    return d.toDateString()===today;
+  }).length;
+  var el = document.getElementById('adminTotalPosts'); if(el) el.textContent=posts.length;
+  var el2 = document.getElementById('adminTotalUsers'); if(el2) el2.textContent=Object.keys(allUsers).length;
+  var el3 = document.getElementById('adminTotalLikes'); if(el3) el3.textContent=totalLikes;
+  var el4 = document.getElementById('adminTodayPosts'); if(el4) el4.textContent=todayPosts;
+  // 7-day chart
+  var chart = document.getElementById('adminActivityChart');
+  if(!chart) return;
+  chart.innerHTML = '';
+  var days = [];
+  for(var i=6;i>=0;i--){
+    var d=new Date(); d.setDate(d.getDate()-i);
+    days.push({label:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()], date:d.toDateString(), count:0});
+  }
+  posts.forEach(function(p){
+    if(!p.createdAt) return;
+    var d = p.createdAt.toDate ? p.createdAt.toDate() : new Date(p.createdAt.seconds*1000);
+    var ds = d.toDateString();
+    var day = days.find(function(x){return x.date===ds;});
+    if(day) day.count++;
+  });
+  var max = Math.max(1, Math.max.apply(null,days.map(function(d){return d.count;})));
+  days.forEach(function(day){
+    var col = document.createElement('div');
+    col.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;';
+    var pct = Math.round(day.count/max*100);
+    col.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--pink)">'+day.count+'</div>'
+      + '<div style="flex:1;width:100%;display:flex;align-items:flex-end;">'
+        + '<div style="width:100%;background:linear-gradient(180deg,var(--pink),var(--pink-soft));border-radius:4px 4px 0 0;height:'+pct+'%;min-height:'+(day.count?4:2)+'px;transition:height .4s ease;"></div>'
+      + '</div>'
+      + '<div style="font-size:9.5px;color:var(--text3)">'+day.label+'</div>';
+    chart.appendChild(col);
+  });
+  loadAdminUsers();
+  loadAdminModeration();
 }
 
 // ── ADMIN: LOAD FEEDBACK INBOX ────────────────────────
