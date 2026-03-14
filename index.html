@@ -4042,7 +4042,7 @@ async function openDMWith(otherUid,otherName){
 
   // Real-time message listener (no orderBy to avoid Firestore index requirement)
   dmUnsubscribe = db.collection('dms').doc(convoId).collection('messages')
-    .onSnapshot(function(snap){
+    .onSnapshot(async function(snap){
       var msgs = document.getElementById('chatMsgs');
       if(!msgs) return;
       // Sort by ts client-side
@@ -5533,13 +5533,10 @@ function closeChatMobile(){
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
-    /* navigator.serviceWorker.register('/sw.js') */
-      .then(function(reg){
-        console.log('SW registered:', reg.scope);
-      })
-      .catch(function(err){
-        console.warn('SW registration failed:', err);
-      });
+    // Service worker disabled for now
+    // navigator.serviceWorker.register('/sw.js')
+    //   .then(function(reg){ console.log('SW registered:', reg.scope); })
+    //   .catch(function(err){ console.warn('SW registration failed:', err); });
   });
 }
 
