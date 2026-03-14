@@ -1977,8 +1977,11 @@ async function deletePostFromFirestore(id) {
 async function loadProfile(uid) {
   if(!uid) return;
   try {
-    const doc = await profileDoc(uid).get();
-    if(doc.exists) Object.assign(me, doc.data());
+    // Race profile load against a 5s timeout so init() never hangs on bad network
+    const profilePromise = profileDoc(uid).get();
+    const timeoutPromise = new Promise(function(res){ setTimeout(res, 5000); });
+    const doc = await Promise.race([profilePromise, timeoutPromise]);
+    if(doc && doc.exists) Object.assign(me, doc.data());
   } catch(e) { /* offline, use defaults */ }
 }
 async function saveProfileToFirestore() {
@@ -3644,7 +3647,18 @@ function watchUsersAndWait(){
 
 function watchUsers(){
   let _firstSnap = true;
+
+  // SAFETY: If Firestore profiles listener never fires (bad rules, offline, etc.)
+  // resolve the gate after 6 seconds so init() can continue instead of hanging forever
+  var _usersTimeout = setTimeout(function(){
+    if(_watchUsersResolve){
+      console.warn('watchUsers: timed out waiting for profiles snapshot - continuing anyway');
+      _watchUsersResolve(); _watchUsersResolve = null;
+    }
+  }, 6000);
+
   db.collection('profiles').onSnapshot(function(snap){
+    clearTimeout(_usersTimeout);
     var changed = false;
     snap.docs.forEach(function(d){
       var prev = allUsers[d.id];
@@ -3670,6 +3684,12 @@ function watchUsers(){
     }
 
     renderFriendsInSidebar();
+  }, function(err){
+    // Error handler: Firestore denied the read or network failed
+    // Resolve the gate so init() doesn't hang forever
+    console.warn('watchUsers: profiles listener error:', err.message);
+    clearTimeout(_usersTimeout);
+    if(_watchUsersResolve){ _watchUsersResolve(); _watchUsersResolve = null; }
   });
 }
 
@@ -5021,12 +5041,21 @@ function _hideSplash(){
 setTimeout(function(){
   _hideSplash();
   if(!_appReady){
-    // App not ready yet (not logged in OR Firebase still loading)
-    // Show login screen as safe fallback
+    // App not ready yet — show login as safe fallback
     document.getElementById('authOverlay').style.display = 'flex';
   }
-  // If _appReady is true, app is already showing — nothing to do
 }, 2200);
+
+// Emergency fallback: if still stuck after 10s, force show login
+setTimeout(function(){
+  if(!_appReady){
+    console.warn('Emergency: app still not ready after 10s, showing login');
+    _hideSplash();
+    document.getElementById('authOverlay').style.display = 'flex';
+    document.getElementById('authOverlay').style.visibility = 'visible';
+    document.getElementById('authOverlay').style.opacity = '1';
+  }
+}, 10000);
 
 async function runAppInit(user){
   try {
@@ -5040,11 +5069,13 @@ async function runAppInit(user){
       uid:         user.uid,
       email:       user.email
     };
-    await init();
-    // App loaded — hide auth overlay and splash
+    // Show the app immediately after basic setup - don't wait for everything to load
     _appReady = true;
     document.getElementById('authOverlay').style.display = 'none';
     _hideSplash();
+    await init();
+    // Re-hide in case something showed it again
+    document.getElementById('authOverlay').style.display = 'none';
     var admin = isAdmin();
     var badge = document.querySelector('.admin-badge');
     if(badge) badge.style.display = admin ? 'inline-flex' : 'none';
