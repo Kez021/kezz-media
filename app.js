@@ -2524,20 +2524,33 @@ function closeStoryViewer(){
   clearTimeout(_svTimer);
   document.getElementById('storyViewer').classList.remove('open');
 }
+// Story reactions config
+var STORY_REACTIONS = ['❤️','😍','😂','😮','😢','🔥'];
+
 function renderStorySlide(){
   clearTimeout(_svTimer);
   var s=_svStories[_svIdx];if(!s)return closeStoryViewer();
   var isMine=s.uid===me.uid;
-  // Mark as seen
-  if(!isMine&&s.seen&&!s.seen.includes(me.uid)){
-    db.collection('stories').doc(s.id).update({seen:firebase.firestore.FieldValue.arrayUnion(me.uid)}).catch(()=>{});
+
+  // Mark as seen (record uid + name for viewers panel)
+  if(!isMine){
+    var seenArr=Array.isArray(s.seen)?s.seen:[];
+    if(!seenArr.includes(me.uid)){
+      var seenInfo={uid:me.uid,name:me.name||me.handle,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null};
+      db.collection('stories').doc(s.id).update({
+        seen:firebase.firestore.FieldValue.arrayUnion(me.uid),
+        seenBy:firebase.firestore.FieldValue.arrayUnion(JSON.stringify(seenInfo))
+      }).catch(()=>{});
+    }
   }
+
   // Header
   var avEl=document.getElementById('svAv');
   avEl.style.background=s.userColor||'var(--pink)';
   avEl.innerHTML=s.userAvatar?('<img src="'+esc(s.userAvatar)+'" alt="">'):esc(s.userInitial||'?');
   document.getElementById('svName').textContent=s.userName||'';
   document.getElementById('svTime').textContent=timeAgo(s.createdAt)+' · '+(_svIdx+1)+' of '+_svStories.length;
+
   // Media
   var media=document.getElementById('svMedia');
   var tapPrev='<div class="sv-tap-prev" onclick="storyNav(-1)"></div>';
@@ -2548,14 +2561,66 @@ function renderStorySlide(){
     var isVid=s.mediaUrl.includes('.mp4')||s.mediaUrl.includes('video');
     media.innerHTML=tapPrev+(isVid?'<video src="'+esc(s.mediaUrl)+'" style="max-width:100%;max-height:85vh;object-fit:contain;" autoplay muted loop></video>':'<img src="'+esc(s.mediaUrl)+'" style="max-width:100%;max-height:85vh;object-fit:contain;">')+tapNext;
   }
+
+  // Archive button for own stories
   if(isMine){
     var archBtn=document.createElement('button');archBtn.className='sv-view-archive';archBtn.textContent='📚 Your Archive';
     archBtn.onclick=function(){closeStoryViewer();openStoryArchive();};
     media.appendChild(archBtn);
   }
+
+  // ── VIEWERS BUTTON (owner only) ──────────────────────
+  var existingVBtn=media.querySelector('.sv-viewers-btn');
+  if(existingVBtn)existingVBtn.remove();
+  if(isMine){
+    var seenCount=(s.seen&&s.seen.length)||0;
+    var vBtn=document.createElement('button');
+    vBtn.className='sv-viewers-btn';
+    vBtn.innerHTML='👁 '+seenCount+' viewer'+(seenCount!==1?'s':'');
+    vBtn.onclick=function(e){e.stopPropagation();openStoryViewers(s);};
+    media.appendChild(vBtn);
+  }
+
+  // ── VIEWERS PANEL (hidden by default) ───────────────
+  var existingPanel=media.querySelector('#storyViewersPanel');
+  if(existingPanel)existingPanel.remove();
+  var vPanel=document.createElement('div');
+  vPanel.id='storyViewersPanel';
+  vPanel.innerHTML='<div class="sv-viewers-handle"></div><div class="sv-viewers-title">👁 Viewers</div><div id="svViewersList"></div>';
+  media.appendChild(vPanel);
+
+  // ── REACTIONS BAR (non-owner only) ──────────────────
+  var existingBar=media.querySelector('.sv-reactions-bar');
+  if(existingBar)existingBar.remove();
+  if(!isMine){
+    var bar=document.createElement('div');bar.className='sv-reactions-bar';
+    var myReaction=(s.reactions&&s.reactions[me.uid])||null;
+    STORY_REACTIONS.forEach(function(emoji){
+      var counts=s.reactionCounts||{};
+      var count=counts[emoji]||0;
+      var wrap=document.createElement('div');wrap.className='sv-react-wrap';
+      var btn=document.createElement('button');
+      btn.className='sv-react-btn'+(myReaction===emoji?' reacted':'');
+      btn.textContent=emoji;
+      btn.title=count>0?(count+' reaction'+(count>1?'s':'')):'';
+      if(count>0){
+        var badge=document.createElement('span');badge.className='sv-react-count';badge.textContent=count;
+        wrap.appendChild(badge);
+      }
+      btn.onclick=function(e){
+        e.stopPropagation();
+        reactToStory(s,emoji);
+      };
+      wrap.appendChild(btn);
+      bar.appendChild(wrap);
+    });
+    media.appendChild(bar);
+  }
+
   // Caption
   var cap=document.getElementById('svCaption');
   if(s.caption){cap.style.display='';cap.textContent=s.caption;}else{cap.style.display='none';}
+
   // Progress bars
   var pb=document.getElementById('svProgressBar');pb.innerHTML='';
   _svStories.forEach(function(st,i){
@@ -2572,6 +2637,81 @@ function renderStorySlide(){
     setTimeout(()=>fillEl.style.width='100%',50);
   }
   _svTimer=setTimeout(()=>storyNav(1),dur);
+}
+
+// ── OPEN VIEWERS LIST PANEL ───────────────────────────
+function openStoryViewers(s){
+  var panel=document.getElementById('storyViewersPanel');
+  if(!panel)return;
+  panel.classList.add('open');
+  var list=document.getElementById('svViewersList');
+  if(!list)return;
+  // Parse seenBy array
+  var seenBy=[];
+  if(Array.isArray(s.seenBy)){
+    s.seenBy.forEach(function(raw){
+      try{ seenBy.push(typeof raw==='string'?JSON.parse(raw):raw); }catch(e){}
+    });
+  }
+  // Deduplicate by uid
+  var seen={}; seenBy=seenBy.filter(function(x){ if(seen[x.uid])return false; seen[x.uid]=true; return true; });
+  if(!seenBy.length){
+    list.innerHTML='<div style="color:rgba(255,255,255,.5);font-size:13px;padding:10px 0;">No viewers yet 👀</div>';
+    return;
+  }
+  var reactions=s.reactions||{};
+  list.innerHTML='';
+  seenBy.forEach(function(viewer){
+    var row=document.createElement('div');row.className='sv-viewer-row';
+    var avBg=viewer.color||'var(--pink)';
+    row.innerHTML=
+      '<div class="sv-viewer-av" style="background:'+esc(avBg)+';">'
+        +(viewer.avatar?'<img src="'+esc(viewer.avatar)+'" alt="">':esc(viewer.initial||'?'))
+      +'</div>'
+      +'<div class="sv-viewer-name">'+esc(viewer.name||viewer.handle||'User')+'<br><span style="font-size:10.5px;opacity:.6;font-weight:400;">@'+esc(viewer.handle||'')+'</span></div>'
+      +(reactions[viewer.uid]?'<div class="sv-viewer-reaction">'+reactions[viewer.uid]+'</div>':'');
+    list.appendChild(row);
+  });
+  // Close panel when tapping outside it
+  panel.addEventListener('click',function(e){e.stopPropagation();},{once:false});
+}
+
+// ── REACT TO A STORY ─────────────────────────────────
+async function reactToStory(s, emoji){
+  var myPrev=(s.reactions&&s.reactions[me.uid])||null;
+  var newReaction=myPrev===emoji?null:emoji;  // toggle off if same
+
+  // Update local story data
+  if(!s.reactions) s.reactions={};
+  if(!s.reactionCounts) s.reactionCounts={};
+
+  // Remove old reaction count
+  if(myPrev){
+    s.reactionCounts[myPrev]=Math.max(0,(s.reactionCounts[myPrev]||1)-1);
+    if(s.reactionCounts[myPrev]===0) delete s.reactionCounts[myPrev];
+  }
+  // Apply new reaction
+  if(newReaction){
+    s.reactions[me.uid]=newReaction;
+    s.reactionCounts[newReaction]=(s.reactionCounts[newReaction]||0)+1;
+  } else {
+    delete s.reactions[me.uid];
+  }
+
+  // Re-render reactions bar with updated counts
+  renderStorySlide();
+
+  // Persist to Firestore
+  try{
+    var update={'reactions.'+me.uid: newReaction||firebase.firestore.FieldValue.delete()};
+    if(myPrev) update['reactionCounts.'+myPrev]=firebase.firestore.FieldValue.increment(-1);
+    if(newReaction) update['reactionCounts.'+newReaction]=firebase.firestore.FieldValue.increment(1);
+    await db.collection('stories').doc(s.id).update(update);
+    // Notify story owner
+    if(newReaction && s.uid!==me.uid){
+      sendNotification(s.uid,'like',{name:me.name,handle:me.handle},newReaction+' reacted to your story');
+    }
+  }catch(e){}
 }
 function storyNav(dir){
   _svIdx+=dir;
