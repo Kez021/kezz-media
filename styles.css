@@ -1172,157 +1172,96 @@ textarea.form-input{resize:none;min-height:80px;}
 .sv-react-wrap{position:relative;}
 
 /* =====================================================
-   KEZ MEDIA — MOBILE RESPONSIVE FIX
-   (SAFE — DOES NOT CHANGE DESKTOP)
+   KEZ MEDIA — MOBILE RESPONSIVE
+   Safe: does NOT change desktop styles
 ===================================================== */
-/* ---------- TABLETS ---------- */
+
+/* ── TABLETS (≤1100px) ─────────────────────────────── */
 @media (max-width:1100px){
-.layout{
-grid-template-columns:200px 1fr 240px;
-gap:16px;
-}
-}
-/* ---------- SMALL TABLETS ---------- */
-@media (max-width:900px){
-.layout{
-grid-template-columns:1fr;
-padding:12px;
-}
-.sidebar-left,
-.sidebar-right{
-display:none;
-}
-main{
-width:100%;
-max-width:100%;
-}
-}
-/* ---------- PHONES ---------- */
-@media (max-width:700px){
-/* NAVBAR */
-nav{
-height:56px;
-padding:0 12px;
-}
-.brand{
-font-size:20px;
-}
-.nav-search{
-display:none;
-}
-.nav-right{
-gap:8px;
-}
-/* FEED */
-.view{
-padding:10px;
-}
-#feed{
-padding-bottom:80px;
-}
-/* STORIES */
-.stories-wrap{
-overflow-x:auto;
-gap:10px;
-padding:8px;
-scroll-snap-type:x mandatory;
-}
-.story-item{
-scroll-snap-align:start;
-}
-/* POSTS */
-.post-card{
-border-radius:12px;
-margin-bottom:12px;
-}
-.post-grid img{
-border-radius:10px;
-}
-/* CREATE POST */
-.create-bar{
-margin:10px 0;
-}
-/* PROFILE */
-.profile-card{
-margin-bottom:12px;
-}
-/* SETTINGS */
-.settings-card{
-margin-bottom:12px;
-}
-/* FRIENDS */
-.friends-sidebar-section{
-margin-bottom:12px;
-}
-/* TOUCH FRIENDLY */
-button,
-.menu-item,
-.nav-icon{
-min-height:42px;
-}
-/* TOP MOBILE NAV */
-.mobile-bottom-nav{
-position:fixed;
-top:56px;
-bottom:auto;
-left:0;
-right:0;
-height:60px;
-background:var(--nav-bg);
-border-top:none;
-border-bottom:1px solid var(--border);
-display:flex;
-justify-content:space-around;
-align-items:center;
-z-index:9999;
-backdrop-filter:blur(16px);
--webkit-backdrop-filter:blur(16px);
-box-shadow:0 2px 12px rgba(226,104,138,.10);
-}
-.mob-nav-item{
-display:flex;
-flex-direction:column;
-align-items:center;
-font-size:11px;
-color:var(--text2);
-cursor:pointer;
-}
-.mob-nav-item svg{
-width:20px;
-height:20px;
-}
-.mob-nav-item.active{
-color:var(--pink);
-font-weight:600;
-}
-body{
-padding-bottom:0;
-padding-top:calc(56px + 60px + 8px);
-}
-}
-/* ---------- VERY SMALL PHONES ---------- */
-@media (max-width:420px){
-.brand{
-font-size:18px;
-}
-.post-avatar{
-width:34px;
-height:34px;
-}
-.story-ring{
-width:48px;
-height:48px;
-}
+  .layout{grid-template-columns:200px 1fr 240px;gap:16px;}
 }
 
-/* =====================================================
-   KEZ MEDIA — MOBILE BOTTOM NAV RAISED CREATE BUTTON
-===================================================== */
+/* ── SMALL TABLETS (≤900px) ───────────────────────── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;padding:12px;}
+  .sidebar-left,.sidebar-right{display:none;}
+  main{width:100%;max-width:100%;}
+}
+
+/* ── PHONES (≤700px) ──────────────────────────────── */
 @media (max-width:700px){
-  /* Centre dropped ➕ button */
+  /* Navbar */
+  nav{height:56px;padding:0 12px;}
+  .brand{font-size:20px;}
+  .nav-search{display:none;}
+  .nav-right{gap:8px;}
+
+  /* Layout — room for fixed bottom nav */
+  .layout,.layout.profile-mode{
+    grid-template-columns:1fr;
+    padding:calc(60px + 12px) 0 72px;
+    gap:0;
+    max-width:100%;
+  }
+  .sidebar-left,.sidebar-right{display:none;}
+
+  /* Feed */
+  .view{padding:10px;}
+  #feed{padding-bottom:80px;}
+
+  /* Stories */
+  .stories-wrap{overflow-x:auto;gap:10px;padding:8px;scroll-snap-type:x mandatory;}
+  .story-item{scroll-snap-align:start;}
+
+  /* Posts */
+  .post-card{border-radius:12px;margin-bottom:12px;}
+  .post-grid img{border-radius:10px;}
+  .create-bar{margin:10px 0;}
+  .profile-card,.settings-card,.friends-sidebar-section{margin-bottom:12px;}
+
+  /* Touch targets */
+  button,.menu-item,.nav-icon{min-height:42px;}
+
+  /* ── BOTTOM MOBILE NAV ── */
+  .mobile-bottom-nav{
+    display:flex !important;
+    position:fixed !important;
+    bottom:0 !important;
+    top:auto !important;
+    left:0;
+    right:0;
+    height:60px;
+    background:var(--nav-bg);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    border-top:1px solid var(--border);
+    border-bottom:none;
+    justify-content:space-around;
+    align-items:center;
+    z-index:9000;
+    box-shadow:0 -2px 14px rgba(226,104,138,.12);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .mob-nav-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    font-size:10px;
+    font-weight:600;
+    color:var(--text3);
+    cursor:pointer;
+    position:relative;
+    padding:4px 8px;
+    transition:color .18s;
+  }
+  .mob-nav-item svg{width:22px;height:22px;}
+  .mob-nav-item.active{color:var(--pink);}
+
+  /* ── Raised pink ➕ centre button ── */
   .mob-nav-create{
     position:relative;
-    margin-bottom:-22px;
+    margin-top:-20px;
   }
   .mob-create-btn{
     width:52px;
@@ -1332,22 +1271,17 @@ height:48px;
     display:flex;
     align-items:center;
     justify-content:center;
-    box-shadow:0 4px 18px rgba(226,104,138,.55),0 2px 8px rgba(0,0,0,.12);
-    transition:transform .18s, box-shadow .18s;
+    box-shadow:0 4px 20px rgba(226,104,138,.6),0 2px 8px rgba(0,0,0,.15);
+    transition:transform .18s,box-shadow .18s;
   }
-  .mob-create-btn:active{
-    transform:scale(.93);
-    box-shadow:0 2px 10px rgba(226,104,138,.4);
-  }
-  .mob-create-btn svg{
-    width:22px;
-    height:22px;
-  }
-  /* Badge on Chat icon */
+  .mob-create-btn:active{transform:scale(.92);box-shadow:0 2px 10px rgba(226,104,138,.4);}
+  .mob-create-btn svg{width:24px;height:24px;}
+
+  /* Badge */
   .mob-nav-badge{
     position:absolute;
-    top:0;
-    right:12px;
+    top:-2px;
+    right:4px;
     background:var(--pink);
     color:white;
     border-radius:10px;
@@ -1358,4 +1292,14 @@ height:48px;
     text-align:center;
     border:2px solid var(--card);
   }
+
+  /* Body padding — content not hidden behind nav */
+  body{padding-bottom:72px;}
+}
+
+/* ── VERY SMALL PHONES (≤420px) ───────────────────── */
+@media (max-width:420px){
+  .brand{font-size:18px;}
+  .post-avatar{width:34px;height:34px;}
+  .story-ring{width:48px;height:48px;}
 }
