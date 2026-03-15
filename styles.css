@@ -1260,20 +1260,24 @@ button,
 .nav-icon{
 min-height:42px;
 }
-/* BOTTOM MOBILE NAV */
+/* TOP MOBILE NAV */
 .mobile-bottom-nav{
 position:fixed;
-bottom:0;
+top:56px;
+bottom:auto;
 left:0;
 right:0;
 height:60px;
-background:var(--card);
-border-top:1px solid var(--border);
+background:var(--nav-bg);
+border-top:none;
+border-bottom:1px solid var(--border);
 display:flex;
 justify-content:space-around;
 align-items:center;
 z-index:9999;
-backdrop-filter:blur(10px);
+backdrop-filter:blur(16px);
+-webkit-backdrop-filter:blur(16px);
+box-shadow:0 2px 12px rgba(226,104,138,.10);
 }
 .mob-nav-item{
 display:flex;
@@ -1292,7 +1296,8 @@ color:var(--pink);
 font-weight:600;
 }
 body{
-padding-bottom:70px;
+padding-bottom:0;
+padding-top:calc(56px + 60px + 8px);
 }
 }
 /* ---------- VERY SMALL PHONES ---------- */
@@ -1314,10 +1319,10 @@ height:48px;
    KEZ MEDIA — MOBILE BOTTOM NAV RAISED CREATE BUTTON
 ===================================================== */
 @media (max-width:700px){
-  /* Centre raised ➕ button */
+  /* Centre dropped ➕ button */
   .mob-nav-create{
     position:relative;
-    margin-top:-22px;
+    margin-bottom:-22px;
   }
   .mob-create-btn{
     width:52px;
