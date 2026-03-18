@@ -3929,7 +3929,8 @@ function openProfileEditModal(){
   updatePeLayoutBtns(_profileLayout);
   // Default to profile tab
   switchPeTab('profile');
-  modal.style.display = 'flex';
+  // Show via class — NEVER use inline display:flex (causes CSS selector bug)
+  modal.classList.add('open');
 }
 function renderPeModalThemeGrid(){
   var tg=document.getElementById('peModalThemeGrid');if(!tg)return;
@@ -3959,7 +3960,7 @@ function updatePeLayoutBtns(layout){
 }
 function closeProfileEditModal(){
   var modal = document.getElementById('profileEditModal');
-  if(modal) modal.style.display = 'none';
+  if(modal) modal.classList.remove('open');
 }
 async function saveProfileEditModal(){
   var newName   = document.getElementById('peModalName').value.trim();
@@ -3972,7 +3973,8 @@ async function saveProfileEditModal(){
   me.bio    = newBio;
   me.initial= newName.charAt(0).toUpperCase();
   await saveProfileToFirestore();
-  refreshProfileUI();
+  refreshProfile();          // correct function name
+  applyUserProfile();        // update nav avatar + initials
   closeProfileEditModal();
   toast('Profile updated ✓ 🌸');
 }
@@ -4021,4 +4023,3 @@ async function seedDummyStories(){
 // ══════════════════════════════════════════════════════
 // (Already implemented in openStoryViewers — just ensuring it's called correctly)
 // The viewers button is shown on your own stories via renderStorySlide()
-
