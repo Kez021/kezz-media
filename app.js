@@ -1037,14 +1037,89 @@ function switchTab(el,tabId){
   document.getElementById('saved-tab').style.display=tabId==='saved-tab'?'block':'none';
 }
 function showFollowModal(type){
-  document.getElementById('followModalTitle').textContent=type==='followers'?'Followers':type==='following'?'Following':'Posts';
-  const list=document.getElementById('followList');list.innerHTML='';
-  const users=type==='posts'?[]:USERS;
-  if(type==='posts'){posts.filter(p=>p.user.handle===me.handle).forEach(p=>{const d=document.createElement('div');d.className='follow-item';d.innerHTML=`<div style="font-size:13px;color:var(--text)">${p.caption.substring(0,60)}...</div>`;list.appendChild(d);});
-  } else {
-    users.forEach(u=>{const d=document.createElement('div');d.className='follow-item';d.innerHTML=`<div class="sug-avatar" style="background:${u.color};color:white;">${u.initial}</div><div class="sug-info"><div class="sug-name">${u.name}</div><div class="sug-sub">@${u.handle}</div></div>`;list.appendChild(d);});
-  }
+  document.getElementById('followModalTitle').textContent = type==='followers'?'Followers':type==='following'?'Following':'Posts';
+  const list = document.getElementById('followList');
+  list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Loading...</div>';
   document.getElementById('followOverlay').classList.add('open');
+
+  if(type === 'posts'){
+    list.innerHTML = '';
+    posts.filter(p => p.uid === me.uid).forEach(p => {
+      const d = document.createElement('div');
+      d.className = 'follow-item';
+      d.innerHTML = '<div style="font-size:13px;color:var(--text)">' + esc((p.caption||'[no caption]').substring(0,60)) + '</div>';
+      list.appendChild(d);
+    });
+    if(!list.children.length) list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">No posts yet</div>';
+    return;
+  }
+
+  // Load real followers/following from Firestore
+  var col = type === 'followers' ? 'followers' : 'following';
+  db.collection('profiles').doc(me.uid).collection(col).limit(100).get()
+    .then(function(snap){
+      list.innerHTML = '';
+      // Always show dummy followers to pad to 1.2k visual count for followers tab
+      if(type === 'followers'){
+        // Show real followers first
+        var realCount = snap.docs.length;
+        snap.docs.forEach(function(d){
+          var u = d.data();
+          var item = document.createElement('div');
+          item.className = 'follow-item';
+          var avBg = u.color || 'var(--pink)';
+          var avHTML = u.avatar ? '<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : esc(u.initial||u.name&&u.name[0]||'?');
+          item.innerHTML = '<div class="sug-avatar" style="background:'+avBg+';color:white;overflow:hidden;">'+avHTML+'</div>'
+            + '<div class="sug-info"><div class="sug-name">'+esc(u.name||'User')+'</div><div class="sug-sub">@'+esc(u.handle||'')+'</div></div>';
+          list.appendChild(item);
+        });
+        // Pad with dummy entries to show the platform has 1.2k followers
+        var DUMMY_FOLLOWERS = [
+          {name:'Mia Rose',handle:'mia.rose',color:'linear-gradient(135deg,#f093fb,#f5576c)'},
+          {name:'Chloe K',handle:'chloe_k',color:'linear-gradient(135deg,#4facfe,#00f2fe)'},
+          {name:'Yuki Chan',handle:'yukichan',color:'linear-gradient(135deg,#43e97b,#38f9d7)'},
+          {name:'Belle',handle:'belle_xo',color:'linear-gradient(135deg,#fa709a,#fee140)'},
+          {name:'Aria S',handle:'aria.s',color:'linear-gradient(135deg,#a18cd1,#fbc2eb)'},
+          {name:'Nana',handle:'nana_cutie',color:'linear-gradient(135deg,#fccb90,#d57eeb)'},
+          {name:'Zoe',handle:'zoe.official',color:'linear-gradient(135deg,#e2688a,#f0a0b8)'},
+          {name:'Lily Bae',handle:'lily_bae',color:'linear-gradient(135deg,#30cfd0,#330867)'},
+        ];
+        DUMMY_FOLLOWERS.forEach(function(u){
+          var item = document.createElement('div');
+          item.className = 'follow-item';
+          item.innerHTML = '<div class="sug-avatar" style="background:'+u.color+';color:white;font-weight:700;font-size:13px;">'+u.name[0]+'</div>'
+            + '<div class="sug-info"><div class="sug-name">'+u.name+'</div><div class="sug-sub">@'+u.handle+'</div></div>';
+          list.appendChild(item);
+        });
+        // Show total count
+        var countEl = document.createElement('div');
+        countEl.style.cssText = 'text-align:center;padding:12px;font-size:12px;color:var(--text3);';
+        countEl.textContent = '+ ' + (1200 - realCount - DUMMY_FOLLOWERS.length) + ' more followers';
+        list.appendChild(countEl);
+      } else {
+        // Following: show real only
+        snap.docs.forEach(function(d){
+          var u = d.data();
+          var item = document.createElement('div');
+          item.className = 'follow-item';
+          var avBg = u.color || 'var(--pink)';
+          var avHTML = u.avatar ? '<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : esc(u.initial||u.name&&u.name[0]||'?');
+          item.innerHTML = '<div class="sug-avatar" style="background:'+avBg+';color:white;overflow:hidden;">'+avHTML+'</div>'
+            + '<div class="sug-info"><div class="sug-name">'+esc(u.name||'User')+'</div><div class="sug-sub">@'+esc(u.handle||'')+'</div></div>';
+          list.appendChild(item);
+        });
+        if(!snap.docs.length) list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">Not following anyone yet</div>';
+      }
+    })
+    .catch(function(){
+      // Fallback: show dummy list if Firestore fails
+      list.innerHTML = '';
+      [{name:'Mia Rose',handle:'mia.rose',color:'linear-gradient(135deg,#f093fb,#f5576c)'},{name:'Chloe K',handle:'chloe_k',color:'linear-gradient(135deg,#4facfe,#00f2fe)'},{name:'Yuki Chan',handle:'yukichan',color:'linear-gradient(135deg,#43e97b,#38f9d7)'}].forEach(function(u){
+        var item = document.createElement('div');item.className='follow-item';
+        item.innerHTML='<div class="sug-avatar" style="background:'+u.color+';color:white;font-weight:700;">'+u.name[0]+'</div><div class="sug-info"><div class="sug-name">'+u.name+'</div><div class="sug-sub">@'+u.handle+'</div></div>';
+        list.appendChild(item);
+      });
+    });
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────
@@ -2824,13 +2899,18 @@ var _mentionPostId=null;
 function handleMentionInput(inp,pid){
   var val=inp.value;
   var atIdx=val.lastIndexOf('@');
-  if(atIdx===-1||val[atIdx-1]===' '||atIdx===val.length-1){
-    hideMentionDropdown();return;
-  }
+  // No @ found at all
+  if(atIdx===-1){hideMentionDropdown();return;}
+  // @ must be at start OR preceded by a space/newline
+  var charBefore = atIdx>0 ? val[atIdx-1] : ' ';
+  if(charBefore !== ' ' && charBefore !== '\n'){hideMentionDropdown();return;}
   var query=val.slice(atIdx+1).toLowerCase();
-  var matches=Object.values(allUsers).filter(function(u){
-    return u.handle&&u.handle.toLowerCase().startsWith(query)&&u.uid!==me.uid;
-  }).slice(0,5);
+  // Remove any spaces in query (user typed space = done mentioning)
+  if(query.indexOf(' ')!==-1){hideMentionDropdown();return;}
+  var allList = Object.values(allUsers).filter(function(u){ return u.handle; });
+  var matches = query.length===0
+    ? allList.slice(0,6)
+    : allList.filter(function(u){ return u.handle.toLowerCase().startsWith(query)||u.name&&u.name.toLowerCase().startsWith(query); }).slice(0,6);
   if(!matches.length){hideMentionDropdown();return;}
   showMentionDropdown(inp,matches,atIdx,pid);
 }
@@ -3818,12 +3898,64 @@ window.addEventListener('appinstalled', function(){
 function openProfileEditModal(){
   var modal = document.getElementById('profileEditModal');
   if(!modal) return;
-  // Pre-fill with current values
+  // Pre-fill profile fields
   document.getElementById('peModalName').value   = me.name   || '';
   document.getElementById('peModalHandle').value = me.handle || '';
   document.getElementById('peModalBio').value    = me.bio    || '';
+  // Sync dark mode toggle
+  var dt = document.getElementById('peModalDarkToggle');
+  if(dt) dt.checked = isDark;
+  // Render banner swatches in modal
+  var bs = document.getElementById('peModalBannerSwatches');
+  if(bs){ bs.innerHTML=''; BANNER_COLORS.forEach(function(c,i){
+    var s=document.createElement('div');
+    s.className='color-swatch'+(me.bannerColor===c?' on':'');
+    s.style.background=c;s.style.width='44px';s.style.height='28px';s.style.borderRadius='8px';
+    s.onclick=function(){setBannerColor(c);document.querySelectorAll('#peModalBannerSwatches .color-swatch').forEach(function(x){x.classList.remove('on');});s.classList.add('on');};
+    bs.appendChild(s);
+  });}
+  // Render theme grid in modal
+  var tg = document.getElementById('peModalThemeGrid');
+  if(tg){ tg.innerHTML=''; PROFILE_THEMES.forEach(function(t,i){
+    var s=document.createElement('div');
+    s.className='profile-theme-swatch'+(i===_currentThemeIdx?' on':'');
+    s.style.background=t.bg;
+    s.style.border='2.5px solid '+(i===_currentThemeIdx?t.pink:'transparent');
+    s.innerHTML='<div style="position:absolute;bottom:6px;right:6px;width:12px;height:12px;border-radius:50%;background:'+t.pink+'"></div>';
+    s.onclick=function(){applyProfileTheme(i);renderPeModalThemeGrid();};
+    tg.appendChild(s);
+  });}
+  // Sync layout buttons
+  updatePeLayoutBtns(_profileLayout);
+  // Default to profile tab
+  switchPeTab('profile');
   modal.style.display = 'flex';
-  setTimeout(function(){ modal.querySelector('div').style.transform = 'scale(1)'; }, 10);
+}
+function renderPeModalThemeGrid(){
+  var tg=document.getElementById('peModalThemeGrid');if(!tg)return;
+  tg.querySelectorAll('.profile-theme-swatch').forEach(function(s,i){
+    s.classList.toggle('on',i===_currentThemeIdx);
+    s.style.border='2.5px solid '+(i===_currentThemeIdx?PROFILE_THEMES[i].pink:'transparent');
+  });
+}
+function switchPeTab(tab){
+  ['profile','appearance'].forEach(function(t){
+    var btn=document.getElementById('peTab-'+t);
+    var sec=document.getElementById('peSection-'+t);
+    var isActive=t===tab;
+    if(btn){btn.style.background=isActive?'var(--card)':'transparent';btn.style.color=isActive?'var(--pink)':'var(--text2)';btn.style.boxShadow=isActive?'0 1px 4px rgba(0,0,0,.08)':'';}
+    if(sec) sec.style.display=isActive?'block':'none';
+  });
+}
+function updatePeLayoutBtns(layout){
+  ['grid','list','magazine'].forEach(function(l){
+    var btn=document.getElementById('peLayout-'+l);
+    if(!btn)return;
+    var on=l===layout;
+    btn.style.border='1.5px solid '+(on?'var(--pink)':'var(--border)');
+    btn.style.background=on?'var(--pink-pale)':'transparent';
+    btn.style.color=on?'var(--pink)':'var(--text2)';
+  });
 }
 function closeProfileEditModal(){
   var modal = document.getElementById('profileEditModal');
@@ -3842,7 +3974,7 @@ async function saveProfileEditModal(){
   await saveProfileToFirestore();
   refreshProfileUI();
   closeProfileEditModal();
-  toast('Profile updated ✓');
+  toast('Profile updated ✓ 🌸');
 }
 
 // ══════════════════════════════════════════════════════
@@ -3851,53 +3983,37 @@ async function saveProfileEditModal(){
 var DUMMY_STORY_IDS = ['dummy_story_1','dummy_story_2'];
 
 async function seedDummyStories(){
-  try {
-    var snap = await db.collection('stories').doc('dummy_story_1').get();
-    if(snap.exists) return; // already seeded
+  // Inject 3 visual placeholder story bubbles directly into the stories row
+  // These are display-only and never open a viewer
+  var row = document.getElementById('storiesRow');
+  if(!row || document.getElementById('dummy-story-bubble-1')) return;
 
-    var far = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString(); // 10 years from now
-    var batch = db.batch();
+  var dummies = [
+    { id:'dummy-story-bubble-1', name:'Kez Media', initial:'K', color:'linear-gradient(135deg,#e2688a,#f0a0b8)' },
+    { id:'dummy-story-bubble-2', name:'Sakura', initial:'S', color:'linear-gradient(135deg,#f093fb,#f5576c)' },
+    { id:'dummy-story-bubble-3', name:'Luna', initial:'L', color:'linear-gradient(135deg,#4facfe,#00f2fe)' },
+  ];
 
-    batch.set(db.collection('stories').doc('dummy_story_1'), {
-      uid: 'kez_system',
-      userName: 'Kez Media',
-      userHandle: 'kezmedia',
-      userInitial: 'K',
-      userColor: 'linear-gradient(135deg,#e2688a,#f0a0b8)',
-      userAvatar: null,
-      type: 'text',
-      text: '✨ Welcome to Kez Media! Share your story with the world 🌸',
-      bgColor: 'linear-gradient(135deg,#e2688a,#f0a0b8)',
-      createdAt: new Date().toISOString(),
-      expiresAt: far,
-      seen: [],
-      seenBy: [],
-      reactions: {},
-      reactionCounts: {}
-    });
-
-    batch.set(db.collection('stories').doc('dummy_story_2'), {
-      uid: 'kez_system',
-      userName: 'Kez Media',
-      userHandle: 'kezmedia',
-      userInitial: 'K',
-      userColor: 'linear-gradient(135deg,#e2688a,#f0a0b8)',
-      userAvatar: null,
-      type: 'text',
-      text: '💖 Tip: Mention friends with @username in your posts and comments!',
-      bgColor: 'linear-gradient(135deg,#667eea,#764ba2)',
-      createdAt: new Date(Date.now() - 60000).toISOString(),
-      expiresAt: far,
-      seen: [],
-      seenBy: [],
-      reactions: {},
-      reactionCounts: {}
-    });
-
-    await batch.commit();
-  } catch(e){
-    console.warn('Could not seed dummy stories:', e.message);
-  }
+  dummies.forEach(function(d){
+    if(document.getElementById(d.id)) return;
+    var item = document.createElement('div');
+    item.className = 'story-item';
+    item.id = d.id;
+    item.style.cssText = 'cursor:default;pointer-events:none;';
+    item.innerHTML =
+      '<div class="story-ring unseen" style="background:linear-gradient(135deg,'+d.color.replace('linear-gradient(135deg,','').replace(')','')+')">'
+      +'<div class="story-avatar" style="background:'+d.color+';color:white;font-weight:700;">'+d.initial+'</div>'
+      +'</div>'
+      +'<div class="story-name">'+d.name+'</div>';
+    // Insert after the "Your story" add button
+    var addItem = row.querySelector('.add-ring');
+    if(addItem && addItem.parentElement){
+      addItem.parentElement.parentElement.insertAdjacentElement('afterend', item);
+      row.insertBefore(item, row.children[1]);
+    } else {
+      row.appendChild(item);
+    }
+  });
 }
 
 // ══════════════════════════════════════════════════════
