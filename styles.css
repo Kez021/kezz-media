@@ -1253,6 +1253,8 @@ textarea.form-input{resize:none;min-height:80px;}
 /* ══════════════════════════════════════════════════════
    PROFILE EDIT MODAL — ensure display:flex shows right
 ══════════════════════════════════════════════════════ */
-#profileEditModal[style*="flex"]{display:flex !important;}
+/* profileEditModal visibility controlled by JS only */
+#profileEditModal{display:none;}
+#profileEditModal.open{display:flex;align-items:flex-start;justify-content:center;}
 
 /* Story sizing consolidated into main mobile block above */
