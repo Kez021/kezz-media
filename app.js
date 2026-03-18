@@ -760,13 +760,17 @@ function buildCard(p,i){
   });
   var inp=card.querySelector('.c-input');
   if(inp){
+    // Wrap FIRST so mention dropdown has correct positioned parent
+    if(!inp.parentElement.classList.contains('c-input-wrap')){
+      var wrap2=document.createElement('div');
+      wrap2.className='c-input-wrap';
+      wrap2.style.position='relative';
+      wrap2.style.flex='1';
+      inp.parentNode.insertBefore(wrap2,inp);
+      wrap2.appendChild(inp);
+    }
     inp.addEventListener('keydown',function(e){if(e.key==='Enter')addComment(pid);});
     inp.addEventListener('input',function(){handleMentionInput(inp,pid);});
-  }
-  // Wrap in relative div for mention dropdown
-  if(inp&&!inp.parentElement.classList.contains('c-input-wrap')){
-    var wrap2=document.createElement('div');wrap2.className='c-input-wrap';
-    inp.parentNode.insertBefore(wrap2,inp);wrap2.appendChild(inp);
   }
   card.querySelectorAll('[data-delete]').forEach(function(el){
     el.addEventListener('click',function(){deletePost(el.dataset.delete);});
@@ -1505,6 +1509,14 @@ function openLightbox(pid){
   if(lbShareBtn) lbShareBtn.addEventListener('click',function(){toast('Shared!');});
   if(lbCommentBtn) lbCommentBtn.addEventListener('click',function(){addLbComment(pid);});
   if(lbCommentInp) lbCommentInp.addEventListener('keydown',function(e){if(e.key==='Enter')addLbComment(pid);});
+  // Hook @mention into lightbox comment input
+  if(lbCommentInp){
+    if(!lbCommentInp.parentElement.classList.contains('c-input-wrap')){
+      var lbWrap=document.createElement('div');lbWrap.className='c-input-wrap';lbWrap.style.position='relative';lbWrap.style.flex='1';
+      lbCommentInp.parentNode.insertBefore(lbWrap,lbCommentInp);lbWrap.appendChild(lbCommentInp);
+    }
+    lbCommentInp.addEventListener('input',function(){handleMentionInput(lbCommentInp,pid);});
+  }
   inner.querySelectorAll('.card-open-profile-lb').forEach(function(el){
     el.addEventListener('click',function(){closeLightbox();viewProfile(el.dataset.uid);});
   });
@@ -2566,11 +2578,14 @@ async function publishStory(){
   if(_storyType==='photo'&&!_storyFileData){toast('Please select a photo first');return;}
   if(_storyType==='text'&&!document.getElementById('smTextInput').value.trim()){toast('Write something first');return;}
   toast('Uploading story...');
+  var photoCaption = (document.getElementById('smPhotoCaption')&&document.getElementById('smPhotoCaption').value.trim())||'';
   var storyData={
     uid: me.uid, userName: me.name, userHandle: me.handle, userColor: me.color, userInitial: me.initial, userAvatar: me.avatar||null,
     type: _storyType, text: _storyType==='text'?(document.getElementById('smTextInput').value.trim()):'',
     bgColor: _storyType==='text'?_storyBgColor:'',
-    mediaUrl: '', caption: '', seen: [],
+    mediaUrl: '', caption: photoCaption,
+    textOverlay: photoCaption,
+    seen: [], seenBy: [], reactions: {}, reactionCounts: {},
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     expiresAt: new Date(Date.now()+24*60*60*1000).toISOString()
   };
@@ -2578,9 +2593,11 @@ async function publishStory(){
     try{
       var url=await uploadToStorage(_storyFileData,'stories/'+me.uid+'/'+Date.now());
       storyData.mediaUrl=url;
-    }catch(e){}
+    }catch(e){ storyData.mediaUrl=_storyFileData; }
   }
   await db.collection('stories').add(storyData);
+  // Reset caption input
+  var capInp=document.getElementById('smPhotoCaption');if(capInp)capInp.value='';
   closeStoryModal();
   toast('Story shared! 🌸 Disappears in 24h');
   loadStories();
@@ -2648,10 +2665,12 @@ function renderStorySlide(){
     }
   }
 
-  // Header
+  // Header — make name/avatar clickable to view profile
   var avEl=document.getElementById('svAv');
   avEl.style.background=s.userColor||'var(--pink)';
   avEl.innerHTML=s.userAvatar?('<img src="'+esc(s.userAvatar)+'" alt="">'):esc(s.userInitial||'?');
+  avEl.dataset.uid = s.uid||'';
+  avEl.dataset.handle = s.userHandle||'';
   document.getElementById('svName').textContent=s.userName||'';
   document.getElementById('svTime').textContent=timeAgo(s.createdAt)+' · '+(_svIdx+1)+' of '+_svStories.length;
 
@@ -2660,10 +2679,12 @@ function renderStorySlide(){
   var tapPrev='<div class="sv-tap-prev" onclick="storyNav(-1)"></div>';
   var tapNext='<div class="sv-tap-next" onclick="storyNav(1)"></div>';
   if(s.type==='text'){
-    media.innerHTML=tapPrev+'<div class="sv-text-story" style="background:'+esc(s.bgColor||'linear-gradient(135deg,#e2688a,#f0a0b8)')+';width:100%;height:100%;display:flex;align-items:center;justify-content:center;">'+esc(s.text)+'</div>'+tapNext;
+    media.innerHTML=tapPrev+'<div class="sv-text-story" style="background:'+esc(s.bgColor||'linear-gradient(135deg,#e2688a,#f0a0b8)')+';width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:22px;font-weight:700;color:white;word-break:break-word;">'+esc(s.text)+'</div>'+tapNext;
   } else if(s.mediaUrl){
     var isVid=s.mediaUrl.includes('.mp4')||s.mediaUrl.includes('video');
-    media.innerHTML=tapPrev+(isVid?'<video src="'+esc(s.mediaUrl)+'" style="max-width:100%;max-height:85vh;object-fit:contain;" autoplay muted loop></video>':'<img src="'+esc(s.mediaUrl)+'" style="max-width:100%;max-height:85vh;object-fit:contain;">')+tapNext;
+    var overlayText=s.textOverlay||s.caption||'';
+    var overlayHTML=overlayText?'<div style="position:absolute;bottom:80px;left:0;right:0;text-align:center;padding:0 16px;pointer-events:none;"><div style="display:inline-block;background:rgba(0,0,0,.55);color:white;font-size:16px;font-weight:700;padding:8px 16px;border-radius:12px;backdrop-filter:blur(4px);max-width:90%;word-break:break-word;">'+esc(overlayText)+'</div></div>':'';
+    media.innerHTML=tapPrev+'<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">'+(isVid?'<video src="'+esc(s.mediaUrl)+'" style="max-width:100%;max-height:85vh;object-fit:contain;" autoplay muted loop></video>':'<img src="'+esc(s.mediaUrl)+'" style="max-width:100%;max-height:85vh;object-fit:contain;">')+overlayHTML+'</div>'+tapNext;
   }
 
   // Archive button for own stories
@@ -4023,3 +4044,121 @@ async function seedDummyStories(){
 // ══════════════════════════════════════════════════════
 // (Already implemented in openStoryViewers — just ensuring it's called correctly)
 // The viewers button is shown on your own stories via renderStorySlide()
+
+
+// ══════════════════════════════════════════════════════
+//  VIEW STORY OWNER PROFILE — click name/avatar in viewer
+// ══════════════════════════════════════════════════════
+function viewStoryOwnerProfile(){
+  var s = _svStories[_svIdx];
+  if(!s) return;
+  closeStoryViewer();
+  if(s.uid && s.uid !== 'kez_system'){
+    if(s.uid === me.uid){ goTo('profile'); return; }
+    viewProfile(s.uid);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  PHOTO STORY PREVIEW WITH TEXT OVERLAY
+// ══════════════════════════════════════════════════════
+function updatePhotoStoryPreview(){
+  var prev = document.getElementById('smPreview');
+  if(!prev || !_storyFileData) return;
+  var caption = (document.getElementById('smPhotoCaption') && document.getElementById('smPhotoCaption').value) || '';
+  // Re-render preview with overlay text
+  var overlayHTML = caption ? '<div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;pointer-events:none;"><div style="display:inline-block;background:rgba(0,0,0,.55);color:white;font-size:13px;font-weight:700;padding:6px 12px;border-radius:10px;max-width:90%;word-break:break-word;">'+caption+'</div></div>' : '';
+  var existing = prev.querySelector('img,video');
+  if(existing){
+    var wrapper = prev.querySelector('.sm-preview-wrap');
+    if(!wrapper){
+      wrapper = document.createElement('div');
+      wrapper.className = 'sm-preview-wrap';
+      wrapper.style.cssText = 'position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;';
+      existing.parentNode.insertBefore(wrapper, existing);
+      wrapper.appendChild(existing);
+    }
+    var old = wrapper.querySelector('.sm-text-overlay');
+    if(old) old.remove();
+    if(caption){
+      var ov = document.createElement('div');
+      ov.className = 'sm-text-overlay';
+      ov.innerHTML = overlayHTML;
+      wrapper.appendChild(ov);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  MOBILE SETTINGS — full menu for mobile
+// ══════════════════════════════════════════════════════
+// Settings page already shows everything on mobile since sidebar collapses
+// The mobile settings nav is already full-width when sidebar-left is hidden
+
+// ══════════════════════════════════════════════════════
+//  ACTIVE USERS IN MESSAGES — show online status
+// ══════════════════════════════════════════════════════
+// Already handled by startPresence() and watchPresence() in the codebase
+// The .pc-online dot appears on user cards in Find People
+// DM conversations show online status via presenceMap
+
+// ══════════════════════════════════════════════════════
+//  SEEN / READ RECEIPTS FOR DMs
+// ══════════════════════════════════════════════════════
+// markDMSeen() already exists — called when opening a conversation
+// getDMSeenStatus() returns seen status per message
+
+// ══════════════════════════════════════════════════════
+//  STORY ORDERING — newest stories first, dummy last
+// ══════════════════════════════════════════════════════
+// Patch loadStories to order by createdAt desc and keep dummies at end
+var _origLoadStories = loadStories;
+loadStories = async function(){
+  try{
+    var row = document.getElementById('storiesRow');
+    if(!row) return;
+    Array.from(row.children).forEach(function(c){
+      if(!c.querySelector('.add-ring') && !c.id.startsWith('dummy-story-bubble')) c.remove();
+    });
+    var now = new Date();
+    var snap = await db.collection('stories')
+      .where('expiresAt', '>', now.toISOString())
+      .get().catch(function(){ return {docs:[]}; });
+
+    var byUser = {};
+    snap.docs.forEach(function(d){
+      var s = {id:d.id, ...d.data()};
+      if(s.uid === 'kez_system') return; // skip old Firestore dummies
+      if(!byUser[s.uid]) byUser[s.uid] = {uid:s.uid, stories:[], user:s, latestAt: s.createdAt||''};
+      byUser[s.uid].stories.push(s);
+      // Track latest story time for ordering
+      if((s.createdAt||'') > byUser[s.uid].latestAt) byUser[s.uid].latestAt = s.createdAt||'';
+    });
+
+    // Sort: my story first, then others by latest story time desc
+    var myEntry = byUser[me.uid];
+    var others = Object.values(byUser).filter(function(u){ return u.uid !== me.uid; });
+    others.sort(function(a,b){ return b.latestAt > a.latestAt ? 1 : -1; });
+    var ordered = (myEntry ? [myEntry] : []).concat(others);
+
+    // Insert real stories before dummy bubbles
+    var dummyRef = document.getElementById('dummy-story-bubble-1');
+    ordered.forEach(function(entry){
+      var u = entry.user;
+      var isMine = entry.uid === me.uid;
+      var seenAll = entry.stories.every(function(s){ return s.seen && s.seen.includes(me.uid); });
+      var d = document.createElement('div');
+      d.className = 'story-item';
+      var ringClass = seenAll ? 'story-ring seen' : (isMine ? 'story-ring my-ring' : 'story-ring unseen');
+      var avHTML = u.userAvatar ? '<img src="'+esc(u.userAvatar)+'" alt="">' : esc(u.userInitial||'?');
+      d.innerHTML = '<div class="'+ringClass+'"><div class="story-avatar" style="background:'+esc(u.userColor||'var(--pink)')+';color:white;">'+avHTML+'</div></div>'
+        + '<div class="story-name">'+esc((u.userName||'?').split(' ')[0])+'</div>';
+      d.onclick = function(){ openStoryViewer(entry.stories, 0); };
+      if(dummyRef && dummyRef.parentNode === row){
+        row.insertBefore(d, dummyRef);
+      } else {
+        row.appendChild(d);
+      }
+    });
+  } catch(e){ console.warn('loadStories error:', e); }
+};
