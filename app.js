@@ -218,7 +218,7 @@ function watchNotifications(){
 
       // Update all badges
       const count = sorted.filter(function(d){return !d.data().read;}).length;
-      ['notifBadge','mnNotifBadge','mobNotifBadge','mobTopNotifBadge'].forEach(function(id){
+      ['notifBadge','mnNotifBadge','mobNotifBadge','mobTopNotifBadge','mobSheetNotifBadge'].forEach(function(id){
         const el=document.getElementById(id);
         if(!el) return;
         el.textContent=count;
@@ -3829,7 +3829,14 @@ function updateMobNav(view){
   document.querySelectorAll('.mob-nav-item').forEach(function(el){
     el.classList.remove('active');
   });
-  var el = document.getElementById('mob-'+view);
+  // Map view names to bottom nav IDs
+  var navMap = {
+    'home':'mob-home','explore':'mob-explore','messages':'mob-messages',
+    'notifs':'mob-home','profile':'mob-home','search':'mob-home',
+    'settings':'mob-settings'
+  };
+  var targetId = navMap[view] || ('mob-'+view);
+  var el = document.getElementById(targetId);
   if(el) el.classList.add('active');
 }
 function closeChatMobile(){
@@ -4007,14 +4014,14 @@ var DUMMY_STORY_IDS = ['dummy_story_1','dummy_story_2'];
 
 async function seedDummyStories(){
   // Inject 3 visual placeholder story bubbles directly into the stories row
-  // These are display-only and never open a viewer
+  // These are display-only and never open a viewer — always at the END
   var row = document.getElementById('storiesRow');
   if(!row || document.getElementById('dummy-story-bubble-1')) return;
 
   var dummies = [
     { id:'dummy-story-bubble-1', name:'Kez Media', initial:'K', color:'linear-gradient(135deg,#e2688a,#f0a0b8)' },
-    { id:'dummy-story-bubble-2', name:'Sakura', initial:'S', color:'linear-gradient(135deg,#f093fb,#f5576c)' },
-    { id:'dummy-story-bubble-3', name:'Luna', initial:'L', color:'linear-gradient(135deg,#4facfe,#00f2fe)' },
+    { id:'dummy-story-bubble-2', name:'Sakura',    initial:'S', color:'linear-gradient(135deg,#f093fb,#f5576c)' },
+    { id:'dummy-story-bubble-3', name:'Luna',      initial:'L', color:'linear-gradient(135deg,#4facfe,#00f2fe)' },
   ];
 
   dummies.forEach(function(d){
@@ -4022,20 +4029,14 @@ async function seedDummyStories(){
     var item = document.createElement('div');
     item.className = 'story-item';
     item.id = d.id;
-    item.style.cssText = 'cursor:default;pointer-events:none;';
+    item.style.cssText = 'cursor:default;pointer-events:none;flex-shrink:0;';
     item.innerHTML =
-      '<div class="story-ring unseen" style="background:linear-gradient(135deg,'+d.color.replace('linear-gradient(135deg,','').replace(')','')+')">'
+      '<div class="story-ring unseen">'
       +'<div class="story-avatar" style="background:'+d.color+';color:white;font-weight:700;">'+d.initial+'</div>'
       +'</div>'
       +'<div class="story-name">'+d.name+'</div>';
-    // Insert after the "Your story" add button
-    var addItem = row.querySelector('.add-ring');
-    if(addItem && addItem.parentElement){
-      addItem.parentElement.parentElement.insertAdjacentElement('afterend', item);
-      row.insertBefore(item, row.children[1]);
-    } else {
-      row.appendChild(item);
-    }
+    // Always append at the END so real stories always appear first
+    row.appendChild(item);
   });
 }
 
@@ -4162,3 +4163,24 @@ loadStories = async function(){
     });
   } catch(e){ console.warn('loadStories error:', e); }
 };
+
+
+// ══════════════════════════════════════════════════════
+//  MOBILE SETTINGS BOTTOM SHEET
+// ══════════════════════════════════════════════════════
+function openMobSettingsSheet(){
+  var sheet = document.getElementById('mobSettingsSheet');
+  if(!sheet) return;
+  // Sync dark mode toggle state
+  var dt = document.getElementById('mobDarkToggle');
+  if(dt) dt.checked = isDark;
+  // Sync notif badge
+  var nb = document.getElementById('notifBadge');
+  var sb = document.getElementById('mobSheetNotifBadge');
+  if(nb && sb){ sb.textContent=nb.textContent; sb.style.display=nb.classList.contains('hidden')?'none':''; }
+  sheet.style.display = 'block';
+}
+function closeMobSettingsSheet(){
+  var sheet = document.getElementById('mobSettingsSheet');
+  if(sheet) sheet.style.display = 'none';
+}
