@@ -218,7 +218,7 @@ function watchNotifications(){
 
       // Update all badges
       const count = sorted.filter(function(d){return !d.data().read;}).length;
-      ['notifBadge','mnNotifBadge','mobNotifBadge'].forEach(function(id){
+      ['notifBadge','mnNotifBadge','mobNotifBadge','mobTopNotifBadge'].forEach(function(id){
         const el=document.getElementById(id);
         if(!el) return;
         el.textContent=count;
@@ -436,6 +436,7 @@ async function init(){
   startPresence();
   watchPresence();
   await seedDummyPosts();
+  await seedDummyStories();
   startPostsListener();
 }
 
@@ -1225,6 +1226,25 @@ function openModal(){
   document.getElementById('uploadPrompt').style.display='block';
   document.querySelectorAll('.mood-chip').forEach(c=>c.classList.remove('sel'));
   switchPostType('status');
+  // Hook mention dropdown to caption input
+  var cap = document.getElementById('captionInput');
+  if(cap && !cap._mentionHooked){
+    cap._mentionHooked = true;
+    var capWrap = cap.parentElement;
+    if(!capWrap.classList.contains('c-input-wrap')){
+      var ww = document.createElement('div');
+      ww.className = 'c-input-wrap';
+      ww.style.position = 'relative';
+      cap.parentNode.insertBefore(ww, cap);
+      ww.appendChild(cap);
+    }
+    cap.addEventListener('input', function(){ handleMentionInput(cap, 'new'); });
+  }
+  var stat = document.getElementById('statusInput');
+  if(stat && !stat._mentionHooked){
+    stat._mentionHooked = true;
+    stat.addEventListener('input', function(){ handleMentionInput(stat, 'new'); });
+  }
 }
 function closeModal(){document.getElementById('overlay').classList.remove('open');}
 function overlayClick(e){if(e.target===document.getElementById('overlay'))closeModal();}
@@ -2383,22 +2403,30 @@ function renderDMConvoList(activeUid){
 
 function uploadBanner(inp){
   const f=inp.files[0];if(!f)return;
-  toast('Uploading cover photo...');
+  // Reset input so same file can be re-selected
+  toast('Uploading cover photo... ⏳');
   const r=new FileReader();
   r.onload=async function(e){
     let url = e.target.result; // base64 fallback
     try{
-      url = await uploadToStorage(e.target.result, 'banners/me_'+Date.now());
-    }catch(err){}
+      url = await uploadToStorage(e.target.result, 'banners/'+me.uid+'_'+Date.now());
+    }catch(err){ console.warn('Banner upload fallback to base64'); }
     me.bannerImage = url;
     me.bannerColor = '';
-    saveProfileToFirestore();
-    // Update UI
+    await saveProfileToFirestore();
+    // Update all banner UI
     const bi=document.getElementById('bannerImg');
-    if(bi){ bi.src=url; bi.style.display='block'; }
+    if(bi){ bi.src=url; bi.style.display='block'; bi.style.opacity='1'; }
     const pb=document.getElementById('profileBanner');
-    if(pb){ pb.style.background='none'; pb.style.backgroundImage='url('+url+')'; pb.style.backgroundSize='cover'; pb.style.backgroundPosition='center'; }
-    toast('Cover photo updated ✓');
+    if(pb){
+      pb.style.backgroundImage='url("'+url+'")';
+      pb.style.backgroundSize='cover';
+      pb.style.backgroundPosition='center';
+      pb.style.background='url("'+url+'") center/cover no-repeat';
+    }
+    // Reset the file input so it fires again next time
+    inp.value='';
+    toast('Cover photo updated ✓ 🌸');
   };
   r.readAsDataURL(f);
 }
@@ -2809,10 +2837,12 @@ function handleMentionInput(inp,pid){
 function showMentionDropdown(inp,users,atIdx,pid){
   hideMentionDropdown();
   var wrap=inp.closest('.c-input-wrap')||inp.parentElement;
+  if(!wrap.style.position) wrap.style.position='relative';
   var dd=document.createElement('div');dd.className='mention-dropdown';
   users.forEach(function(u){
     var item=document.createElement('div');item.className='mention-item';
-    item.innerHTML='<div class="mention-av" style="background:'+esc(u.color||'var(--pink)')+'">'+esc(u.initial||'?')+'</div><strong>@'+esc(u.handle)+'</strong>';
+    var avImg=u.avatar?('<img src="'+esc(u.avatar)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'):esc(u.initial||'?');
+    item.innerHTML='<div class="mention-av" style="background:'+esc(u.color||'var(--pink)')+'">'+avImg+'</div><div><strong>'+esc(u.name||u.handle)+'</strong><div style="font-size:11px;color:var(--text3);">@'+esc(u.handle)+'</div></div>';
     item.onmousedown=function(e){
       e.preventDefault();
       var val=inp.value;var atIdx2=val.lastIndexOf('@');
@@ -3781,3 +3811,98 @@ window.addEventListener('appinstalled', function(){
   _pwaInstallPrompt = null;
   _updateInstallUI();
 });
+
+// ══════════════════════════════════════════════════════
+//  INLINE EDIT PROFILE MODAL (profile page shortcut)
+// ══════════════════════════════════════════════════════
+function openProfileEditModal(){
+  var modal = document.getElementById('profileEditModal');
+  if(!modal) return;
+  // Pre-fill with current values
+  document.getElementById('peModalName').value   = me.name   || '';
+  document.getElementById('peModalHandle').value = me.handle || '';
+  document.getElementById('peModalBio').value    = me.bio    || '';
+  modal.style.display = 'flex';
+  setTimeout(function(){ modal.querySelector('div').style.transform = 'scale(1)'; }, 10);
+}
+function closeProfileEditModal(){
+  var modal = document.getElementById('profileEditModal');
+  if(modal) modal.style.display = 'none';
+}
+async function saveProfileEditModal(){
+  var newName   = document.getElementById('peModalName').value.trim();
+  var newHandle = document.getElementById('peModalHandle').value.trim().replace(/^@/,'').replace(/\s+/g,'').toLowerCase();
+  var newBio    = document.getElementById('peModalBio').value.trim();
+  if(!newName){ toast('Display name cannot be empty'); return; }
+  if(!newHandle){ toast('Username cannot be empty'); return; }
+  me.name   = newName;
+  me.handle = newHandle;
+  me.bio    = newBio;
+  me.initial= newName.charAt(0).toUpperCase();
+  await saveProfileToFirestore();
+  refreshProfileUI();
+  closeProfileEditModal();
+  toast('Profile updated ✓');
+}
+
+// ══════════════════════════════════════════════════════
+//  DUMMY PERMANENT STORIES (visible to everyone)
+// ══════════════════════════════════════════════════════
+var DUMMY_STORY_IDS = ['dummy_story_1','dummy_story_2'];
+
+async function seedDummyStories(){
+  try {
+    var snap = await db.collection('stories').doc('dummy_story_1').get();
+    if(snap.exists) return; // already seeded
+
+    var far = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString(); // 10 years from now
+    var batch = db.batch();
+
+    batch.set(db.collection('stories').doc('dummy_story_1'), {
+      uid: 'kez_system',
+      userName: 'Kez Media',
+      userHandle: 'kezmedia',
+      userInitial: 'K',
+      userColor: 'linear-gradient(135deg,#e2688a,#f0a0b8)',
+      userAvatar: null,
+      type: 'text',
+      text: '✨ Welcome to Kez Media! Share your story with the world 🌸',
+      bgColor: 'linear-gradient(135deg,#e2688a,#f0a0b8)',
+      createdAt: new Date().toISOString(),
+      expiresAt: far,
+      seen: [],
+      seenBy: [],
+      reactions: {},
+      reactionCounts: {}
+    });
+
+    batch.set(db.collection('stories').doc('dummy_story_2'), {
+      uid: 'kez_system',
+      userName: 'Kez Media',
+      userHandle: 'kezmedia',
+      userInitial: 'K',
+      userColor: 'linear-gradient(135deg,#e2688a,#f0a0b8)',
+      userAvatar: null,
+      type: 'text',
+      text: '💖 Tip: Mention friends with @username in your posts and comments!',
+      bgColor: 'linear-gradient(135deg,#667eea,#764ba2)',
+      createdAt: new Date(Date.now() - 60000).toISOString(),
+      expiresAt: far,
+      seen: [],
+      seenBy: [],
+      reactions: {},
+      reactionCounts: {}
+    });
+
+    await batch.commit();
+  } catch(e){
+    console.warn('Could not seed dummy stories:', e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  STORY VIEWERS — who viewed your story (enhance panel)
+// ══════════════════════════════════════════════════════
+// (Already implemented in openStoryViewers — just ensuring it's called correctly)
+// The viewers button is shown on your own stories via renderStorySlide()
+
