@@ -110,13 +110,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;background:var(-
   background:var(--card);border:1px solid var(--border);border-radius:16px;
   padding:12px 0 12px 14px;margin-bottom:16px;
   box-shadow:var(--card-shadow);transition:background .3s,border-color .3s;
-  overflow-x:auto;overflow-y:hidden;height:108px;flex-shrink:0;
+  overflow-x:auto;overflow-y:hidden;
+  height:108px;flex-shrink:0;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
 }
 .stories-wrap::-webkit-scrollbar{display:none;}
 .stories-row{
   display:flex;gap:14px;
-  overflow:visible;
-  flex-wrap:nowrap;scrollbar-width:none;
+  overflow:visible;flex-wrap:nowrap;
   padding-bottom:4px;padding-right:14px;
   touch-action:pan-x;
   height:100%;align-items:flex-start;
@@ -1246,12 +1248,11 @@ textarea.form-input{resize:none;min-height:80px;}
   .mob-nav-badge{position:absolute;top:-2px;right:2px;background:var(--pink);color:white;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:14px;text-align:center;border:2px solid var(--card);}
 
   /* ── STORIES: show 3-4, rest scroll sideways ONLY ──
-     iOS Safari CRITICAL FIX: parent must be the scroller.
-     overflow:hidden on any ancestor kills child scroll on iOS. */
+     iOS Safari CRITICAL FIX: the WRAP is the scroller.
+     Never use overflow shorthand after overflow-x/y — it resets them. */
   .stories-wrap{
     overflow-x:auto !important;
     overflow-y:hidden !important;
-    overflow:visible !important; /* override the base overflow:hidden */
     -webkit-overflow-scrolling:touch !important;
     height:100px !important;
     min-height:100px !important;
@@ -1263,6 +1264,7 @@ textarea.form-input{resize:none;min-height:80px;}
     border-right:none !important;
     scroll-snap-type:x mandatory !important;
     overscroll-behavior-x:contain !important;
+    background:var(--card) !important;
   }
   .stories-wrap::-webkit-scrollbar{display:none !important;}
   .stories-row{
