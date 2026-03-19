@@ -474,6 +474,19 @@ async function init(){
 }
 
 // ── USER PROFILE ──────────────────────────────────────
+// ── SET BANNER COLOR ─────────────────────────────────
+function setBannerColor(color){
+  me.bannerColor = color;
+  me.bannerImage = '';
+  // Update profile banner immediately
+  const banner = document.getElementById('profileBanner');
+  const bi = document.getElementById('bannerImg');
+  if(banner){ banner.style.background = color; }
+  if(bi){ bi.style.display = 'none'; }
+  saveProfileToFirestore();
+  toast('Banner color updated!');
+}
+
 function applyUserProfile(){
   me.initial = me.name ? me.name.trim()[0].toUpperCase() : 'Y';
   // nav + create avatars
@@ -1497,7 +1510,7 @@ function openModal(){
   if(vc) vc.value='';
   document.querySelectorAll('.mood-chip').forEach(c=>c.classList.remove('sel'));
   switchPostType('status');
-  // Hook mention dropdown to caption input
+  // Hook mention dropdown to ALL caption inputs
   var cap = document.getElementById('captionInput');
   if(cap && !cap._mentionHooked){
     cap._mentionHooked = true;
@@ -1515,6 +1528,18 @@ function openModal(){
   if(stat && !stat._mentionHooked){
     stat._mentionHooked = true;
     stat.addEventListener('input', function(){ handleMentionInput(stat, 'new'); });
+  }
+  // Video caption mention hook
+  var vcap = document.getElementById('videoCaptionInput');
+  if(vcap && !vcap._mentionHooked){
+    vcap._mentionHooked = true;
+    vcap.addEventListener('input', function(){ handleMentionInput(vcap, 'new'); });
+  }
+  // YouTube caption mention hook
+  var ytcap = document.getElementById('ytCaptionInput');
+  if(ytcap && !ytcap._mentionHooked){
+    ytcap._mentionHooked = true;
+    ytcap.addEventListener('input', function(){ handleMentionInput(ytcap, 'new'); });
   }
 }
 function closeModal(){document.getElementById('overlay').classList.remove('open');}
@@ -1662,19 +1687,37 @@ function openLightbox(pid){
   const p=posts.find(x=>String(x.id)===pid);if(!p)return;
   const imgs=p.images||(p.image?[p.image]:[]);
   const inner=document.getElementById('lightboxInner');
-  // Use registry for all string IDs in onclick attrs
   const iPid=_r(pid);
   const iUid=_r(String(p.uid||''));
   let imgSide='';
-  if(imgs.length===0){
+
+  // ── YouTube post ──
+  if(p.isYoutube && p.ytVideoId){
+    const embedUrl='https://www.youtube.com/embed/'+p.ytVideoId+'?autoplay=1&rel=0';
+    imgSide=`<div class="lightbox-img-side" style="background:#000;display:flex;align-items:center;justify-content:center;padding:0;">
+      <iframe src="${embedUrl}" style="width:100%;height:100%;min-height:280px;border:none;" allowfullscreen allow="autoplay;encrypted-media"></iframe>
+    </div>`;
+  }
+  // ── Video post ──
+  else if(p.isVideo && p.videoUrl){
+    imgSide=`<div class="lightbox-img-side" style="background:#000;display:flex;align-items:center;justify-content:center;padding:0;">
+      <video src="${esc(p.videoUrl)}" controls autoplay playsinline style="width:100%;max-height:90vh;display:block;"></video>
+    </div>`;
+  }
+  // ── No images (status) ──
+  else if(imgs.length===0){
     if(p.isStatus){
       imgSide=`<div class="lightbox-img-side" style="background:var(--bg2);display:flex;align-items:center;justify-content:center;padding:40px 36px;"><div><div style="width:36px;height:3px;background:var(--pink);border-radius:2px;margin-bottom:20px;"></div><div style="font-size:${(p.caption||'').length>120?'16px':(p.caption||'').length>60?'19px':'22px'};line-height:1.7;color:var(--text);word-break:break-word;">${esc(p.caption||'')}</div>${p.mood?`<div style="margin-top:16px;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);background:var(--bg3);padding:4px 12px;border-radius:20px;border:1px solid var(--border);">${esc(p.mood)}</div>`:''}</div></div>`;
     } else {
-      imgSide=`<div class="lightbox-img-side" style="background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:48px;">🖼️</div>`;
+      imgSide=`<div class="lightbox-img-side" style="background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:48px;">📷</div>`;
     }
-  } else if(imgs.length===1){
+  }
+  // ── Single image ──
+  else if(imgs.length===1){
     imgSide=`<div class="lightbox-img-side"><img src="${imgs[0]}" alt="" style="width:100%;height:100%;object-fit:contain;"></div>`;
-  } else {
+  }
+  // ── Multi-image carousel ──
+  else {
     const slides=imgs.map(src=>`<div class="carousel-slide" style="min-width:100%;"><img src="${src}" style="width:100%;max-height:90vh;object-fit:contain;display:block;"></div>`).join('');
     const dots=imgs.map((_,di)=>`<span class="carousel-dot ${di===0?'active':''}" onclick="goSlide('lbcar',${di})"></span>`).join('');
     imgSide=`<div class="lightbox-img-side" style="overflow:hidden;"><div id="lbcar" data-idx="0" style="position:relative;height:100%;overflow:hidden;"><div class="carousel-track" id="ctlbcar" style="display:flex;height:100%;">${slides}</div><button class="carousel-btn carousel-prev" onclick="shiftSlide('lbcar',-1)">&#8249;</button><button class="carousel-btn carousel-next" onclick="shiftSlide('lbcar',1)">&#8250;</button><div class="carousel-dots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;">${dots}</div></div></div>`;
