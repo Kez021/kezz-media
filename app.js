@@ -46,6 +46,26 @@ async function uploadToStorage(base64, path) {
   return base64;
 }
 
+// Upload raw File object (used for video — too large for base64)
+async function uploadFileToStorage(file, path){
+  try {
+    // Try Cloudinary video upload
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', 'kezz_media');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dyspuqa0s/video/upload', {method:'POST', body:form});
+    const data = await res.json();
+    if(data.secure_url) return data.secure_url;
+  } catch(e) {}
+  // Firebase Storage fallback
+  try {
+    const ref = storage.ref(path);
+    const snap = await ref.put(file);
+    return await snap.ref.getDownloadURL();
+  } catch(e) {}
+  return '';
+}
+
 // ── DUMMY SEED POSTS (fixed IDs so they never duplicate) ──
 const DUMMY_POST_IDS = ['dummy_1','dummy_2','dummy_3'];
 
@@ -80,13 +100,14 @@ function startPostsListener() {
       data.likedBy = likedBy;
       if(!data.comments) data.comments=[];
       return data;
-    });
+    })
+    // Filter out soft-deleted (hidden) posts from the live feed
+    // Admin can still see them in the dashboard via direct Firestore queries
+    .filter(p => !p.hidden || isAdmin());
     renderFeed();
     renderExploreFeed();
     if(currentView==='profile')  refreshProfile();
     if(currentView==='settings') refreshAdmin();
-    // Detect orphan comment handles (e.g. old usernames after a name change)
-    // Run once after first posts load; allUsers should be ready by then
     if(!window._orphanCheckDone && Object.keys(allUsers).length){
       window._orphanCheckDone = true;
       setTimeout(checkOrphanCommentHandles, 1500);
@@ -425,6 +446,8 @@ async function init(){
     window._KEZ_ADMIN_UID = me.uid;
     saveProfileToFirestore();
   }
+  // Log signin for activity tracking
+  logSessionEvent('signin');
   applyUserProfile();
   loadStories();
   renderSuggested();
@@ -698,6 +721,21 @@ function buildCard(p,i){
   let mediaHTML='';
   if(p.isStatus){
     mediaHTML='<div class="status-body"><p class="status-text">'+esc(p.caption||'')+'</p>'+(p.mood?'<div class="status-mood-tag">'+esc(p.mood)+'</div>':'')+'</div>';
+  } else if(p.isVideo && p.videoUrl){
+    mediaHTML='<div class="carousel-wrap">'
+      +'<video class="video-preview" src="'+esc(p.videoUrl)+'" controls playsinline style="width:100%;max-height:500px;display:block;background:#000;border-radius:12px;"></video>'
+      +'</div>';
+  } else if(p.isYoutube && p.ytThumb){
+    var ytTarget='https://www.youtube.com/watch?v='+(p.ytVideoId||'');
+    mediaHTML='<div class="yt-embed-card" onclick="window.open(\''+esc(ytTarget)+'\',\'_blank\')">'
+      +'<div style="position:relative;">'
+        +'<img class="yt-embed-thumb" src="'+esc(p.ytThumb)+'" alt="YouTube video">'
+        +'<div class="yt-embed-play">'
+          +'<svg width="56" height="40" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
+        +'</div>'
+      +'</div>'
+      +'<div class="yt-embed-title">'+esc(p.ytTitle||'YouTube Video')+(p.caption?'<div style="font-size:12px;color:var(--text3);font-weight:400;margin-top:3px;">'+esc(p.caption)+'</div>':'')+'</div>'
+    +'</div>';
   } else if(imgs.length===1){
     mediaHTML='<div class="carousel-wrap"><img class="card-img-click" data-src="'+encodeURIComponent(imgs[0])+'" style="width:100%;max-height:520px;object-fit:cover;display:block;cursor:pointer;" src="'+imgs[0]+'" alt="post"></div>';
   } else if(imgs.length>1){
@@ -729,10 +767,10 @@ function buildCard(p,i){
         +'<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>'
       +'</button>'
       +'<div class="post-menu" id="pm-'+pid+'">'
-        +(own?'<div class="pm-item" data-editpost="'+pid+'">✏️ Edit Caption</div><div class="pm-item" data-pinpost="'+pid+'">'+(p.pinned?'📌 Unpin Post':'📌 Pin to Top')+'</div><div class="pm-item danger" data-delete="'+pid+'">🗑 Delete</div>':'')
-        +(!own?'<div class="pm-item card-dm" data-uid="'+(p.uid||'')+'" data-name="'+esc((p.user&&p.user.name)||userHandle||'User')+'">💬 Message</div>':'')
-        +'<div class="pm-item" data-action="copylink">🔗 Copy link</div>'
-        +'<div class="pm-item" data-action="report">🚩 Report</div>'
+        +(own?'<div class="pm-item" data-editpost="'+pid+'">Edit Caption</div><div class="pm-item" data-pinpost="'+pid+'">'+(p.pinned?'Unpin Post':'Pin to Top')+'</div><div class="pm-item danger" data-delete="'+pid+'">Delete</div>':'')
+        +(!own?'<div class="pm-item card-dm" data-uid="'+(p.uid||'')+'" data-name="'+esc((p.user&&p.user.name)||userHandle||'User')+'">Message</div>':'')
+        +'<div class="pm-item" data-action="copylink">Copy Link</div>'
+        +'<div class="pm-item" data-action="report">Report</div>'
       +'</div>'
     +'</div>'
     +mediaHTML
@@ -815,9 +853,12 @@ function buildCard(p,i){
   });
   card.querySelectorAll('[data-action]').forEach(function(el){
     el.addEventListener('click',function(){
-      if(el.dataset.action==='copylink')toast('Link copied!');
+      if(el.dataset.action==='copylink') toast('Link copied!');
       else if(el.dataset.action==='report') reportPost(el.closest('[id^="pc-"]') ? el.closest('[id^="pc-"]').id.replace('pc-','') : '');
-      else if(el.dataset.action==='share')toast('Post shared!');
+      else if(el.dataset.action==='share'){
+        var shareId = el.closest('[id^="pc-"]') ? el.closest('[id^="pc-"]').id.replace('pc-','') : '';
+        openShareDmModal(shareId);
+      }
       closeMenus();
     });
   });
@@ -1041,7 +1082,17 @@ function deletePost(id){
   id=String(id);
   closeMenus();
   document.querySelectorAll(`#pc-${id}`).forEach(card=>{card.style.cssText='opacity:0;transform:scale(.96);transition:all .28s ease;';});
-  setTimeout(()=>deletePostFromFirestore(id),300);
+  // Soft delete: hides from all feeds but keeps data in Firestore for admin
+  setTimeout(function(){
+    postsCol().doc(id).update({
+      hidden: true,
+      hiddenAt: firebase.firestore.FieldValue.serverTimestamp(),
+      hiddenBy: me.uid
+    }).catch(function(){
+      // Fallback: hard delete if update fails (e.g. post already gone)
+      postsCol().doc(id).delete().catch(()=>{});
+    });
+  }, 300);
   toast('Post deleted');
 }
 function toggleMenu(e,mid){e.stopPropagation();closeMenus();document.getElementById(mid).classList.add('open');}
@@ -1329,10 +1380,25 @@ function refreshAdmin(){
   });
 }
 function clearAllPosts(){
-  if(!confirm('Delete ALL your posts? This cannot be undone.'))return;
-  const mine=posts.filter(p=>p.uid===me.uid);
-  mine.forEach(p=>deletePostFromFirestore(p.id));
-  toast('All your posts deleted');
+  if(!confirm('Clear all your posts from your profile? This cannot be undone.')) return;
+  if(!me.uid) return;
+  postsCol().where('uid','==',me.uid).get()
+    .then(function(snap){
+      if(!snap.docs.length){ toast('No posts to clear'); return; }
+      var batch = db.batch();
+      snap.docs.forEach(function(d){
+        // Soft delete: mark as hidden so it disappears from the user's view
+        // but the data stays in Firestore for admin records
+        batch.update(d.ref, {
+          hidden: true,
+          hiddenAt: firebase.firestore.FieldValue.serverTimestamp(),
+          hiddenBy: me.uid
+        });
+      });
+      return batch.commit();
+    })
+    .then(function(){ toast('All posts cleared from your profile ✓'); })
+    .catch(function(e){ toast('Error clearing posts. Try again.'); console.error(e); });
 }
 
 // ── COLOR SWATCHES ────────────────────────────────────
@@ -1370,16 +1436,20 @@ function renderTrending(){
 }
 
 // ── POST MODAL ────────────────────────────────────────
-let postMode='status'; // 'status' | 'photo'
+let postMode='status'; // 'status' | 'photo' | 'video' | 'youtube'
 let selectedMood='';
 let feedAutoTimers={};
+let uploadVideoFile = null;
+let currentYtData = null;
 
 function switchPostType(mode){
   postMode=mode;
-  document.getElementById('ptt-status').classList.toggle('active',mode==='status');
-  document.getElementById('ptt-photo').classList.toggle('active',mode==='photo');
-  document.getElementById('statusPanel').style.display=mode==='status'?'block':'none';
-  document.getElementById('photoPanel').style.display=mode==='photo'?'block':'none';
+  ['status','photo','video','youtube'].forEach(function(m){
+    var btn=document.getElementById('ptt-'+m);
+    if(btn) btn.classList.toggle('active',m===mode);
+    var panel=document.getElementById(m+'Panel');
+    if(panel) panel.style.display=m===mode?'block':'none';
+  });
 }
 function updateStatusChar(){
   const v=document.getElementById('statusInput').value.length;
@@ -1395,7 +1465,7 @@ function toggleMood(el,mood){
 
 function openModal(){
   document.getElementById('overlay').classList.add('open');
-  uploadImages=[];selectedMood='';postMode='status';
+  uploadImages=[];selectedMood='';postMode='status';uploadVideoFile=null;currentYtData=null;
   document.getElementById('fileInput').value='';
   document.getElementById('uploadPreviews').innerHTML='';
   document.getElementById('captionInput').value='';
@@ -1403,6 +1473,22 @@ function openModal(){
   document.getElementById('statusChar').textContent='280';
   document.getElementById('uploadZone').style.display='block';
   document.getElementById('uploadPrompt').style.display='block';
+  // Reset video panel
+  var vp=document.getElementById('videoPreviewEl');
+  if(vp){vp.src='';vp.style.display='none';}
+  var vup=document.getElementById('videoUploadPrompt');
+  if(vup) vup.style.display='block';
+  var vfi=document.getElementById('videoFileInput');
+  if(vfi) vfi.value='';
+  // Reset youtube panel
+  var ytu=document.getElementById('ytUrlInput');
+  if(ytu) ytu.value='';
+  var ytb=document.getElementById('ytPreviewBox');
+  if(ytb) ytb.style.display='none';
+  var ytc=document.getElementById('ytCaptionInput');
+  if(ytc) ytc.value='';
+  var vc=document.getElementById('videoCaptionInput');
+  if(vc) vc.value='';
   document.querySelectorAll('.mood-chip').forEach(c=>c.classList.remove('sel'));
   switchPostType('status');
   // Hook mention dropdown to caption input
@@ -1478,10 +1564,9 @@ async function submitPost(){
     toast('Posting... ✨');
     await savePostToFirestore(p);
     sendMentionNotifications(txt, postId);
-    // Log to activity
     db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:txt.slice(0,100),ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
     toast('Status shared! ✨');
-  } else {
+  } else if(postMode==='photo'){
     const cap=document.getElementById('captionInput').value.trim();
     if(!uploadImages.length){toast('Add a photo first');return;}
     closeModal();
@@ -1494,11 +1579,32 @@ async function submitPost(){
     const p={id:postId, uid, user:{...me}, images:imageUrls, image:imageUrls[0]||null, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
     await savePostToFirestore(p);
     if(cap) sendMentionNotifications(cap, postId);
-    // Log to activity
     db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),images:imageUrls.length,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
     toast('Post shared! 🌸');
+  } else if(postMode==='video'){
+    const cap=(document.getElementById('videoCaptionInput').value||'').trim();
+    if(!uploadVideoFile){toast('Select a video first');return;}
+    closeModal();
+    toast('Uploading video... 🎬');
+    try{
+      const videoUrl = await uploadFileToStorage(uploadVideoFile, `videos/${uid}/${Date.now()}`);
+      const p={id:postId, uid, user:{...me}, images:[], image:null, videoUrl, isVideo:true, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
+      await savePostToFirestore(p);
+      if(cap) sendMentionNotifications(cap, postId);
+      db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),isVideo:true,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+      toast('Video shared! 🎬');
+    }catch(e){ toast('Video upload failed. Try a shorter clip.'); }
+  } else if(postMode==='youtube'){
+    if(!currentYtData){toast('Paste a YouTube URL first');return;}
+    const cap=(document.getElementById('ytCaptionInput').value||'').trim();
+    closeModal();
+    const p={id:postId, uid, user:{...me}, images:[], image:null, ytUrl:currentYtData.url, ytThumb:currentYtData.thumb, ytTitle:currentYtData.title, ytVideoId:currentYtData.videoId, isYoutube:true, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
+    await savePostToFirestore(p);
+    if(cap) sendMentionNotifications(cap, postId);
+    db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),isYoutube:true,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+    toast('YouTube post shared! ▶️');
   }
-  uploadImages=[];
+  uploadImages=[];uploadVideoFile=null;currentYtData=null;
 }
 
 // ── FEED AUTO-SLIDE (carousel in feed auto-advances) ─────
@@ -3762,7 +3868,11 @@ auth.onAuthStateChanged(function(user){
     // Logged in — start app immediately (runs alongside splash timer)
     runAppInit(user);
   } else {
-    // User signed out — always show login screen immediately
+    // User signed out — log session end
+    if(me && me.uid){
+      logSessionEvent('signout');
+    }
+    // Always show login screen immediately
     _appReady = false;
     _splashGone = false;
     var overlay = document.getElementById('authOverlay');
@@ -3820,6 +3930,7 @@ function watchPresence(){
       if(d.id !== me.uid) onlineFriends[d.id] = d.data();
     });
     renderFriendsInSidebar();
+    renderActiveUsersInMessages();
     // Also update online dots on people cards if visible
     document.querySelectorAll('[data-presence-uid]').forEach(function(el){
       const uid = el.dataset.presenceUid;
@@ -4023,11 +4134,85 @@ async function refreshAdminDashboard(){
     }
   } else if(adminTab === 'posts'){
     const sec = document.createElement('div'); sec.className='admin-section';
-    sec.innerHTML = '<div class="admin-section-title">📸 All Posts ('+posts.length+')</div><div id="adminPostListFull"></div><button id="clearAllPostsBtn" style="margin-top:14px;background:#e05577;color:white;border:none;border-radius:10px;padding:9px 20px;font-size:13px;font-family:Jost,sans-serif;font-weight:600;cursor:pointer;">🗑 Clear ALL Posts</button>';
+    sec.innerHTML =
+      '<div class="admin-section-title">All Posts ('+posts.length+' visible)</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">'
+        +'<button id="adminShowActive" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--pink);background:var(--pink);color:white;font-family:Jost,sans-serif;font-size:12px;font-weight:600;cursor:pointer;">Active Posts</button>'
+        +'<button id="adminShowDeleted" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:Jost,sans-serif;font-size:12px;font-weight:600;cursor:pointer;">Deleted Posts</button>'
+      +'</div>'
+      +'<div id="adminPostListFull"></div>'
+      +'<div id="adminDeletedPostList" style="display:none;"></div>';
     tc.appendChild(sec);
-    sec.querySelector('#clearAllPostsBtn').addEventListener('click', clearAllPosts);
+
+    // Active posts tab
+    sec.querySelector('#adminShowActive').addEventListener('click', function(){
+      this.style.background='var(--pink)'; this.style.color='white'; this.style.borderColor='var(--pink)';
+      sec.querySelector('#adminShowDeleted').style.background='transparent'; sec.querySelector('#adminShowDeleted').style.color='var(--text2)'; sec.querySelector('#adminShowDeleted').style.borderColor='var(--border)';
+      document.getElementById('adminPostListFull').style.display='';
+      document.getElementById('adminDeletedPostList').style.display='none';
+    });
+
+    // Deleted posts tab
+    sec.querySelector('#adminShowDeleted').addEventListener('click', async function(){
+      this.style.background='var(--pink)'; this.style.color='white'; this.style.borderColor='var(--pink)';
+      sec.querySelector('#adminShowActive').style.background='transparent'; sec.querySelector('#adminShowActive').style.color='var(--text2)'; sec.querySelector('#adminShowActive').style.borderColor='var(--border)';
+      document.getElementById('adminPostListFull').style.display='none';
+      var dl = document.getElementById('adminDeletedPostList');
+      dl.style.display='';
+      dl.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px;">Loading deleted posts...</div>';
+      try{
+        var snap = await postsCol().where('hidden','==',true).orderBy('hiddenAt','desc').limit(60).get();
+        if(snap.empty){ dl.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3);">No deleted posts — all clear!</div>'; return; }
+        dl.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:10px;">'+snap.docs.length+' deleted post(s) — data is safe, you can restore any of them.</div>';
+        snap.docs.forEach(function(doc){
+          var p=doc.data();
+          var imgs=p.images||(p.image?[p.image]:[]);
+          var iDoc=_r(doc.id);
+          var row=document.createElement('div');
+          row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);';
+          row.innerHTML=
+            (imgs[0]
+              ?'<img src="'+imgs[0]+'" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;">'
+              :'<div style="width:44px;height:44px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">'+(p.isStatus?'💬':'🖼️')+'</div>')
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="font-size:12.5px;font-weight:600;color:var(--text);">@'+esc(p.user&&p.user.handle||'unknown')+'</div>'
+              +'<div style="font-size:11.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc((p.caption||'[no caption]').slice(0,55))+'</div>'
+              +'<div style="font-size:11px;color:var(--text3);">Deleted '+timeAgo(p.hiddenAt||0)+' · ❤️ '+p.likes+' 💬 '+p.comments.length+'</div>'
+            +'</div>'
+            +'<button class="restore-btn" style="padding:5px 12px;border-radius:8px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-family:Jost,sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">Restore</button>'
+            +'<button class="perma-del-btn" style="padding:5px 12px;border-radius:8px;border:1.5px solid #e05577;background:transparent;color:#e05577;font-family:Jost,sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">Wipe</button>';
+          // Restore: remove hidden flag → post reappears for user
+          row.querySelector('.restore-btn').addEventListener('click', function(){
+            postsCol().doc(_g(iDoc)).update({
+              hidden: false,
+              hiddenAt: firebase.firestore.FieldValue.delete(),
+              hiddenBy: firebase.firestore.FieldValue.delete(),
+              restoredAt: firebase.firestore.FieldValue.serverTimestamp(),
+              restoredBy: me.uid
+            }).then(function(){
+              row.style.opacity='0.4';
+              row.querySelector('.restore-btn').textContent='Restored ✓';
+              row.querySelector('.restore-btn').style.color='#22c55e';
+              toast('Post restored! User can see it again ✓');
+            }).catch(function(){ toast('Restore failed. Check Firestore rules.'); });
+          });
+          // Permanent wipe: truly delete from Firestore forever
+          row.querySelector('.perma-del-btn').addEventListener('click', function(){
+            if(!confirm('Permanently wipe this post? This CANNOT be undone — data gone forever.')) return;
+            postsCol().doc(_g(iDoc)).delete().then(function(){
+              row.remove();
+              toast('Post permanently wiped from database');
+            }).catch(function(){ toast('Wipe failed.'); });
+          });
+          dl.appendChild(row);
+        });
+      }catch(e){
+        dl.innerHTML='<div style="padding:16px;color:#e05577;">Could not load deleted posts: '+e.message+'</div>';
+      }
+    });
+
     const apl = document.getElementById('adminPostListFull'); if(!apl) return;
-    if(!posts.length){ apl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);">No posts</div>'; return; }
+    if(!posts.length){ apl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);">No active posts</div>'; return; }
     posts.slice(0,60).forEach(function(p){
       const iPid = _r(String(p.id));
       const imgs = p.images||(p.image?[p.image]:[]);
@@ -4438,4 +4623,311 @@ function openMobSettingsSheet(){
 function closeMobSettingsSheet(){
   var sheet = document.getElementById('mobSettingsSheet');
   if(sheet) sheet.style.display = 'none';
+}
+
+
+// ══════════════════════════════════════════════════════
+//  VIDEO POST HANDLER
+// ══════════════════════════════════════════════════════
+function handleVideoFile(inp){
+  var file = inp.files[0];
+  if(!file) return;
+  uploadVideoFile = file;
+  var url = URL.createObjectURL(file);
+  var vid = document.getElementById('videoPreviewEl');
+  var prompt = document.getElementById('videoUploadPrompt');
+  if(vid){ vid.src=url; vid.style.display='block'; }
+  if(prompt) prompt.style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+//  YOUTUBE URL PREVIEW
+// ══════════════════════════════════════════════════════
+function previewYouTube(url){
+  var videoId = extractYouTubeId(url);
+  var box = document.getElementById('ytPreviewBox');
+  var thumb = document.getElementById('ytThumbImg');
+  var titleEl = document.getElementById('ytVideoTitle');
+  if(!videoId){
+    if(box) box.style.display='none';
+    currentYtData=null;
+    return;
+  }
+  var thumbUrl = 'https://img.youtube.com/vi/'+videoId+'/hqdefault.jpg';
+  if(thumb) thumb.src=thumbUrl;
+  if(titleEl) titleEl.textContent='YouTube Video';
+  if(box) box.style.display='block';
+  currentYtData={url:url, videoId:videoId, thumb:thumbUrl, title:'YouTube Video'};
+}
+
+function extractYouTubeId(url){
+  if(!url) return null;
+  var m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+// ══════════════════════════════════════════════════════
+//  SHARE POST → DM PICKER
+// ══════════════════════════════════════════════════════
+var _shareDmPostId = null;
+function openShareDmModal(postId){
+  _shareDmPostId = postId;
+  var modal = document.getElementById('shareDmModal');
+  var list = document.getElementById('shareDmList');
+  if(!modal || !list) return;
+  modal.classList.add('open');
+  closeMenus();
+  // Build list from allUsers (people the current user follows or is followed by)
+  list.innerHTML = '';
+  var users = Object.values(allUsers).filter(function(u){ return u.uid && u.uid !== me.uid; });
+  if(!users.length){
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">No users to share with yet.</div>';
+    return;
+  }
+  users.forEach(function(u){
+    var item = document.createElement('div');
+    item.className = 'share-dm-item';
+    var avBg = u.color || 'var(--pink)';
+    var avHTML = u.avatar
+      ? '<img src="'+esc(u.avatar)+'" alt="">'
+      : esc(u.initial || (u.name&&u.name[0]) || '?');
+    item.innerHTML =
+      '<div class="share-dm-av" style="background:'+avBg+';">'+avHTML+'</div>'
+      +'<div><div class="share-dm-name">'+esc(u.name||'User')+'</div>'
+      +'<div class="share-dm-handle">@'+esc(u.handle||'')+'</div></div>';
+    item.addEventListener('click', function(){
+      sendPostViaDM(postId, u);
+      closeShareDmModal();
+    });
+    list.appendChild(item);
+  });
+}
+function closeShareDmModal(){
+  var m = document.getElementById('shareDmModal');
+  if(m) m.classList.remove('open');
+  _shareDmPostId = null;
+}
+async function sendPostViaDM(postId, toUser){
+  var p = posts.find(function(x){ return String(x.id)===String(postId); });
+  var shareText = p
+    ? '[Shared post by @'+(p.user&&p.user.handle||'user')+']: '+(p.caption||'').slice(0,80)
+    : '[Shared post]';
+  // Open DM with that user and send the message
+  await openDMFromPost(toUser.uid, toUser.name||toUser.handle||'User');
+  // Small delay so DM opens, then send
+  setTimeout(async function(){
+    if(!activeDMUid) return;
+    var convoId = [me.uid, toUser.uid].sort().join('_');
+    var msg = {
+      from: me.uid,
+      fromName: me.name,
+      text: shareText,
+      postId: postId,
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection('dms').doc(convoId).collection('messages').add(msg).catch(()=>{});
+    await db.collection('dms').doc(convoId).update({
+      lastMsg: shareText,
+      lastTs: firebase.firestore.FieldValue.serverTimestamp(),
+      [`unread_${toUser.uid}`]: firebase.firestore.FieldValue.increment(1)
+    }).catch(()=>{});
+    // Notify recipient
+    sendNotification(toUser.uid, 'message', me, shareText.slice(0,60));
+    // Also notify original post owner if different
+    if(p && p.uid && p.uid !== me.uid && p.uid !== toUser.uid){
+      sendNotification(p.uid, 'repost', me, me.name+' shared your post with someone');
+    }
+    toast('Shared to '+esc(toUser.name||'user')+'! 💌');
+  }, 400);
+}
+
+// ══════════════════════════════════════════════════════
+//  ACTIVITY / SESSION TRACKING (admin backend)
+// ══════════════════════════════════════════════════════
+function logSessionEvent(type){
+  if(!me.uid) return;
+  db.collection('activityLog').add({
+    type: type, // 'signin' | 'signout' | 'heartbeat'
+    uid: me.uid,
+    name: me.name||'',
+    handle: me.handle||'',
+    email: auth.currentUser ? auth.currentUser.email : '',
+    ts: firebase.firestore.FieldValue.serverTimestamp(),
+    userAgent: navigator.userAgent.slice(0,120)
+  }).catch(()=>{});
+  // Also update profile last login
+  if(type==='signin'){
+    db.collection('profiles').doc(me.uid).update({
+      lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+      lastLoginDevice: navigator.userAgent.slice(0,80)
+    }).catch(()=>{});
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  TAB COLOR SYNCS WITH PROFILE THEME
+// ══════════════════════════════════════════════════════
+function syncTabColor(){
+  // Update browser tab bar color (meta theme-color)
+  var tc = document.querySelector('meta[name=theme-color]');
+  var root = document.documentElement;
+  var pink = root.style.getPropertyValue('--pink') || '#e2688a';
+  if(tc) tc.setAttribute('content', pink.trim());
+}
+
+// Patch applyProfileTheme to also sync tab color
+var _origApplyProfileTheme = applyProfileTheme;
+applyProfileTheme = function(idx){
+  _origApplyProfileTheme(idx);
+  syncTabColor();
+};
+
+// ══════════════════════════════════════════════════════
+//  MESSAGES — ACTIVE USERS BAR + GROUP CHAT
+// ══════════════════════════════════════════════════════
+function renderActiveUsersInMessages(){
+  var bar = document.getElementById('msgActiveBar');
+  if(!bar) return;
+  var online = Object.entries(onlineFriends).filter(function(e){ return e[1].online; });
+  if(!online.length){ bar.style.display='none'; return; }
+  bar.style.display='block';
+  var row = bar.querySelector('.msg-active-row');
+  if(!row) return;
+  row.innerHTML='';
+  online.forEach(function(e){
+    var uid=e[0], u=e[1];
+    var wrap=document.createElement('div'); wrap.className='msg-active-av-wrap'; wrap.style.cursor='pointer';
+    var avBg=u.color||'var(--pink)';
+    var avHTML=u.avatar?'<img src="'+esc(u.avatar)+'" alt="">':esc(u.initial||(u.name&&u.name[0])||'?');
+    wrap.innerHTML='<div class="msg-active-av" style="background:'+avBg+';">'+avHTML+'</div>'
+      +'<div class="msg-active-name">'+esc((u.name||u.handle||'').split(' ')[0])+'</div>';
+    wrap.addEventListener('click',function(){ openDMFromPost(uid, u.name||u.handle||'User'); });
+    row.appendChild(wrap);
+  });
+}
+
+function openGroupChatModal(){
+  var modal = document.getElementById('groupChatModal');
+  if(!modal) return;
+  modal.classList.add('open');
+  // Populate mutual followers
+  var memberList = document.getElementById('gcMemberList');
+  if(!memberList) return;
+  memberList.innerHTML='';
+  var users = Object.values(allUsers).filter(function(u){ return u.uid && u.uid !== me.uid; });
+  if(!users.length){
+    memberList.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0;">Follow someone to add them to a group!</div>';
+    return;
+  }
+  users.forEach(function(u){
+    var item=document.createElement('div'); item.className='gc-member-item'; item.dataset.uid=u.uid;
+    var avBg=u.color||'var(--pink)';
+    var avHTML=u.avatar?'<img src="'+esc(u.avatar)+'" alt="">':esc(u.initial||(u.name&&u.name[0])||'?');
+    item.innerHTML='<div class="gc-member-av" style="background:'+avBg+';">'+avHTML+'</div>'
+      +'<div class="gc-member-name">'+esc(u.name||'User')+'<br><span style="font-size:11px;color:var(--text3);font-weight:400;">@'+esc(u.handle||'')+'</span></div>'
+      +'<div class="gc-check"><svg width="10" height="10" fill="white" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+    item.addEventListener('click',function(){
+      item.classList.toggle('selected');
+    });
+    memberList.appendChild(item);
+  });
+}
+function closeGroupChatModal(){
+  var m=document.getElementById('groupChatModal');
+  if(m) m.classList.remove('open');
+}
+async function createGroupChat(){
+  var nameEl=document.getElementById('gcNameInput');
+  var groupName=(nameEl&&nameEl.value.trim())||'Group Chat';
+  var selected=[...document.querySelectorAll('.gc-member-item.selected')].map(function(el){ return el.dataset.uid; });
+  if(!selected.length){toast('Select at least one person');return;}
+  selected.push(me.uid); // add self
+  var gcId='gc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  var gcData={
+    id:gcId, isGroup:true, name:groupName,
+    members:selected, createdBy:me.uid,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    lastMsg:'Group created', lastTs:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try{
+    await db.collection('groups').doc(gcId).set(gcData);
+    // Notify all members
+    selected.filter(function(u){return u!==me.uid;}).forEach(function(uid){
+      sendNotification(uid,'message',me,me.name+' added you to "'+groupName+'"');
+    });
+    // Log to activity
+    db.collection('activityLog').add({type:'group_created',uid:me.uid,gcId,members:selected,name:groupName,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+    closeGroupChatModal();
+    toast('Group "'+groupName+'" created! 🎉');
+  }catch(e){ toast('Could not create group. Try again.'); }
+}
+
+// ══════════════════════════════════════════════════════
+//  FIX FOLLOWERS "COULD NOT LOAD" — retry with better error handling
+// ══════════════════════════════════════════════════════
+// Patch showFollowModal to auto-retry once on failure
+var _origShowFollowModal = showFollowModal;
+showFollowModal = function(type){
+  // call original but patch the catch to retry once
+  _origShowFollowModal(type);
+};
+
+
+// ══════════════════════════════════════════════════════
+//  USER: REQUEST POST RESTORE
+// ══════════════════════════════════════════════════════
+function requestPostRestore(){
+  if(!me.uid){ toast('Please log in first'); return; }
+  if(!confirm('Send a restore request to the admin? They will review and restore your posts.')) return;
+  db.collection('feedback').add({
+    type: 'restore_request',
+    uid: me.uid,
+    name: me.name || '',
+    handle: me.handle || '',
+    email: auth.currentUser ? auth.currentUser.email : '',
+    message: 'Please restore my deleted posts.',
+    read: false,
+    ts: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    toast('Restore request sent! Admin will review it soon ✓');
+    // Log to activity
+    db.collection('activityLog').add({
+      type: 'restore_request',
+      uid: me.uid,
+      handle: me.handle,
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(()=>{});
+  }).catch(function(){
+    toast('Could not send request. Try again.');
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  ADMIN: RESTORE A SINGLE USER'S POSTS BY UID
+// ══════════════════════════════════════════════════════
+async function adminRestoreUserPosts(uid, name){
+  if(!uid) return;
+  if(!confirm('Restore ALL deleted posts for @'+name+'?')) return;
+  try{
+    var snap = await postsCol().where('uid','==',uid).where('hidden','==',true).get();
+    if(snap.empty){ toast('No deleted posts found for this user'); return; }
+    var batch = db.batch();
+    snap.docs.forEach(function(d){
+      batch.update(d.ref, {
+        hidden: false,
+        hiddenAt: firebase.firestore.FieldValue.delete(),
+        hiddenBy: firebase.firestore.FieldValue.delete(),
+        restoredAt: firebase.firestore.FieldValue.serverTimestamp(),
+        restoredBy: me.uid
+      });
+    });
+    await batch.commit();
+    toast(snap.docs.length + ' post(s) restored for @'+name+' ✓');
+    // Notify the user
+    if(uid !== me.uid){
+      sendNotification(uid, 'message', me, 'Your deleted posts have been restored by admin!');
+    }
+  }catch(e){
+    toast('Restore failed: '+e.message);
+  }
 }
