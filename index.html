@@ -56,7 +56,13 @@
     <div class="ac-err" id="authErr"></div>
     <input class="ac-inp" id="aName" type="text" placeholder="Your display name" autocomplete="name" style="display:none" onkeydown="if(event.key==='Enter')authSubmit()">
     <input class="ac-inp" id="aEmail" type="email" placeholder="Email address" autocomplete="email" onkeydown="if(event.key==='Enter')authSubmit()">
-    <input class="ac-inp" id="aPass" type="password" placeholder="Password (min 6 characters)" autocomplete="current-password" onkeydown="if(event.key==='Enter')authSubmit()">
+    <div style="position:relative;margin-bottom:0;">
+      <input class="ac-inp" id="aPass" type="password" placeholder="Password (min 6 characters)" autocomplete="current-password" onkeydown="if(event.key==='Enter')authSubmit()" style="margin-bottom:0;padding-right:48px;width:100%;box-sizing:border-box;">
+      <button type="button" onclick="togglePassVis()" id="aPassEye" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text3);display:flex;align-items:center;justify-content:center;" title="Show/hide password">
+        <svg id="eyeIcon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <div style="height:9px;"></div>
     <button class="ac-btn" id="aBtn" onclick="authSubmit()">Sign In</button>
     <div id="aForgotWrap" style="text-align:center;margin-bottom:10px;">
       <button onclick="authForgotPassword()" style="background:none;border:none;color:var(--pink);font-size:12.5px;font-family:Jost,sans-serif;cursor:pointer;text-decoration:underline;">Forgot password?</button>
@@ -301,7 +307,7 @@
             </div>
             <!-- Action buttons aligned right, no overlap -->
             <div class="profile-actions">
-              <button class="edit-profile-btn" onclick="openProfileEditModal()">✏️ Edit Profile</button>
+              <button class="edit-profile-btn" onclick="openProfileEditModal()">Edit Profile</button>
               <button class="share-profile-btn" onclick="toast('Profile link copied!')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
               </button>
@@ -952,7 +958,7 @@
 <!-- ── POST EDIT MODAL ────────────────────────────── -->
 <div id="editPostModal" onclick="if(event.target===this)closeEditPost()">
   <div class="epm-box">
-    <div class="epm-title">✏️ Edit Caption</div>
+    <div class="epm-title">Edit Caption</div>
     <textarea class="epm-textarea" id="epmText" placeholder="Write a caption..."></textarea>
     <div class="epm-actions">
       <button class="epm-cancel" onclick="closeEditPost()">Cancel</button>
@@ -986,8 +992,8 @@
 
     <!-- Section tabs -->
     <div style="display:flex;gap:6px;margin-bottom:20px;background:var(--bg2);border-radius:12px;padding:4px;">
-      <button id="peTab-profile" onclick="switchPeTab('profile')" style="flex:1;padding:8px;border-radius:9px;border:none;background:var(--card);color:var(--pink);font-family:Jost,sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);">✏️ Profile</button>
-      <button id="peTab-appearance" onclick="switchPeTab('appearance')" style="flex:1;padding:8px;border-radius:9px;border:none;background:transparent;color:var(--text2);font-family:Jost,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">🎨 Appearance</button>
+      <button id="peTab-profile" onclick="switchPeTab('profile')" style="flex:1;padding:8px;border-radius:9px;border:none;background:var(--card);color:var(--pink);font-family:Jost,sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);">Profile</button>
+      <button id="peTab-appearance" onclick="switchPeTab('appearance')" style="flex:1;padding:8px;border-radius:9px;border:none;background:transparent;color:var(--text2);font-family:Jost,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Appearance</button>
     </div>
 
     <!-- PROFILE TAB -->
