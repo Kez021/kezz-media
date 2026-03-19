@@ -125,6 +125,8 @@ async function loadProfile(uid) {
 }
 async function saveProfileToFirestore() {
   if(!me.uid) return;
+  // Always persist isAdmin flag so other users can detect admin profile
+  if(isAdmin()) me.isAdmin = true;
   try { await profileDoc(me.uid).set(me); } catch(e) {}
 }
 
@@ -160,7 +162,7 @@ const CONVOS = [
 // ── NOTIFICATIONS (Firestore-backed) ─────────────────
 let notifUnsubscribe = null;
 async function sendNotification(toUid, type, fromUser, extra){
-  // type: 'like'|'comment'|'follow'|'message'
+  // type: 'like'|'comment'|'follow'|'message'|'mention'
   if(!toUid || toUid===me.uid || toUid==='system') return;
   try{
     await db.collection('notifications').add({
@@ -233,9 +235,9 @@ function watchNotifications(){
 
 // Show a sliding popup card for an incoming notification
 function showNotifPopup(nid, n){
-  const icons  = {like:'❤️', comment:'💬', follow:'👤', message:'✉️'};
+  const icons  = {like:'❤️', comment:'💬', follow:'👤', message:'✉️', mention:'@'};
   const texts  = {like:'liked your post', comment:'commented on your post',
-                  follow:'started following you', message:'sent you a message'};
+                  follow:'started following you', message:'sent you a message', mention:'mentioned you'};
   const container = document.getElementById('notifPopup');
   if(!container) return;
 
@@ -415,6 +417,14 @@ async function init(){
   await loadProfile(me.uid);
   if(me.banned){ auth.signOut(); toast('Your account has been suspended.'); return; }
   applyTheme();
+  // If this user is admin, mark their UID and save isAdmin flag to Firestore
+  if(isAdmin()){
+    me.isAdmin = true;
+    me._adminUid = me.uid;
+    // Store adminUid globally so _drawOtherProfile can read it
+    window._KEZ_ADMIN_UID = me.uid;
+    saveProfileToFirestore();
+  }
   applyUserProfile();
   loadStories();
   renderSuggested();
@@ -471,6 +481,18 @@ function applyUserProfile(){
   const pn=document.getElementById('profileName');if(pn)pn.textContent=me.name||'Your Name';
   const ph=document.getElementById('profileHandle');if(ph)ph.textContent='@'+(me.handle||'you');
   const pb=document.getElementById('profileBio');if(pb)pb.textContent=me.bio||'✨ Welcome to my Kez Media profile!';
+  // followers count — admin profile always shows 1.2k (visible to everyone)
+  const sf=document.getElementById('statFollowers');
+  if(sf){
+    if(isAdmin()){
+      sf.textContent='1.2k';
+    } else {
+      // Regular user: load real count from Firestore
+      db.collection('profiles').doc(me.uid).collection('followers').get()
+        .then(function(s){ sf.textContent = s.size || me.followersCount || 0; })
+        .catch(function(){ sf.textContent = me.followersCount || 0; });
+    }
+  }
   // edit fields
   const en=document.getElementById('editName');if(en)en.value=me.name||'';
   const eh=document.getElementById('editHandle');if(eh)eh.value=me.handle||'';
@@ -726,6 +748,10 @@ function buildCard(p,i){
       +'<button class="act" data-action="share">'
         +'<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
       +'</button>'
+      +'<button class="act '+(p.repostedBy&&p.repostedBy.includes(me.uid)?'liked':'')+'" data-repost="'+pid+'" title="Repost">'
+        +'<svg width="17" height="17" fill="none" stroke="'+(p.repostedBy&&p.repostedBy.includes(me.uid)?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>'
+        +(p.repostCount&&p.repostCount>0?'<span class="cc">'+p.repostCount+'</span>':'')
+      +'</button>'
       +'<button class="act act-right '+(p.saved?'liked':'')+'" data-save="'+pid+'">'
         +'<svg width="17" height="17" fill="'+(p.saved?'var(--pink)':'none')+'" stroke="'+(p.saved?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
       +'</button>'
@@ -751,6 +777,9 @@ function buildCard(p,i){
   });
   card.querySelectorAll('[data-save]').forEach(function(el){
     el.addEventListener('click',function(){doSave(el.dataset.save);});
+  });
+  card.querySelectorAll('[data-repost]').forEach(function(el){
+    el.addEventListener('click',function(){doRepost(el.dataset.repost);});
   });
   card.querySelectorAll('[data-lightbox]').forEach(function(el){
     el.addEventListener('click',function(){openLightbox(el.dataset.lightbox);});
@@ -921,6 +950,30 @@ function doSave(id){
   saveProfileToFirestore();
   toast(p.saved?'Post saved 🌸':'Post unsaved');
 }
+
+async function doRepost(id){
+  id=String(id);
+  const p=posts.find(x=>String(x.id)===id);if(!p)return;
+  if(!Array.isArray(p.repostedBy)) p.repostedBy=[];
+  const alreadyReposted = p.repostedBy.includes(me.uid);
+  if(alreadyReposted){
+    p.repostedBy=p.repostedBy.filter(x=>x!==me.uid);
+    p.repostCount=Math.max(0,(p.repostCount||1)-1);
+    toast('Repost removed');
+  } else {
+    p.repostedBy.push(me.uid);
+    p.repostCount=(p.repostCount||0)+1;
+    toast('Reposted! 🔁');
+    // Notify post owner
+    if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'repost',me,'reposted your post');
+    // Save to activity log
+    db.collection('activityLog').add({type:'repost',fromUid:me.uid,fromHandle:me.handle,postId:id,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+  }
+  // Update Firestore
+  updatePostField(id,{repostedBy:p.repostedBy,repostCount:p.repostCount});
+  // Update all card buttons
+  renderFeed();renderExploreFeed();
+}
 function toggleComments(id){
   id=String(id);
   const p=posts.find(x=>String(x.id)===id);if(!p)return;
@@ -944,6 +997,36 @@ function addComment(id){
   updatePostField(id,{comments:p.comments,showComments:true});
   // notify post owner
   if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'comment',me,txt.slice(0,60));
+  // notify anyone @mentioned in the comment
+  sendMentionNotifications(txt, id);
+}
+
+// Send notifications to all @mentioned users
+function sendMentionNotifications(text, postId){
+  var mentions = [...text.matchAll(/@(\w+)/g)].map(m=>m[1].toLowerCase());
+  if(!mentions.length) return;
+  var notified = new Set();
+  Object.values(allUsers).forEach(function(u){
+    if(!u.handle) return;
+    if(u.uid === me.uid) return; // don't notify yourself
+    if(notified.has(u.uid)) return;
+    if(mentions.includes(u.handle.toLowerCase())){
+      notified.add(u.uid);
+      sendNotification(u.uid, 'mention', me, '@'+u.handle+' — '+text.slice(0,50));
+      // Save to Firestore for backend tracking
+      db.collection('activityLog').add({
+        type: 'mention',
+        fromUid: me.uid,
+        fromName: me.name,
+        fromHandle: me.handle,
+        toUid: u.uid,
+        toHandle: u.handle,
+        postId: postId||'',
+        text: text.slice(0,100),
+        ts: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(()=>{});
+    }
+  });
 }
 function reportPost(id){
   id=String(id);
@@ -1038,7 +1121,26 @@ function switchTab(el,tabId){
   el.classList.add('active');
   document.getElementById('grid').style.display=tabId==='grid'?'grid':'none';
   document.getElementById('status-tab').style.display=tabId==='status-tab'?'block':'none';
+  var rt=document.getElementById('repost-tab');if(rt)rt.style.display=tabId==='repost-tab'?'block':'none';
   document.getElementById('saved-tab').style.display=tabId==='saved-tab'?'block':'none';
+  if(tabId==='repost-tab') renderRepostGrid();
+}
+function renderRepostGrid(){
+  var grid=document.getElementById('repostGrid');if(!grid)return;grid.innerHTML='';
+  var reposts=posts.filter(function(p){return Array.isArray(p.repostedBy)&&p.repostedBy.includes(me.uid);});
+  if(!reposts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No reposts yet. Hit 🔁 on any post!</div>';return;}
+  reposts.forEach(function(p){
+    var imgs=p.images||(p.image?[p.image]:[]);
+    var item=document.createElement('div');item.className='grid-item';
+    if(p.isStatus){
+      item.style.cssText='aspect-ratio:1;background:var(--bg2);border-left:3px solid var(--pink);display:flex;align-items:center;padding:12px;cursor:pointer;';
+      item.innerHTML='<span style="font-size:13px;color:var(--text);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">'+esc(p.caption)+'</span>';
+    } else {
+      item.innerHTML=imgs[0]?'<img src="'+imgs[0]+'" alt=""><div class="grid-overlay"><span>❤️ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>':'<div class="grid-item-placeholder" style="font-size:24px;">🔁</div>';
+    }
+    item.onclick=function(){openLightbox(p.id);};
+    grid.appendChild(item);
+  });
 }
 function showFollowModal(type){
   document.getElementById('followModalTitle').textContent = type==='followers'?'Followers':type==='following'?'Following':'Posts';
@@ -1058,36 +1160,47 @@ function showFollowModal(type){
     return;
   }
 
-  // Load real followers/following from Firestore
   var col = type === 'followers' ? 'followers' : 'following';
   db.collection('profiles').doc(me.uid).collection(col).limit(100).get()
     .then(function(snap){
       list.innerHTML = '';
-      // Always show dummy followers to pad to 1.2k visual count for followers tab
-      if(type === 'followers'){
-        // Show real followers first
-        var realCount = snap.docs.length;
-        snap.docs.forEach(function(d){
-          var u = d.data();
-          var item = document.createElement('div');
-          item.className = 'follow-item';
-          var avBg = u.color || 'var(--pink)';
-          var avHTML = u.avatar ? '<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : esc(u.initial||u.name&&u.name[0]||'?');
-          item.innerHTML = '<div class="sug-avatar" style="background:'+avBg+';color:white;overflow:hidden;">'+avHTML+'</div>'
-            + '<div class="sug-info"><div class="sug-name">'+esc(u.name||'User')+'</div><div class="sug-sub">@'+esc(u.handle||'')+'</div></div>';
-          list.appendChild(item);
-        });
-        // Pad with dummy entries to show the platform has 1.2k followers
+
+      // Always show REAL followers/following first
+      var realCount = snap.docs.length;
+      snap.docs.forEach(function(d){
+        var u = d.data();
+        var item = document.createElement('div');
+        item.className = 'follow-item';
+        item.style.cursor = 'pointer';
+        var avBg = u.color || 'var(--pink)';
+        var avHTML = u.avatar ? '<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : esc(u.initial||u.name&&u.name[0]||'?');
+        item.innerHTML = '<div class="sug-avatar" style="background:'+avBg+';color:white;overflow:hidden;">'+avHTML+'</div>'
+          + '<div class="sug-info"><div class="sug-name">'+esc(u.name||'User')+'</div><div class="sug-sub">@'+esc(u.handle||'')+'</div></div>'
+          + '<svg width="14" height="14" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
+        if(u.uid){
+          item.addEventListener('click', function(){
+            document.getElementById('followOverlay').classList.remove('open');
+            viewProfile(u.uid);
+          });
+        }
+        list.appendChild(item);
+      });
+
+      // Only ADMIN account gets 1.2k dummy followers padded at the back
+      if(type === 'followers' && isAdmin()){
         var DUMMY_FOLLOWERS = [
-          {name:'Mia Rose',handle:'mia.rose',color:'linear-gradient(135deg,#f093fb,#f5576c)'},
-          {name:'Chloe K',handle:'chloe_k',color:'linear-gradient(135deg,#4facfe,#00f2fe)'},
-          {name:'Yuki Chan',handle:'yukichan',color:'linear-gradient(135deg,#43e97b,#38f9d7)'},
-          {name:'Belle',handle:'belle_xo',color:'linear-gradient(135deg,#fa709a,#fee140)'},
-          {name:'Aria S',handle:'aria.s',color:'linear-gradient(135deg,#a18cd1,#fbc2eb)'},
-          {name:'Nana',handle:'nana_cutie',color:'linear-gradient(135deg,#fccb90,#d57eeb)'},
-          {name:'Zoe',handle:'zoe.official',color:'linear-gradient(135deg,#e2688a,#f0a0b8)'},
-          {name:'Lily Bae',handle:'lily_bae',color:'linear-gradient(135deg,#30cfd0,#330867)'},
+          {name:'Mia Rose',    handle:'mia.rose',     color:'linear-gradient(135deg,#f093fb,#f5576c)'},
+          {name:'Chloe K',     handle:'chloe_k',      color:'linear-gradient(135deg,#4facfe,#00f2fe)'},
+          {name:'Yuki Chan',   handle:'yukichan',     color:'linear-gradient(135deg,#43e97b,#38f9d7)'},
+          {name:'Belle',       handle:'belle_xo',     color:'linear-gradient(135deg,#fa709a,#fee140)'},
+          {name:'Aria S',      handle:'aria.s',       color:'linear-gradient(135deg,#a18cd1,#fbc2eb)'},
+          {name:'Nana',        handle:'nana_cutie',   color:'linear-gradient(135deg,#fccb90,#d57eeb)'},
+          {name:'Zoe',         handle:'zoe.official', color:'linear-gradient(135deg,#e2688a,#f0a0b8)'},
+          {name:'Lily Bae',    handle:'lily_bae',     color:'linear-gradient(135deg,#30cfd0,#330867)'},
+          {name:'Hana',        handle:'hana_pink',    color:'linear-gradient(135deg,#f7971e,#ffd200)'},
+          {name:'Sophie L',    handle:'sophie.l',     color:'linear-gradient(135deg,#667eea,#764ba2)'},
         ];
+        // Append dummies AFTER real followers
         DUMMY_FOLLOWERS.forEach(function(u){
           var item = document.createElement('div');
           item.className = 'follow-item';
@@ -1095,34 +1208,21 @@ function showFollowModal(type){
             + '<div class="sug-info"><div class="sug-name">'+u.name+'</div><div class="sug-sub">@'+u.handle+'</div></div>';
           list.appendChild(item);
         });
-        // Show total count
-        var countEl = document.createElement('div');
-        countEl.style.cssText = 'text-align:center;padding:12px;font-size:12px;color:var(--text3);';
-        countEl.textContent = '+ ' + (1200 - realCount - DUMMY_FOLLOWERS.length) + ' more followers';
-        list.appendChild(countEl);
-      } else {
-        // Following: show real only
-        snap.docs.forEach(function(d){
-          var u = d.data();
-          var item = document.createElement('div');
-          item.className = 'follow-item';
-          var avBg = u.color || 'var(--pink)';
-          var avHTML = u.avatar ? '<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : esc(u.initial||u.name&&u.name[0]||'?');
-          item.innerHTML = '<div class="sug-avatar" style="background:'+avBg+';color:white;overflow:hidden;">'+avHTML+'</div>'
-            + '<div class="sug-info"><div class="sug-name">'+esc(u.name||'User')+'</div><div class="sug-sub">@'+esc(u.handle||'')+'</div></div>';
-          list.appendChild(item);
-        });
-        if(!snap.docs.length) list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">Not following anyone yet</div>';
+        var remaining = 1200 - realCount - DUMMY_FOLLOWERS.length;
+        if(remaining > 0){
+          var countEl = document.createElement('div');
+          countEl.style.cssText = 'text-align:center;padding:14px;font-size:12.5px;color:var(--text3);';
+          countEl.textContent = '+ ' + remaining.toLocaleString() + ' more followers';
+          list.appendChild(countEl);
+        }
+      } else if(!realCount){
+        list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">'
+          + (type==='followers' ? 'No followers yet' : 'Not following anyone yet')
+          + '</div>';
       }
     })
     .catch(function(){
-      // Fallback: show dummy list if Firestore fails
-      list.innerHTML = '';
-      [{name:'Mia Rose',handle:'mia.rose',color:'linear-gradient(135deg,#f093fb,#f5576c)'},{name:'Chloe K',handle:'chloe_k',color:'linear-gradient(135deg,#4facfe,#00f2fe)'},{name:'Yuki Chan',handle:'yukichan',color:'linear-gradient(135deg,#43e97b,#38f9d7)'}].forEach(function(u){
-        var item = document.createElement('div');item.className='follow-item';
-        item.innerHTML='<div class="sug-avatar" style="background:'+u.color+';color:white;font-weight:700;">'+u.name[0]+'</div><div class="sug-info"><div class="sug-name">'+u.name+'</div><div class="sug-sub">@'+u.handle+'</div></div>';
-        list.appendChild(item);
-      });
+      list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">Could not load. Try again.</div>';
     });
 }
 
@@ -1377,6 +1477,9 @@ async function submitPost(){
     closeModal();
     toast('Posting... ✨');
     await savePostToFirestore(p);
+    sendMentionNotifications(txt, postId);
+    // Log to activity
+    db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:txt.slice(0,100),ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
     toast('Status shared! ✨');
   } else {
     const cap=document.getElementById('captionInput').value.trim();
@@ -1390,6 +1493,9 @@ async function submitPost(){
     }
     const p={id:postId, uid, user:{...me}, images:imageUrls, image:imageUrls[0]||null, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
     await savePostToFirestore(p);
+    if(cap) sendMentionNotifications(cap, postId);
+    // Log to activity
+    db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),images:imageUrls.length,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
     toast('Post shared! 🌸');
   }
   uploadImages=[];
@@ -2035,7 +2141,8 @@ function _drawOtherProfile(uid, prof){
     var isFollowing = Array.isArray(me.following) && me.following.includes(uid);
     var isOnline    = getPresenceStatus(uid) === 'online';
     var userPosts   = posts.filter(function(p){ return p.uid===uid; });
-    var feedPosts   = userPosts.filter(function(p){ return !p.isStatus; });
+    var photoPosts  = userPosts.filter(function(p){ return !p.isStatus; });
+    var statusPosts = userPosts.filter(function(p){ return p.isStatus; });
     var iUid        = _r(uid);
     var profName    = prof.name || prof.handle || 'User';
     var iName       = _r(String(profName));
@@ -2043,95 +2150,221 @@ function _drawOtherProfile(uid, prof){
     var bannerBg    = prof.bannerColor || 'linear-gradient(135deg,#f4a8c0,#e2688a)';
     var avBg        = prof.color || 'var(--pink)';
     var followersCount = prof.followersCount || 0;
-    var followingCount = (prof.following && prof.following.length) ? prof.following.length : 0;
+    // Admin profile always shows 1.2k to EVERYONE who views it.
+    // prof.isAdmin is saved to Firestore the first time the admin logs in.
+    // window._KEZ_ADMIN_UID is set on the admin's own device as a fallback.
+    var isAdminProfile = !!(prof.isAdmin) ||
+                         !!(window._KEZ_ADMIN_UID && window._KEZ_ADMIN_UID === uid);
+    var displayFollowers = isAdminProfile ? '1.2k' : (followersCount || 0);
+    var followingCount = Array.isArray(prof.following) ? prof.following.length : 0;
 
     var avHtml = prof.avatar
       ? '<img src="'+prof.avatar+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
       : '<span>'+initial+'</span>';
 
-    // Use CSS classes only (no inline styles) so media queries work on mobile
     var html =
       '<div class="profile-card">'
         +'<div class="opu-banner" style="background:'+bannerBg+';">'
-          +(prof.bannerImage ? '<img src="'+prof.bannerImage+'" alt="">' : '')
+          +(prof.bannerImage ? '<img src="'+prof.bannerImage+'" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">' : '')
           +'<button class="opu-back" id="opuBackBtn">'
             +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>'
           +'</button>'
         +'</div>'
         +'<div class="opu-top">'
-          +'<div class="opu-av" style="background:'+avBg+';">'
-            +avHtml
-            +(isOnline ? '<div class="opu-online-dot"></div>' : '')
+          +'<div class="profile-av-wrap" style="margin-top:-44px;margin-bottom:10px;">'
+            +'<div class="opu-av" style="background:'+avBg+';">'+avHtml+(isOnline?'<div class="opu-online-dot"></div>':'')+'</div>'
+            +'<div class="profile-actions">'
+              +'<button id="opuFollowBtn" class="opu-follow-btn'+(isFollowing?' following':'')+'">'+( isFollowing?'Following':'Follow')+'</button>'
+              +'<button id="opuMsgBtn" class="opu-msg-btn"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Message</button>'
+            +'</div>'
           +'</div>'
-          +'<div class="opu-name">'
-            +esc(profName)
-            +(prof.isAdmin ? '<span class="opu-admin-badge"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</span>' : '')
-            +(isOnline ? '<span class="opu-online-badge">● Active now</span>' : '')
-          +'</div>'
-          +'<div class="opu-handle">@'+esc(prof.handle||'user')+'</div>'
-          +(prof.bio ? '<div class="opu-bio">'+esc(prof.bio)+'</div>' : '')
-          +'<div class="opu-actions">'
-            +'<button id="opuFollowBtn" class="opu-follow-btn'+(isFollowing?' following':'')+'">'
-              +(isFollowing?'Following':'Follow')
-            +'</button>'
-            +'<button id="opuMsgBtn" class="opu-msg-btn">'
-              +'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Message'
-            +'</button>'
-          +'</div>'
-          +'<div class="opu-stats">'
-            +'<div class="opu-stat"><div class="opu-stat-n">'+feedPosts.length+'</div><div class="opu-stat-l">Posts</div></div>'
-            +'<div class="opu-stat" id="opuFollowersStat"><div class="opu-stat-n">'+followersCount+'</div><div class="opu-stat-l">Followers</div></div>'
-            +'<div class="opu-stat"><div class="opu-stat-n">'+followingCount+'</div><div class="opu-stat-l">Following</div></div>'
+          +(prof.isAdmin?'<div class="admin-badge"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</div>':'')
+          +(isOnline?'<div class="opu-online-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#22c55e;font-weight:600;margin-bottom:4px;">● Active now</div>':'')
+          +'<div class="profile-name">'+esc(profName)+'</div>'
+          +'<div class="profile-handle">@'+esc(prof.handle||'user')+'</div>'
+          +(prof.bio?'<div class="profile-bio">'+esc(prof.bio)+'</div>':'')
+          +'<div class="profile-stats">'
+            +'<div class="stat-item" id="opuStatPosts"><div class="stat-num">'+photoPosts.length+'</div><div class="stat-label">Posts</div></div>'
+            +'<div class="stat-item" id="opuStatFollowers" style="cursor:pointer;"><div class="stat-num">'+displayFollowers+'</div><div class="stat-label">Followers</div></div>'
+            +'<div class="stat-item" id="opuStatFollowing" style="cursor:pointer;"><div class="stat-num">'+followingCount+'</div><div class="stat-label">Following</div></div>'
           +'</div>'
         +'</div>'
       +'</div>'
-      +'<div class="opu-feed-tabs">'
-        +'<div id="opuTabPosts" class="opu-feed-tab'+(otherProfilePostsTab==='posts'?' active':'')+'">📋 Posts</div>'
-        +'<div id="opuTabGrid" class="opu-feed-tab'+(otherProfilePostsTab==='grid'?' active':'')+'">⊞ Grid</div>'
-      +'</div>'
-      +'<div id="opuFeedContent"></div>';
+      // Tabs bar matching own profile
+      +'<div class="profile-card" style="overflow:hidden;">'
+        +'<div class="profile-tabs-bar">'
+          +'<div class="profile-tabs" id="opuTabs">'
+            +'<div class="ptab active" data-tab="photos">Photos</div>'
+            +'<div class="ptab" data-tab="status">Status</div>'
+            +'<div class="ptab" data-tab="repost">Reposts</div>'
+            +'<div class="ptab" data-tab="saved">Saved</div>'
+          +'</div>'
+          +'<div class="profile-layout-btns" id="opuLayoutBtns">'
+            +'<button class="layout-btn on" id="opuLayoutGrid" title="Grid"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></button>'
+            +'<button class="layout-btn" id="opuLayoutList" title="List"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>'
+          +'</div>'
+        +'</div>'
+        +'<div id="opuFeedContent"></div>'
+      +'</div>';
 
     container.innerHTML = html;
 
-    // wire buttons
+    // Wire back button
     document.getElementById('opuBackBtn').onclick = function(){ goTo(previousView||'home'); };
 
-    document.getElementById('opuFollowBtn').onclick = function(){
-      toggleFollowUserOpu(uid, profName);
-    };
+    // Wire follow/msg
+    document.getElementById('opuFollowBtn').onclick = function(){ toggleFollowUserOpu(uid, profName); };
+    document.getElementById('opuMsgBtn').onclick = function(){ openDMFromPost(_g(iUid), _g(iName)); };
 
-    document.getElementById('opuMsgBtn').onclick = function(){
-      openDMFromPost(_g(iUid), _g(iName));
-    };
+    // Wire followers/following clickable
+    document.getElementById('opuStatFollowers').onclick = function(){ showOtherFollowModal(uid, profName, 'followers'); };
+    document.getElementById('opuStatFollowing').onclick = function(){ showOtherFollowModal(uid, profName, 'following'); };
 
-    document.getElementById('opuTabPosts').onclick = function(){
-      otherProfilePostsTab='posts';
-      this.style.color='var(--pink)'; this.style.borderBottom='2px solid var(--pink)';
-      var g=document.getElementById('opuTabGrid');
-      if(g){g.style.color='var(--text3)';g.style.borderBottom='2px solid transparent';}
-      renderOtherProfileFeed(userPosts);
-    };
-
-    document.getElementById('opuTabGrid').onclick = function(){
-      otherProfilePostsTab='grid';
-      this.style.color='var(--pink)'; this.style.borderBottom='2px solid var(--pink)';
-      var p=document.getElementById('opuTabPosts');
-      if(p){p.style.color='var(--text3)';p.style.borderBottom='2px solid transparent';}
-      renderOtherProfileGrid(feedPosts);
-    };
-
-    // render initial tab
-    if(otherProfilePostsTab==='grid'){
-      renderOtherProfileGrid(feedPosts);
-    } else {
-      renderOtherProfileFeed(userPosts);
+    // Layout switcher
+    var opuLayout = 'grid';
+    function setOpuLayout(l){
+      opuLayout = l;
+      ['Grid','List'].forEach(function(n){
+        var btn = document.getElementById('opuLayout'+n);
+        if(btn) btn.classList.toggle('on', n.toLowerCase()===l);
+      });
+      renderOpuTab(currentOpuTab);
     }
+    document.getElementById('opuLayoutGrid').onclick = function(){ setOpuLayout('grid'); };
+    document.getElementById('opuLayoutList').onclick = function(){ setOpuLayout('list'); };
+
+    // Tab switching
+    var currentOpuTab = 'photos';
+    function renderOpuTab(tab){
+      currentOpuTab = tab;
+      var fc = document.getElementById('opuFeedContent');
+      if(!fc) return;
+      // Get saved/repost posts for this user
+      var savedIds = Array.isArray(prof.saved) ? prof.saved : [];
+      var tabPosts = tab==='photos' ? photoPosts
+        : tab==='status' ? statusPosts
+        : tab==='repost' ? posts.filter(function(p){ return p.repostedBy && p.repostedBy.includes(uid); })
+        : posts.filter(function(p){ return savedIds.includes(String(p.id)); });
+
+      if(!tabPosts.length){
+        fc.innerHTML = '<div class="opu-empty" style="padding:40px;text-align:center;color:var(--text3);">No '+(tab==='photos'?'photos':tab==='status'?'statuses':tab==='repost'?'reposts':'saved posts')+' yet 🌸</div>';
+        return;
+      }
+      fc.innerHTML = '';
+      if(opuLayout==='list' || tab==='status'){
+        tabPosts.forEach(function(p){ fc.appendChild(buildCard(p, 0)); });
+      } else {
+        var grid = document.createElement('div');
+        grid.className = 'post-grid';
+        tabPosts.forEach(function(p){
+          var imgs = p.images||(p.image?[p.image]:[]);
+          var img = imgs[0]||null;
+          var iPid = _r(String(p.id));
+          var item = document.createElement('div');
+          item.className = 'grid-item';
+          item.innerHTML = img
+            ? '<img src="'+img+'" alt=""><div class="grid-overlay"><span>❤️ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>'
+            : '<div class="grid-item-placeholder" style="font-size:24px;">'+(p.isStatus?'💬':'🖼️')+'</div>';
+          item.addEventListener('click', function(){ openLightbox(_g(iPid)); });
+          grid.appendChild(item);
+        });
+        fc.appendChild(grid);
+      }
+    }
+
+    document.getElementById('opuTabs').addEventListener('click', function(e){
+      var tab = e.target.dataset.tab;
+      if(!tab) return;
+      document.querySelectorAll('#opuTabs .ptab').forEach(function(t){ t.classList.toggle('active', t.dataset.tab===tab); });
+      renderOpuTab(tab);
+    });
+
+    renderOpuTab('photos');
 
   } catch(err){
     console.error('_drawOtherProfile error:', err);
     var c = document.getElementById('otherProfileContent');
     if(c) c.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);">Could not load profile. <button onclick="loadOtherProfile(currentOtherProfileUid)" style="color:var(--pink);background:none;border:none;cursor:pointer;font-family:Jost,sans-serif;font-size:14px;">Tap to retry</button></div>';
   }
+}
+
+// Show followers/following list for any user — anyone can view anyone's list
+function showOtherFollowModal(uid, name, type){
+  document.getElementById('followModalTitle').textContent = (type==='followers' ? name+"'s Followers" : name+"'s Following");
+  var list = document.getElementById('followList');
+  list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Loading...</div>';
+  document.getElementById('followOverlay').classList.add('open');
+
+  // Detect if this is the admin's profile
+  var viewingAdminProfile = !!(window._KEZ_ADMIN_UID && window._KEZ_ADMIN_UID === uid) ||
+                             !!(allUsers[uid] && allUsers[uid].isAdmin);
+
+  db.collection('profiles').doc(uid).collection(type).limit(100).get()
+    .then(function(snap){
+      list.innerHTML = '';
+      var realCount = snap.docs.length;
+
+      // Always show REAL followers/following first — all clickable
+      snap.docs.forEach(function(d){
+        var u = d.data();
+        var item = document.createElement('div');
+        item.className = 'follow-item';
+        item.style.cursor = 'pointer';
+        var avBg = u.color || 'var(--pink)';
+        var avHTML = u.avatar
+          ? '<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+          : esc(u.initial || (u.name && u.name[0]) || '?');
+        item.innerHTML =
+          '<div class="sug-avatar" style="background:'+avBg+';color:white;overflow:hidden;">'+avHTML+'</div>'
+          + '<div class="sug-info"><div class="sug-name">'+esc(u.name||'User')+'</div><div class="sug-sub">@'+esc(u.handle||'')+'</div></div>'
+          + '<svg width="14" height="14" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
+        item.addEventListener('click', function(){
+          document.getElementById('followOverlay').classList.remove('open');
+          if(u.uid) viewProfile(u.uid);
+        });
+        list.appendChild(item);
+      });
+
+      // If viewing admin's followers list — pad with dummies at the back
+      if(type === 'followers' && viewingAdminProfile){
+        var DUMMY_FOLLOWERS = [
+          {name:'Mia Rose',   handle:'mia.rose',     color:'linear-gradient(135deg,#f093fb,#f5576c)'},
+          {name:'Chloe K',    handle:'chloe_k',      color:'linear-gradient(135deg,#4facfe,#00f2fe)'},
+          {name:'Yuki Chan',  handle:'yukichan',     color:'linear-gradient(135deg,#43e97b,#38f9d7)'},
+          {name:'Belle',      handle:'belle_xo',     color:'linear-gradient(135deg,#fa709a,#fee140)'},
+          {name:'Aria S',     handle:'aria.s',       color:'linear-gradient(135deg,#a18cd1,#fbc2eb)'},
+          {name:'Nana',       handle:'nana_cutie',   color:'linear-gradient(135deg,#fccb90,#d57eeb)'},
+          {name:'Zoe',        handle:'zoe.official', color:'linear-gradient(135deg,#e2688a,#f0a0b8)'},
+          {name:'Lily Bae',   handle:'lily_bae',     color:'linear-gradient(135deg,#30cfd0,#330867)'},
+          {name:'Hana',       handle:'hana_pink',    color:'linear-gradient(135deg,#f7971e,#ffd200)'},
+          {name:'Sophie L',   handle:'sophie.l',     color:'linear-gradient(135deg,#667eea,#764ba2)'},
+        ];
+        // Dummies are non-clickable (no real UID)
+        DUMMY_FOLLOWERS.forEach(function(u){
+          var item = document.createElement('div');
+          item.className = 'follow-item';
+          item.innerHTML =
+            '<div class="sug-avatar" style="background:'+u.color+';color:white;font-weight:700;font-size:13px;">'+u.name[0]+'</div>'
+            + '<div class="sug-info"><div class="sug-name">'+u.name+'</div><div class="sug-sub">@'+u.handle+'</div></div>';
+          list.appendChild(item);
+        });
+        // Show remaining count
+        var remaining = 1200 - realCount - DUMMY_FOLLOWERS.length;
+        if(remaining > 0){
+          var countEl = document.createElement('div');
+          countEl.style.cssText = 'text-align:center;padding:14px;font-size:12.5px;color:var(--text3);';
+          countEl.textContent = '+ ' + remaining.toLocaleString() + ' more followers';
+          list.appendChild(countEl);
+        }
+      } else if(!realCount){
+        list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">'
+          + (type==='followers' ? 'No followers yet' : 'Not following anyone yet')
+          + '</div>';
+      }
+    })
+    .catch(function(){
+      list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">Could not load. Try again.</div>';
+    });
 }
 
 function renderOtherProfileFeed(userPosts){
@@ -2793,8 +3026,20 @@ function openStoryViewers(s){
       '<div class="sv-viewer-av" style="background:'+esc(avBg)+';">'
         +(viewer.avatar?'<img src="'+esc(viewer.avatar)+'" alt="">':esc(viewer.initial||'?'))
       +'</div>'
-      +'<div class="sv-viewer-name">'+esc(viewer.name||viewer.handle||'User')+'<br><span style="font-size:10.5px;opacity:.6;font-weight:400;">@'+esc(viewer.handle||'')+'</span></div>'
-      +(reactions[viewer.uid]?'<div class="sv-viewer-reaction">'+reactions[viewer.uid]+'</div>':'');
+      +'<div class="sv-viewer-name">'+esc(viewer.name||viewer.handle||'User')
+        +'<br><span style="font-size:10.5px;opacity:.6;font-weight:400;">@'+esc(viewer.handle||'')+'</span>'
+      +'</div>'
+      +(reactions[viewer.uid]?'<div class="sv-viewer-reaction">'+reactions[viewer.uid]+'</div>':'')
+      +'<svg width="14" height="14" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
+    // Click → go to that person's profile
+    row.addEventListener('click', function(){
+      closeStoryViewer();
+      if(viewer.uid && viewer.uid !== me.uid){
+        viewProfile(viewer.uid);
+      } else if(viewer.uid === me.uid){
+        goTo('profile');
+      }
+    });
     list.appendChild(row);
   });
   // Close panel when tapping outside it
@@ -3108,9 +3353,13 @@ function applyProfileTheme(idx){
 var _profileLayout = 'grid';
 function setProfileLayout(layout){
   _profileLayout = layout;
+  // Update profile page layout buttons
   ['grid','list','magazine'].forEach(function(l){
     var btn = document.getElementById('layout-'+l);
     if(btn) btn.classList.toggle('on', l===layout);
+    // Also sync settings page layout buttons (different IDs to avoid duplicate)
+    var sbtn = document.getElementById('settings-layout-'+l);
+    if(sbtn) sbtn.classList.toggle('on', l===layout);
   });
   var grid = document.getElementById('grid');
   if(grid){
@@ -3898,6 +4147,12 @@ function _updateInstallUI(){
 var _origSwitchNav = null;
 window.addEventListener('DOMContentLoaded', function(){
   _updateInstallUI();
+  // Safety: ensure profile edit modal is NEVER open on page load
+  var pem = document.getElementById('profileEditModal');
+  if(pem) pem.classList.remove('open');
+  // Safety: ensure settings sheet is hidden on load
+  var mss = document.getElementById('mobSettingsSheet');
+  if(mss) mss.style.display = 'none';
 });
 
 function triggerInstall(){
