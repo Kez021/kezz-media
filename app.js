@@ -3737,7 +3737,22 @@ function authTab(m){
   document.getElementById('t-up').classList.toggle('on', m==='up');
   document.getElementById('aBtn').textContent = m==='in' ? 'Sign In' : 'Create Account';
   document.getElementById('aName').style.display = m==='up' ? 'block' : 'none';
+  document.getElementById('aPass').placeholder = m==='up' ? 'Password (min 6 characters)' : 'Password';
+  // Show forgot password only on Sign In
+  var fw = document.getElementById('aForgotWrap');
+  if(fw) fw.style.display = m==='in' ? 'block' : 'none';
   document.getElementById('authErr').className = 'ac-err';
+}
+async function authForgotPassword(){
+  const email = document.getElementById('aEmail').value.trim();
+  if(!email){ showAuthErr('Enter your email address first, then click Forgot Password'); return; }
+  try{
+    await auth.sendPasswordResetEmail(email);
+    showAuthErr('Password reset email sent! Check your inbox.');
+    document.getElementById('authErr').style.color='#22c55e';
+  }catch(err){
+    showAuthErr('Could not send reset email — check your email address');
+  }
 }
 function showAuthErr(msg){
   const e = document.getElementById('authErr');
@@ -4373,9 +4388,25 @@ function openProfileEditModal(){
   // Sync dark mode toggle
   var dt = document.getElementById('peModalDarkToggle');
   if(dt) dt.checked = isDark;
+  // Render profile color swatches in Profile tab
+  var cs = document.getElementById('peModalColorSwatches');
+  if(cs){ cs.innerHTML=''; COLORS.forEach(function(c){
+    var s=document.createElement('div');
+    s.className='color-swatch'+(me.color===c?' on':'');
+    s.style.background=c; s.style.width='36px'; s.style.height='36px'; s.style.borderRadius='50%';
+    s.title=c;
+    s.onclick=function(){
+      me.color=c;
+      saveProfileToFirestore();
+      applyUserProfile();
+      cs.querySelectorAll('.color-swatch').forEach(function(x){x.classList.remove('on');});
+      s.classList.add('on');
+    };
+    cs.appendChild(s);
+  });}
   // Render banner swatches in modal
   var bs = document.getElementById('peModalBannerSwatches');
-  if(bs){ bs.innerHTML=''; BANNER_COLORS.forEach(function(c,i){
+  if(bs){ bs.innerHTML=''; BANNER_COLORS.forEach(function(c){
     var s=document.createElement('div');
     s.className='color-swatch'+(me.bannerColor===c?' on':'');
     s.style.background=c;s.style.width='44px';s.style.height='28px';s.style.borderRadius='8px';
