@@ -1004,7 +1004,7 @@ async function doRepost(id){
   } else {
     p.repostedBy.push(me.uid);
     p.repostCount=(p.repostCount||0)+1;
-    toast('Reposted! 🔁');
+    toast('Reposted!');
     // Notify post owner
     if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'repost',me,'reposted your post');
     // Save to activity log
@@ -1108,24 +1108,30 @@ function refreshProfile(){
 }
 function renderPostGrid(){
   const grid=document.getElementById('grid');grid.innerHTML='';
-  // Apply saved layout class
   grid.className='post-grid' + (_profileLayout&&_profileLayout!=='grid'?' layout-'+_profileLayout:'');
   var myPosts=posts.filter(p=>p.uid===me.uid && !p.isStatus);
-  // Pinned post first
   myPosts.sort(function(a,b){
     if(a.pinned&&!b.pinned) return -1;
     if(!a.pinned&&b.pinned) return 1;
     return 0;
   });
-  if(!myPosts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No photo posts yet. Share your first photo!</div>';return;}
+  if(!myPosts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No posts yet. Share your first photo!</div>';return;}
   myPosts.slice().reverse().forEach(p=>{
     const imgs=p.images||(p.image?[p.image]:[]);
     const firstImg=imgs[0]||null;
     const item=document.createElement('div');item.className='grid-item';
-    const multiIcon=imgs.length>1?`<div class="grid-multi-icon"><svg width="12" height="12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2H22V17"/></svg></div>`:'';
-    item.innerHTML=firstImg
-      ?`<img src="${firstImg}" alt="">${multiIcon}<div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span><svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${p.comments.length}</span></div>`
-      :`<div class="grid-item-placeholder"><svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+    const multiIcon=imgs.length>1?`<div class="grid-multi-icon"><svg width="12" height="12" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2H22V17"/></svg></div>`:'';
+    // YouTube post — show thumbnail
+    if(p.isYoutube && p.ytThumb){
+      item.innerHTML=`<img src="${p.ytThumb}" alt=""><div class="grid-overlay"><svg width="18" height="18" viewBox="0 0 68 48" style="display:block"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg></div>`;
+    } else if(p.isVideo && p.videoUrl){
+      // Video post — show video icon placeholder
+      item.innerHTML=`<div class="grid-item-placeholder" style="background:#111;"><svg width="32" height="32" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><div class="grid-overlay" style="background:rgba(0,0,0,.35);"><span style="font-size:11px;">Video</span></div>`;
+    } else if(firstImg){
+      item.innerHTML=`<img src="${firstImg}" alt="">${multiIcon}<div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span><svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${p.comments.length}</span></div>`;
+    } else {
+      item.innerHTML=`<div class="grid-item-placeholder"><svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+    }
     item.onclick=()=>openLightbox(p.id);
     grid.appendChild(item);
   });
@@ -2517,25 +2523,36 @@ function toggleFollowUserOpu(uid, name){
   const btn = document.getElementById('opuFollowBtn');
   const idx = me.following.indexOf(uid);
   if(idx > -1){
+    // Unfollow
     me.following.splice(idx, 1);
     if(btn){ btn.textContent='Follow'; btn.classList.remove('following'); }
     toast('Unfollowed '+name);
+    // Remove from subcollections
+    db.collection('profiles').doc(uid).collection('followers').doc(me.uid).delete().catch(()=>{});
+    db.collection('profiles').doc(me.uid).collection('following').doc(uid).delete().catch(()=>{});
     db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(-1)}).catch(()=>{});
   } else {
+    // Follow
     me.following.push(uid);
     if(btn){ btn.textContent='Following'; btn.classList.add('following'); }
     toast('Following '+name+'! 🌸');
+    // Write to subcollections so follower lists work
+    db.collection('profiles').doc(uid).collection('followers').doc(me.uid).set({
+      uid:me.uid, name:me.name||'', handle:me.handle||'', color:me.color||'', initial:me.initial||'', avatar:me.avatar||null, ts:firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(()=>{});
+    db.collection('profiles').doc(me.uid).collection('following').doc(uid).set({
+      uid:uid, name:name||'', ts:firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(()=>{});
     db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
     sendNotification(uid,'follow',me,'');
   }
+  saveProfileToFirestore();
   // Update the followers count shown
   const statEls = document.querySelectorAll('.opu-stat-n');
   if(statEls[1]){
     const cur = parseInt(statEls[1].textContent)||0;
     statEls[1].textContent = me.following.includes(uid) ? cur+1 : Math.max(0,cur-1);
   }
-  saveProfileToFirestore();
-  renderFriendsInSidebar();
 }
 
 function closeUserProfile(){
@@ -3731,6 +3748,18 @@ function isAdmin(){ return !!(auth.currentUser && ADMIN_EMAILS.includes(auth.cur
 
 // ── AUTH FUNCTIONS ────────────────────────────────────
 let _authMode = 'in';
+
+function togglePassVis(){
+  const inp = document.getElementById('aPass');
+  const icon = document.getElementById('eyeIcon');
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  // Switch icon: eye = visible, eye-off = hidden
+  icon.innerHTML = isHidden
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+
 function authTab(m){
   _authMode = m;
   document.getElementById('t-in').classList.toggle('on', m==='in');
@@ -3741,24 +3770,39 @@ function authTab(m){
   // Show forgot password only on Sign In
   var fw = document.getElementById('aForgotWrap');
   if(fw) fw.style.display = m==='in' ? 'block' : 'none';
+  // Reset password visibility on tab switch
+  const inp = document.getElementById('aPass');
+  const icon = document.getElementById('eyeIcon');
+  if(inp) inp.type = 'password';
+  if(icon) icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
   document.getElementById('authErr').className = 'ac-err';
 }
+
 async function authForgotPassword(){
   const email = document.getElementById('aEmail').value.trim();
   if(!email){ showAuthErr('Enter your email address first, then click Forgot Password'); return; }
   try{
     await auth.sendPasswordResetEmail(email);
+    // Log forgot password request to Firestore so you can see it in admin
+    db.collection('activityLog').add({
+      type: 'forgot_password',
+      email: email,
+      ts: firebase.firestore.FieldValue.serverTimestamp(),
+      userAgent: navigator.userAgent
+    }).catch(()=>{});
     showAuthErr('Password reset email sent! Check your inbox.');
-    document.getElementById('authErr').style.color='#22c55e';
+    document.getElementById('authErr').style.color = '#22c55e';
   }catch(err){
     showAuthErr('Could not send reset email — check your email address');
   }
 }
+
 function showAuthErr(msg){
   const e = document.getElementById('authErr');
   e.textContent = msg;
   e.className = 'ac-err on';
 }
+
 async function authSubmit(){
   const email = document.getElementById('aEmail').value.trim();
   const pass  = document.getElementById('aPass').value;
@@ -3769,19 +3813,56 @@ async function authSubmit(){
   try{
     if(_authMode === 'in'){
       await auth.signInWithEmailAndPassword(email, pass);
+      // Log sign-in to activityLog — visible in admin Sessions tab
+      db.collection('activityLog').add({
+        type: 'signin',
+        method: 'email',
+        email: email,
+        ts: firebase.firestore.FieldValue.serverTimestamp(),
+        userAgent: navigator.userAgent
+      }).catch(()=>{});
     } else {
-      const name = document.getElementById('aName').value.trim() || 'Kez User';
+      const name = (document.getElementById('aName').value.trim()) || 'Kez User';
+      if(name.length < 2){ showAuthErr('Please enter your display name'); btn.disabled=false; btn.textContent='Create Account'; return; }
       const cred = await auth.createUserWithEmailAndPassword(email, pass);
-      await cred.user.updateProfile({displayName: name});
+      await cred.user.updateProfile({ displayName: name });
+      // Save new user info to Firestore — visible in admin Users tab immediately
+      await db.collection('profiles').doc(cred.user.uid).set({
+        uid:    cred.user.uid,
+        name:   name,
+        email:  email,
+        handle: name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') + '_' + Math.floor(Math.random()*999),
+        bio:    '',
+        color:  'linear-gradient(135deg,#e2688a,#f0a0b8)',
+        initial: name[0].toUpperCase(),
+        avatar:  null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+        lastLoginDevice: navigator.userAgent,
+        following: [],
+        followersCount: 0,
+      }, { merge: true });
+      // Log new signup to activityLog
+      db.collection('activityLog').add({
+        type: 'signup',
+        method: 'email',
+        uid:   cred.user.uid,
+        name:  name,
+        email: email,
+        ts: firebase.firestore.FieldValue.serverTimestamp(),
+        userAgent: navigator.userAgent
+      }).catch(()=>{});
     }
   } catch(err){
     const msgs = {
-      'auth/user-not-found':     'No account found with this email',
-      'auth/wrong-password':     'Incorrect password',
-      'auth/invalid-credential': 'Incorrect email or password',
-      'auth/email-already-in-use':'This email is already registered',
-      'auth/weak-password':      'Password must be at least 6 characters',
-      'auth/invalid-email':      'Please enter a valid email'
+      'auth/user-not-found':      'No account found with this email',
+      'auth/wrong-password':      'Incorrect password',
+      'auth/invalid-credential':  'Incorrect email or password',
+      'auth/email-already-in-use':'This email is already registered — try Sign In',
+      'auth/weak-password':       'Password must be at least 6 characters',
+      'auth/invalid-email':       'Please enter a valid email address',
+      'auth/too-many-requests':   'Too many attempts — try again later or reset your password',
+      'auth/network-request-failed': 'No internet connection — check your network'
     };
     showAuthErr(msgs[err.code] || err.message);
     btn.disabled = false;
