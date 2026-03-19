@@ -106,22 +106,22 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;background:var(-
 [data-theme="dark"] .mood-chip:hover,[data-theme="dark"] .mood-chip.sel{background:var(--bg3);}
 
 /* ─── STORIES ──────────────────────────────────────── */
-/* The WRAP itself scrolls — overflow:hidden on wrap was blocking scroll */
 .stories-wrap{
   background:var(--card);border:1px solid var(--border);border-radius:16px;
   padding:12px 0 12px 14px;margin-bottom:16px;
   box-shadow:var(--card-shadow);transition:background .3s,border-color .3s;
-  overflow:hidden;height:108px;flex-shrink:0;
+  overflow-x:auto;overflow-y:hidden;height:108px;flex-shrink:0;
 }
+.stories-wrap::-webkit-scrollbar{display:none;}
 .stories-row{
   display:flex;gap:14px;
-  overflow-x:auto;overflow-y:hidden;
+  overflow:visible;
   flex-wrap:nowrap;scrollbar-width:none;
   padding-bottom:4px;padding-right:14px;
-  -webkit-overflow-scrolling:touch;touch-action:pan-x;
+  touch-action:pan-x;
   height:100%;align-items:flex-start;
+  width:max-content;min-width:100%;
 }
-.stories-row::-webkit-scrollbar{display:none;}
 .story-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;flex-grow:0;min-width:62px;width:62px;}
 .story-avatar{width:52px;height:52px;min-width:52px;min-height:52px;border-radius:50%;background:var(--bg3);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:18px;font-weight:600;color:var(--text2);transition:transform .2s;}
 .story-item:hover .story-avatar{transform:scale(1.06);}
@@ -957,9 +957,6 @@ textarea.form-input{resize:none;min-height:80px;}
   .ac-err{font-size:13px;}
   /* Lightbox full screen */
   .lightbox-inner{border-radius:0;max-height:100dvh;}
-  /* Stories horizontal scroll */
-  .stories-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-  .stories-wrap::-webkit-scrollbar{display:none;}
   /* Notif items easier to tap */
   .notif-item{padding:14px 12px;}
   /* People cards 2 col */
@@ -1136,15 +1133,6 @@ textarea.form-input{resize:none;min-height:80px;}
   .view{padding:10px;}
   #feed{padding-bottom:80px;}
 
-  /* Stories — perfect circles, no deformation on mobile */
-  .stories-wrap{overflow-x:auto;padding:12px 10px;scroll-snap-type:x mandatory;}
-  .stories-row{display:flex;gap:14px;padding-bottom:4px;}
-  .story-item{scroll-snap-align:start;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:62px;}
-  .story-ring{width:58px;height:58px;min-width:58px;min-height:58px;padding:2px;border-radius:50% !important;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
-  .story-ring.add-ring{width:58px;height:58px;min-width:58px;min-height:58px;border:1.5px dashed var(--pink);background:transparent;}
-  .story-avatar{width:50px;height:50px;min-width:50px;min-height:50px;border-radius:50% !important;border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:17px;font-weight:700;flex-shrink:0;}
-  .story-name{font-size:10.5px;color:var(--text3);font-weight:500;text-align:center;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-
   /* Posts */
   .post-card{border-radius:12px;margin-bottom:12px;}
   .post-card,.create-bar,.stories-wrap{border-left:none;border-right:none;}
@@ -1257,16 +1245,22 @@ textarea.form-input{resize:none;min-height:80px;}
   .mob-create-btn svg{width:24px;height:24px;}
   .mob-nav-badge{position:absolute;top:-2px;right:2px;background:var(--pink);color:white;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:14px;text-align:center;border:2px solid var(--card);}
 
-  /* ── STORIES: show 3-4, rest scroll sideways ONLY ── */
-  /* iOS Safari fix: the WRAP must be overflow-x:auto, not just the inner row */
+  /* ── STORIES: show 3-4, rest scroll sideways ONLY ──
+     iOS Safari CRITICAL FIX: parent must be the scroller.
+     overflow:hidden on any ancestor kills child scroll on iOS. */
   .stories-wrap{
-    padding:10px 0 6px 10px !important;
-    overflow-x:auto !important;          /* wrap scrolls, not inner row */
+    overflow-x:auto !important;
     overflow-y:hidden !important;
+    overflow:visible !important; /* override the base overflow:hidden */
     -webkit-overflow-scrolling:touch !important;
     height:100px !important;
+    min-height:100px !important;
+    max-height:100px !important;
     flex-shrink:0 !important;
-    border-left:none;border-right:none;border-radius:0;
+    padding:8px 0 6px 10px !important;
+    border-radius:0 !important;
+    border-left:none !important;
+    border-right:none !important;
     scroll-snap-type:x mandatory !important;
     overscroll-behavior-x:contain !important;
   }
@@ -1274,15 +1268,15 @@ textarea.form-input{resize:none;min-height:80px;}
   .stories-row{
     display:flex !important;
     flex-wrap:nowrap !important;
-    overflow-x:visible !important;       /* row does NOT scroll — wrap does */
-    overflow-y:visible !important;
-    touch-action:pan-x !important;
+    overflow:visible !important;   /* row MUST NOT scroll — wrap does */
+    width:max-content !important;  /* row is as wide as all items */
+    min-width:100% !important;
     gap:8px !important;
     padding-right:12px !important;
-    padding-bottom:6px !important;
-    height:84px !important;
+    padding-bottom:0 !important;
+    height:86px !important;
     align-items:flex-start !important;
-    width:max-content !important;        /* row grows as wide as needed */
+    touch-action:pan-x !important;
   }
   .story-item{
     flex-shrink:0 !important;
@@ -1290,19 +1284,19 @@ textarea.form-input{resize:none;min-height:80px;}
     width:62px !important;
     min-width:62px !important;
     scroll-snap-align:start !important;
-    touch-action:manipulation !important;
   }
   .story-ring{
     width:52px !important;height:52px !important;
     min-width:52px !important;min-height:52px !important;
-    border-radius:50% !important;padding:2px;
-    display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+    border-radius:50% !important;padding:2px !important;
+    display:flex !important;align-items:center !important;
+    justify-content:center !important;box-sizing:border-box !important;
   }
   .story-ring.add-ring{border:1.5px dashed var(--pink) !important;background:transparent !important;}
   .story-avatar{
     width:44px !important;height:44px !important;
     min-width:44px !important;min-height:44px !important;
-    border-radius:50% !important;font-size:14px;font-weight:700;
+    border-radius:50% !important;font-size:14px !important;font-weight:700 !important;
   }
   .story-name{font-size:9.5px !important;max-width:60px !important;width:60px !important;}
 
