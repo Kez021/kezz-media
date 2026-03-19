@@ -106,8 +106,21 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;background:var(-
 [data-theme="dark"] .mood-chip:hover,[data-theme="dark"] .mood-chip.sel{background:var(--bg3);}
 
 /* ─── STORIES ──────────────────────────────────────── */
-.stories-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;margin-bottom:16px;box-shadow:var(--card-shadow);transition:background .3s,border-color .3s;overflow:hidden;}
-.stories-row{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;scrollbar-width:none;padding-bottom:4px;-webkit-overflow-scrolling:touch;touch-action:pan-x;}
+/* The WRAP itself scrolls — overflow:hidden on wrap was blocking scroll */
+.stories-wrap{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:12px 0 12px 14px;margin-bottom:16px;
+  box-shadow:var(--card-shadow);transition:background .3s,border-color .3s;
+  overflow:hidden;height:108px;flex-shrink:0;
+}
+.stories-row{
+  display:flex;gap:14px;
+  overflow-x:auto;overflow-y:hidden;
+  flex-wrap:nowrap;scrollbar-width:none;
+  padding-bottom:4px;padding-right:14px;
+  -webkit-overflow-scrolling:touch;touch-action:pan-x;
+  height:100%;align-items:flex-start;
+}
 .stories-row::-webkit-scrollbar{display:none;}
 .story-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;flex-grow:0;min-width:62px;width:62px;}
 .story-avatar{width:52px;height:52px;min-width:52px;min-height:52px;border-radius:50%;background:var(--bg3);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:18px;font-weight:600;color:var(--text2);transition:transform .2s;}
@@ -931,9 +944,17 @@ textarea.form-input{resize:none;min-height:80px;}
     margin:0 !important;
     padding-bottom:max(20px, env(safe-area-inset-bottom));
   }
-  /* Auth card full width */
-  .ac{border-radius:22px;width:calc(100% - 32px);max-width:420px;position:relative;bottom:auto;left:auto;right:auto;box-shadow:0 8px 40px rgba(180,100,140,.2);}
-  #authOverlay{align-items:center;justify-content:center;padding:16px;}
+  /* Auth card full width, bigger on mobile */
+  .ac{border-radius:24px;width:calc(100% - 24px);max-width:440px;position:relative;bottom:auto;left:auto;right:auto;box-shadow:0 8px 40px rgba(180,100,140,.2);padding:32px 22px;}
+  #authOverlay{align-items:center;justify-content:center;padding:12px;}
+  .ac-brand{font-size:44px;margin-bottom:6px;}
+  .ac-sub{font-size:14px;margin-bottom:22px;}
+  .ac-tabs{margin-bottom:18px;}
+  .ac-tab{font-size:15px;padding:12px;}
+  .ac-inp{font-size:16px;padding:16px;margin-bottom:13px;border-radius:14px;}
+  .ac-btn{font-size:16px;padding:16px;border-radius:14px;margin-bottom:14px;}
+  .ac-google{font-size:15px;padding:14px;border-radius:14px;}
+  .ac-err{font-size:13px;}
   /* Lightbox full screen */
   .lightbox-inner{border-radius:0;max-height:100dvh;}
   /* Stories horizontal scroll */
@@ -1236,32 +1257,64 @@ textarea.form-input{resize:none;min-height:80px;}
   .mob-create-btn svg{width:24px;height:24px;}
   .mob-nav-badge{position:absolute;top:-2px;right:2px;background:var(--pink);color:white;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:14px;text-align:center;border:2px solid var(--card);}
 
-  /* Stories — STRICT horizontal scroll, 3-4 visible, NO diagonal */
-  .stories-wrap{padding:10px;overflow:hidden !important;}
+  /* ── STORIES: show 3-4, rest scroll sideways ONLY ── */
+  /* iOS Safari fix: the WRAP must be overflow-x:auto, not just the inner row */
+  .stories-wrap{
+    padding:10px 0 6px 10px !important;
+    overflow-x:auto !important;          /* wrap scrolls, not inner row */
+    overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    height:100px !important;
+    flex-shrink:0 !important;
+    border-left:none;border-right:none;border-radius:0;
+    scroll-snap-type:x mandatory !important;
+    overscroll-behavior-x:contain !important;
+  }
+  .stories-wrap::-webkit-scrollbar{display:none !important;}
   .stories-row{
     display:flex !important;
     flex-wrap:nowrap !important;
-    overflow-x:scroll !important;
-    overflow-y:hidden !important;
-    gap:10px;
-    padding-bottom:6px;
-    -webkit-overflow-scrolling:touch;
+    overflow-x:visible !important;       /* row does NOT scroll — wrap does */
+    overflow-y:visible !important;
     touch-action:pan-x !important;
-    scroll-snap-type:x mandatory;
-    overscroll-behavior-x:contain;
+    gap:8px !important;
+    padding-right:12px !important;
+    padding-bottom:6px !important;
+    height:84px !important;
+    align-items:flex-start !important;
+    width:max-content !important;        /* row grows as wide as needed */
   }
   .story-item{
     flex-shrink:0 !important;
     flex-grow:0 !important;
-    min-width:70px !important;
-    width:70px !important;
-    scroll-snap-align:start;
-    touch-action:pan-x !important;
+    width:62px !important;
+    min-width:62px !important;
+    scroll-snap-align:start !important;
+    touch-action:manipulation !important;
   }
-  .story-ring{width:56px !important;height:56px !important;min-width:56px !important;min-height:56px !important;border-radius:50% !important;padding:2px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .story-ring{
+    width:52px !important;height:52px !important;
+    min-width:52px !important;min-height:52px !important;
+    border-radius:50% !important;padding:2px;
+    display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  }
   .story-ring.add-ring{border:1.5px dashed var(--pink) !important;background:transparent !important;}
-  .story-avatar{width:49px !important;height:49px !important;min-width:49px !important;min-height:49px !important;border-radius:50% !important;font-size:16px;font-weight:700;}
-  .story-name{font-size:10px;max-width:68px;width:68px;}
+  .story-avatar{
+    width:44px !important;height:44px !important;
+    min-width:44px !important;min-height:44px !important;
+    border-radius:50% !important;font-size:14px;font-weight:700;
+  }
+  .story-name{font-size:9.5px !important;max-width:60px !important;width:60px !important;}
+
+  /* Post action buttons — bigger and easier to tap on mobile */
+  .post-actions{padding:8px 10px 4px;gap:0;}
+  .act{padding:9px 10px;font-size:13.5px;min-height:44px;min-width:44px;border-radius:10px;}
+  .act svg{width:20px;height:20px;}
+  .lc,.cc{font-size:13px;font-weight:600;}
+  /* Comment input row bigger */
+  .c-input-row{padding:8px 12px 10px;gap:8px;}
+  .c-input{font-size:14px;padding:10px 14px;min-height:42px;}
+  .chat-send{min-width:40px;min-height:40px;}
 
   /* Body padding */
   body{padding-bottom:68px;}
