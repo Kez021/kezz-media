@@ -23,8 +23,12 @@
   --pink-light:rgba(226,104,138,.12);
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 body{font-family:'Jost',sans-serif;background:linear-gradient(145deg,#fff0f6 0%,#fde8f2 30%,#fdf3f8 60%,#fce8f0 100%);background-attachment:fixed;color:var(--text);min-height:100vh;transition:background .3s,color .3s;overflow-x:hidden;position:relative;}
+/* Prevent double-tap zoom on buttons/links */
+button,a,[role=button]{touch-action:manipulation;}
+/* Inputs: 16px minimum prevents iOS auto-zoom */
+input,textarea,select{font-size:16px !important;}
 [data-theme="dark"] body{background:#0e0810;background-attachment:fixed;}
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 0% 0%,rgba(255,150,200,.38) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 100% 0%,rgba(240,100,170,.30) 0%,transparent 60%),radial-gradient(ellipse 45% 55% at 100% 100%,rgba(255,170,210,.32) 0%,transparent 65%),radial-gradient(ellipse 55% 35% at 0% 100%,rgba(230,110,170,.26) 0%,transparent 60%),radial-gradient(ellipse 35% 40% at 50% 50%,rgba(255,190,220,.16) 0%,transparent 65%);transition:opacity .3s;}
 [data-theme="dark"] body::before{background:radial-gradient(ellipse 70% 60% at 0% 0%,rgba(226,104,138,.10) 0%,transparent 65%),radial-gradient(ellipse 55% 45% at 100% 0%,rgba(180,25,90,.08) 0%,transparent 60%),radial-gradient(ellipse 50% 60% at 100% 100%,rgba(226,104,138,.07) 0%,transparent 65%),radial-gradient(ellipse 60% 40% at 0% 100%,rgba(190,30,95,.06) 0%,transparent 60%);}
@@ -612,15 +616,17 @@ textarea.form-input{resize:none;min-height:80px;}
 .c-input-wrap{position:relative;}
 
 /* ── POST EDIT MODAL ────────────────────────────────── */
-#editPostModal{display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px;}
+#editPostModal{display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;}
 #editPostModal.open{display:flex;}
-.epm-box{background:var(--card);border-radius:20px;padding:24px;max-width:440px;width:100%;}
-.epm-title{font-size:15px;font-weight:700;margin-bottom:14px;}
-.epm-textarea{width:100%;min-height:100px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-family:Jost,sans-serif;font-size:14px;outline:none;resize:vertical;margin-bottom:14px;}
+.epm-box{background:var(--card);border-radius:20px;padding:22px;max-width:480px;width:100%;max-height:90dvh;overflow-y:auto;}
+.epm-title{font-size:16px;font-weight:700;margin-bottom:0;color:var(--text);}
+.epm-textarea{width:100%;min-height:90px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-family:Jost,sans-serif;font-size:14px;outline:none;resize:vertical;margin-bottom:14px;box-sizing:border-box;}
 .epm-textarea:focus{border-color:var(--pink);}
 .epm-actions{display:flex;gap:10px;}
-.epm-cancel{flex:1;padding:10px;border-radius:12px;border:1px solid var(--border);background:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;}
-.epm-save{flex:1;padding:10px;border-radius:12px;border:none;background:var(--pink);color:white;font-size:13px;font-weight:600;cursor:pointer;}
+.epm-cancel{flex:1;padding:11px;border-radius:12px;border:1px solid var(--border);background:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:Jost,sans-serif;}
+.epm-save{flex:1;padding:11px;border-radius:12px;border:none;background:var(--pink);color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:Jost,sans-serif;}
+.epm-thumb-option{width:64px;height:64px;border-radius:8px;object-fit:cover;cursor:pointer;border:2.5px solid transparent;transition:border-color .15s;}
+.epm-thumb-option.selected{border-color:var(--pink);}
 
 /* ── PINNED POST ────────────────────────────────────── */
 .pinned-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--pink);background:var(--pink-pale);border-radius:20px;padding:2px 8px;margin-bottom:6px;}
