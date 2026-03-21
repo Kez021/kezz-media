@@ -1128,12 +1128,14 @@ textarea.form-input{resize:none;min-height:80px;}
   /* Settings button visible on profile page on mobile */
   .profile-settings-btn{display:flex !important;}
 
-  /* Layout — room for fixed bottom nav */
+  /* Layout — room for fixed bottom nav, proper horizontal padding */
   .layout,.layout.profile-mode{
     grid-template-columns:1fr;
-    padding:calc(60px + 12px) 0 72px;
+    padding:calc(60px + 12px) 12px 72px;
     gap:0;
     max-width:100%;
+    width:100%;
+    box-sizing:border-box;
   }
   .sidebar-left,.sidebar-right{display:none;}
 
@@ -1253,9 +1255,9 @@ textarea.form-input{resize:none;min-height:80px;}
   .mob-create-btn svg{width:24px;height:24px;}
   .mob-nav-badge{position:absolute;top:-2px;right:2px;background:var(--pink);color:white;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:14px;text-align:center;border:2px solid var(--card);}
 
-  /* ── STORIES: show 3-4, rest scroll sideways ONLY ──
-     iOS Safari CRITICAL FIX: the WRAP is the scroller.
-     Never use overflow shorthand after overflow-x/y — it resets them. */
+  /* ── STORIES: 3-4 visible, rest side-scroll ──────────
+     FINAL FIX: wrap = scroller, row = plain flex container
+     Key rules: wrap gets overflow-x:auto, row has NO overflow set */
   .stories-wrap{
     overflow-x:auto !important;
     overflow-y:hidden !important;
@@ -1271,20 +1273,20 @@ textarea.form-input{resize:none;min-height:80px;}
     scroll-snap-type:x mandatory !important;
     overscroll-behavior-x:contain !important;
     background:var(--card) !important;
+    /* Force GPU layer for iOS scroll */
+    -webkit-transform:translateZ(0);
+    transform:translateZ(0);
   }
   .stories-wrap::-webkit-scrollbar{display:none !important;}
   .stories-row{
-    display:flex !important;
+    display:inline-flex !important;  /* inline-flex so row width = content width */
     flex-wrap:nowrap !important;
-    overflow:visible !important;   /* row MUST NOT scroll — wrap does */
-    width:max-content !important;  /* row is as wide as all items */
-    min-width:100% !important;
+    /* NO overflow property here — wrap handles it */
     gap:8px !important;
-    padding-right:12px !important;
-    padding-bottom:0 !important;
+    padding-right:16px !important;
     height:86px !important;
     align-items:flex-start !important;
-    touch-action:pan-x !important;
+    vertical-align:top !important;
   }
   .story-item{
     flex-shrink:0 !important;
@@ -1292,6 +1294,11 @@ textarea.form-input{resize:none;min-height:80px;}
     width:62px !important;
     min-width:62px !important;
     scroll-snap-align:start !important;
+    display:inline-flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    gap:5px !important;
+    cursor:pointer !important;
   }
   .story-ring{
     width:52px !important;height:52px !important;
@@ -1457,3 +1464,167 @@ textarea.form-input{resize:none;min-height:80px;}
 
 [data-theme="dark"] .share-dm-box{background:var(--card);}
 [data-theme="dark"] .gc-box{background:var(--card);}
+
+/* ── NEW FEATURES ──────────────────────────────────── */
+
+/* Pull to refresh indicator */
+@keyframes spin{to{transform:rotate(360deg);}}
+#ptr-indicator svg{transition:transform .3s;}
+
+/* Comment actions row */
+.c-actions{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.c-react-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:8px;transition:color .15s;font-family:'Jost',sans-serif;}
+.c-react-btn:hover{color:var(--pink);}
+.c-like-count{font-size:10.5px;}
+
+/* Verified badge */
+#profileVerifiedBadge svg{display:block;}
+
+/* Edited label on posts */
+.post-edited-label{font-size:10.5px;color:var(--text3);margin-left:6px;}
+
+/* Block user in post menu */
+.pm-item.danger{color:#e05577;}
+
+/* Infinite scroll loading */
+#feed-sentinel{height:10px;margin-top:8px;}
+#feed-end-label{text-align:center;padding:24px;font-size:13px;color:var(--text3);}
+
+/* Link in bio */
+#profileLinkBio a:hover{text-decoration:underline !important;}
+
+/* DM typing live indicator */
+#dmTypingIndicator{padding:8px 16px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);}
+
+/* Read receipt */
+.msg-seen{font-size:10px;color:var(--text3);text-align:right;padding:0 12px 4px;display:block;}
+
+/* ── FEATURE PACK CSS ─────────────────────────────── */
+
+/* Comment reaction picker */
+.c-react-picker button:hover{ background:var(--bg2); }
+
+/* Comment reply indent */
+.c-reply-input-row{ background:var(--bg2); border-radius:10px; margin:4px 0 4px 30px; }
+
+/* Edited label */
+.edited-label{ font-size:10px; color:var(--text3); }
+
+/* Pull to refresh indicator */
+#ptrIndicator{ transition:transform .25s ease, opacity .2s ease; }
+
+/* DM media button */
+.dm-media-btn{ width:36px !important; height:36px !important; border-radius:10px !important; flex-shrink:0; }
+
+/* Verified badge inline */
+#profileVerifiedBadge{ display:inline-flex; align-items:center; }
+
+/* Link in bio */
+#profileLinkBio a:hover{ text-decoration:underline !important; }
+
+/* View count in post actions */
+.post-actions .view-count{ font-size:11.5px; color:var(--text3); margin-left:auto; padding-right:4px; align-self:center; }
+
+/* Block menu item */
+.pm-item.block-item{ color:#ef4444 !important; }
+
+/* Feed load more sentinel */
+#feedLoadMore .spinner{ border-top-color:var(--pink); }
+
+/* Other profile link in bio */
+.opu-link-bio a{ color:var(--pink); font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+.opu-link-bio a:hover{ text-decoration:underline; }
+
+/* DM read receipt */
+.dm-read-receipt{ font-size:10px; color:var(--text3); text-align:right; padding:0 4px 2px; }
+
+/* Typing indicator in DM */
+#dmTypingIndicator{ padding:6px 12px; }
+
+/* ─── COMMENT REACTIONS & REPLIES ────────────────────── */
+.c-actions{display:flex;align-items:center;gap:10px;margin-top:4px;padding-top:2px;}
+.c-like-btn{background:none;border:none;cursor:pointer;font-size:11.5px;color:var(--text3);display:flex;align-items:center;gap:3px;font-family:'Jost',sans-serif;padding:2px 0;transition:color .15s;}
+.c-like-btn.active,.c-like-btn.liked{color:var(--pink);}
+.c-like-btn svg{transition:transform .15s;}
+.c-like-btn.active svg,.c-like-btn.liked svg{transform:scale(1.2);}
+.c-reply-btn{background:none;border:none;cursor:pointer;font-size:11.5px;color:var(--text3);font-family:'Jost',sans-serif;padding:2px 0;font-weight:600;transition:color .15s;}
+.c-reply-btn:hover{color:var(--pink);}
+.c-react-trigger{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;border-radius:8px;transition:background .15s;}
+.c-react-trigger:hover{background:var(--bg2);}
+.c-react-picker{position:absolute;bottom:28px;left:0;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:6px 8px;display:flex;gap:4px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+.c-react-picker button{background:none;border:none;cursor:pointer;font-size:18px;padding:4px;border-radius:8px;transition:transform .15s;}
+.c-react-picker button:hover{transform:scale(1.3);}
+.c-react-summary{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;}
+.c-react-summary span{font-size:11px;background:var(--bg2);border-radius:10px;padding:1px 6px;cursor:default;}
+.c-replies{margin-left:34px;margin-top:4px;border-left:2px solid var(--border);padding-left:10px;}
+.reply-comment .c-bubble{background:var(--bg3);}
+
+/* ─── BLOCK USER ──────────────────────────────────────── */
+.pm-item.block-item{color:#ef4444;}
+.pm-item.block-item:hover{background:#fff0f0;}
+
+/* ─── PULL TO REFRESH ─────────────────────────────────── */
+#ptr-indicator{display:flex;align-items:center;gap:8px;}
+@keyframes ptr-spin{to{transform:rotate(360deg);}}
+
+/* ─── POLLS IN POSTS ──────────────────────────────────── */
+.poll-card{background:var(--bg2);border-radius:14px;padding:14px;margin-top:8px;border:1px solid var(--border);}
+.poll-question{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.4;}
+.poll-option{width:100%;margin-bottom:8px;border:none;background:none;padding:0;cursor:pointer;text-align:left;}
+.poll-option-inner{position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);transition:border-color .2s;}
+.poll-option-inner:hover{border-color:var(--pink);}
+.poll-option.voted .poll-option-inner{border-color:var(--pink);}
+.poll-option-bar{position:absolute;inset:0;background:var(--pink-pale);border-radius:8px;transition:width .5s ease;}
+.poll-option-label{position:relative;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;font-size:13.5px;font-weight:600;color:var(--text);z-index:1;}
+.poll-option-pct{font-size:12px;color:var(--text3);font-weight:600;}
+.poll-option.winner .poll-option-inner{border-color:var(--pink);}
+.poll-option.winner .poll-option-bar{background:linear-gradient(90deg,var(--pink-pale),rgba(226,104,138,.15));}
+.poll-footer{font-size:11.5px;color:var(--text3);margin-top:8px;display:flex;gap:10px;align-items:center;}
+.poll-vote-count{font-weight:600;}
+.poll-ends{color:var(--text3);}
+
+/* Poll post type tab in modal */
+.post-type-tab.poll-tab{color:var(--pink);}
+
+/* ─── STORY HIGHLIGHTS ────────────────────────────────── */
+.highlights-row{display:flex;gap:14px;padding:0 16px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.highlights-row::-webkit-scrollbar{display:none;}
+.highlight-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;}
+.highlight-ring{width:60px;height:60px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;background:var(--bg2);overflow:hidden;position:relative;}
+.highlight-ring img{width:100%;height:100%;object-fit:cover;}
+.highlight-ring.add-highlight{border:2px dashed var(--pink);background:var(--pink-pale);}
+.highlight-ring.add-highlight svg{color:var(--pink);}
+.highlight-name{font-size:10.5px;color:var(--text3);font-weight:500;text-align:center;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Highlight modal */
+#highlightModal{display:none;position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;}
+#highlightModal.open{display:flex;}
+.hl-box{background:var(--card);border-radius:22px;padding:22px;max-width:420px;width:100%;max-height:85dvh;overflow-y:auto;}
+.hl-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px;}
+.hl-story-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.hl-story-item{aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;position:relative;border:2.5px solid transparent;transition:border-color .15s;}
+.hl-story-item.selected{border-color:var(--pink);}
+.hl-story-item img,.hl-story-item video{width:100%;height:100%;object-fit:cover;}
+.hl-story-item .hl-check{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:var(--pink);display:none;align-items:center;justify-content:center;}
+.hl-story-item.selected .hl-check{display:flex;}
+
+/* Verified badge */
+#profileVerifiedBadge svg{display:block;}
+.verified-inline{display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;}
+.verified-inline svg{display:block;}
+
+/* Edited label on posts */
+.post-edited-label{font-size:10.5px;color:var(--text3);font-style:italic;margin-left:4px;}
+
+/* DM media button */
+.dm-media-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px 6px;border-radius:8px;transition:color .15s;display:flex;align-items:center;}
+.dm-media-btn:hover{color:var(--pink);}
+.chat-msg-media{max-width:220px;border-radius:12px;overflow:hidden;margin-top:4px;}
+.chat-msg-media img,.chat-msg-media video{width:100%;display:block;border-radius:10px;}
+
+/* Mobile stories - extra rule for very narrow phones */
+@media(max-width:380px){
+  .story-item{width:56px !important;min-width:56px !important;}
+  .story-ring{width:46px !important;height:46px !important;min-width:46px !important;min-height:46px !important;}
+  .story-avatar{width:38px !important;height:38px !important;min-width:38px !important;min-height:38px !important;}
+}
