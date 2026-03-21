@@ -153,9 +153,29 @@ async function loadProfile(uid) {
 }
 async function saveProfileToFirestore() {
   if(!me.uid) return;
-  // Always persist isAdmin flag so other users can detect admin profile
   if(isAdmin()) me.isAdmin = true;
-  try { await profileDoc(me.uid).set(me); } catch(e) {}
+  // Use merge:true so we NEVER overwrite fields we didn't intend to change
+  // Build a clean save object — never include uid-registry internals
+  var saveData = {
+    uid: me.uid,
+    email: me.email || '',
+    name: me.name || '',
+    handle: me.handle || '',
+    bio: me.bio || '',
+    color: me.color || 'linear-gradient(135deg,#e2688a,#f0a0b8)',
+    initial: me.initial || 'K',
+    bannerColor: me.bannerColor || 'linear-gradient(135deg,#f4a8c0,#e2688a,#c93f6e)',
+    isAdmin: !!me.isAdmin
+  };
+  if(me.avatar)       saveData.avatar       = me.avatar;
+  if(me.bannerImage)  saveData.bannerImage  = me.bannerImage;
+  if(me.website)      saveData.website      = me.website;
+  if(me.following)    saveData.following    = me.following;
+  if(me.followersCount!==undefined) saveData.followersCount = me.followersCount;
+  if(me.profileTheme!==undefined)   saveData.profileTheme   = me.profileTheme;
+  if(me.profileLayout)              saveData.profileLayout  = me.profileLayout;
+  if(me.blocked)      saveData.blocked      = me.blocked;
+  try { await profileDoc(me.uid).set(saveData, {merge:true}); } catch(e) {}
 }
 
 // ── STATE ────────────────────────────────────────────
@@ -442,7 +462,7 @@ function goSettings(section){goTo('settings');setTimeout(()=>switchSettingsNav(s
 
 // ── INIT ──────────────────────────────────────────────
 async function init(){
-  await loadProfile(me.uid);
+  // Note: loadProfile already called by runAppInit before init() — don't call again
   if(me.banned){ auth.signOut(); toast('Your account has been suspended.'); return; }
   applyTheme();
   // If this user is admin, mark their UID and save isAdmin flag to Firestore
@@ -541,17 +561,32 @@ function applyUserProfile(){
   // Verified badge — admin only
   const vb=document.getElementById('profileVerifiedBadge');
   if(vb) vb.style.display=isAdmin()?'inline-flex':'none';
-  // followers count — admin profile always shows 1.2k (visible to everyone)
+  // followers count — read real count from subcollection
   const sf=document.getElementById('statFollowers');
+  const sfw=document.getElementById('statFollowing');
   if(sf){
     if(isAdmin()){
       sf.textContent='1.2k';
     } else {
-      // Regular user: load real count from Firestore
       db.collection('profiles').doc(me.uid).collection('followers').get()
-        .then(function(s){ sf.textContent = s.size || me.followersCount || 0; })
+        .then(function(s){
+          var cnt = s.size || 0;
+          if(cnt===0) cnt = me.followersCount || 0;
+          sf.textContent = cnt;
+          // also update Firestore so it stays in sync
+          if(s.size > 0) db.collection('profiles').doc(me.uid).set({followersCount:s.size},{merge:true}).catch(()=>{});
+        })
         .catch(function(){ sf.textContent = me.followersCount || 0; });
     }
+  }
+  if(sfw){
+    db.collection('profiles').doc(me.uid).collection('following').get()
+      .then(function(s){
+        var cnt = s.size || 0;
+        if(cnt===0) cnt = (me.following&&me.following.length) || 0;
+        sfw.textContent = cnt;
+      })
+      .catch(function(){ sfw.textContent = (me.following&&me.following.length) || 0; });
   }
   // edit fields
   const en=document.getElementById('editName');if(en)en.value=me.name||'';
@@ -714,8 +749,16 @@ function linkifyCaption(txt){
   return escaped;
 }
 function viewProfileByHandle(handle){
-  var u=Object.values(allUsers).find(function(x){return x.handle===handle;});
-  if(u) viewProfile(u.uid||u.id);
+  if(!handle) return;
+  var h = handle.toLowerCase().replace(/^@/,'');
+  var u = Object.values(allUsers).find(function(x){
+    return x.handle && x.handle.toLowerCase() === h;
+  });
+  if(u && (u.uid || u.id)){
+    viewProfile(u.uid || u.id);
+  } else {
+    toast('User @'+handle+' not found');
+  }
 }
 function showHashtag(tag){
   var tagged=posts.filter(function(p){return p.caption&&p.caption.toLowerCase().indexOf('#'+tag.toLowerCase())>-1;});
@@ -814,6 +857,10 @@ function buildCard(p,i){
     +'</div>'
     +captionRow
     +mediaHTML
+    +(own?'<div class="feed-edit-bar" data-editpost="'+pid+'">'
+      +'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+      +' Edit post &amp; thumbnail'
+      +'</div>':'')
     +'<div class="post-actions">'
       +'<button class="act '+(p.liked?'liked':'')+'" data-like="'+pid+'">'
         +'<svg width="17" height="17" fill="'+(p.liked?'var(--pink)':'none')+'" stroke="'+(p.liked?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
@@ -890,6 +937,10 @@ function buildCard(p,i){
   });
   card.querySelectorAll('[data-pinpost]').forEach(function(el){
     el.addEventListener('click',function(){togglePin(el.dataset.pinpost);});
+  });
+  // Feed edit bar — quick access edit for own posts
+  card.querySelectorAll('.feed-edit-bar[data-editpost]').forEach(function(el){
+    el.addEventListener('click',function(){ openEditPost(el.dataset.editpost); });
   });
   card.querySelectorAll('.card-dm').forEach(function(el){
     el.addEventListener('click',function(){openDMFromPost(el.dataset.uid,el.dataset.name);closeMenus();});
@@ -1208,17 +1259,24 @@ function renderPostGrid(){
     const firstImg=imgs[0]||null;
     const item=document.createElement('div');item.className='grid-item';
     const multiIcon=imgs.length>1?`<div class="grid-multi-icon"><svg width="12" height="12" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2H22V17"/></svg></div>`:'';
-    // YouTube post — show thumbnail
+    // Edit pencil button — always visible top-right of grid item
+    const editBtn=`<div class="grid-edit-btn" title="Edit Post"><svg width="11" height="11" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>`;
+    // YouTube post
     if(p.isYoutube && p.ytThumb){
-      item.innerHTML=`<img src="${p.ytThumb}" alt=""><div class="grid-overlay"><svg width="18" height="18" viewBox="0 0 68 48" style="display:block"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg></div>`;
+      item.innerHTML=`<img src="${p.ytThumb}" alt=""><div class="grid-overlay"><svg width="18" height="18" viewBox="0 0 68 48" style="display:block"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg></div>${editBtn}`;
     } else if(p.isVideo && p.videoUrl){
-      // Video post — show video icon placeholder
-      item.innerHTML=`<div class="grid-item-placeholder" style="background:#111;"><svg width="32" height="32" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><div class="grid-overlay" style="background:rgba(0,0,0,.35);"><span style="font-size:11px;">Video</span></div>`;
+      item.innerHTML=`<div class="grid-item-placeholder" style="background:#111;"><svg width="32" height="32" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><div class="grid-overlay" style="background:rgba(0,0,0,.35);"><span style="font-size:11px;">Video</span></div>${editBtn}`;
     } else if(firstImg){
-      item.innerHTML=`<img src="${firstImg}" alt="">${multiIcon}<div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span><svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${p.comments.length}</span></div>`;
+      item.innerHTML=`<img src="${firstImg}" alt="">${multiIcon}<div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span><svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${p.comments.length}</span></div>${editBtn}`;
     } else {
-      item.innerHTML=`<div class="grid-item-placeholder"><svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+      item.innerHTML=`<div class="grid-item-placeholder"><svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>${editBtn}`;
     }
+    // Edit button click — open edit modal
+    const eb = item.querySelector('.grid-edit-btn');
+    if(eb) eb.addEventListener('click', function(e){
+      e.stopPropagation(); // don't open lightbox
+      openEditPost(p.id);
+    });
     item.onclick=()=>openLightbox(p.id);
     grid.appendChild(item);
   });
@@ -2630,26 +2688,39 @@ function renderOtherProfileGrid(feedPosts){
     const iPid = _r(String(p.id));
     const item = document.createElement('div');
     item.className = 'opu-grid-item';
-    // YouTube: show actual thumbnail
+    // Show edit pencil if this post belongs to the logged-in user
+    const isOwn = p.uid === me.uid || isAdmin();
+    const editBtn = isOwn
+      ? '<div class="grid-edit-btn" title="Edit Post"><svg width="11" height="11" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>'
+      : '';
+    // YouTube
     if(p.isYoutube && p.ytThumb){
       item.innerHTML = '<img src="'+esc(p.ytThumb)+'" alt="" style="width:100%;height:100%;object-fit:cover;">'
         +'<div class="opu-grid-overlay" style="background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;">'
         +'<svg width="28" height="20" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
-        +'</div>';
+        +'</div>'+editBtn;
     }
-    // Video: show dark tile with play icon
+    // Video
     else if(p.isVideo && p.videoUrl){
       item.innerHTML = '<div style="width:100%;height:100%;background:#111;display:flex;align-items:center;justify-content:center;">'
         +'<svg width="32" height="32" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" fill="none"/></svg>'
-        +'</div>';
+        +'</div>'+editBtn;
     }
-    // Photo: show image
+    // Photo
     else if(img){
-      item.innerHTML = '<img src="'+esc(img)+'" alt=""><div class="opu-grid-overlay"><span>❤ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>';
+      item.innerHTML = '<img src="'+esc(img)+'" alt=""><div class="opu-grid-overlay"><span>❤ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>'+editBtn;
     }
-    // Status or no media
+    // Status/no media
     else {
-      item.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px;background:var(--bg2);">💬</div>';
+      item.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px;background:var(--bg2);">💬</div>'+editBtn;
+    }
+    // Wire edit button
+    if(isOwn){
+      const eb = item.querySelector('.grid-edit-btn');
+      if(eb) eb.addEventListener('click', function(e){
+        e.stopPropagation();
+        openEditPost(p.id);
+      });
     }
     item.addEventListener('click', function(){ openLightbox(_g(iPid)); });
     grid.appendChild(item);
