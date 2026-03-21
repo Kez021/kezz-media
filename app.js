@@ -100,43 +100,31 @@ async function seedDummyPosts() {
 }
 
 function startPostsListener() {
-  showSkeletons('feed',4);
-  // Use paginated load instead of real-time listener for performance
-  startPostsPaginated();
-  // Also watch for NEW posts in real time (only latest 5 to catch new posts)
-  postsCol().orderBy('createdAt','desc').limit(5).onSnapshot(function(snap){
-    var newPosts = snap.docs.map(function(d){
-      var data=d.data();
-      var likedBy=Array.isArray(data.likedBy)?data.likedBy:[];
-      data.liked=likedBy.includes(me.uid);
-      data.likedBy=likedBy;
-      if(!data.comments)data.comments=[];
+  showSkeletons('feed', 4);
+  postsCol().orderBy('createdAt','desc').onSnapshot(function(snap){
+    posts = snap.docs.map(function(d){
+      var data = d.data();
+      var likedBy = Array.isArray(data.likedBy) ? data.likedBy : [];
+      data.liked = likedBy.includes(me.uid);
+      data.likedBy = likedBy;
+      if(!data.comments) data.comments = [];
       return data;
-    }).filter(function(p){ return !p.hidden||isAdmin(); });
-    // Merge any new posts not already in our list
-    newPosts.forEach(function(np){
-      var exists = posts.find(function(p){ return String(p.id)===String(np.id); });
-      if(!exists){
-        posts.unshift(np);
-      } else {
-        // Update existing post data (likes, comments etc)
-        Object.assign(exists, np);
-      }
-    });
+    }).filter(function(p){ return !p.hidden || isAdmin(); });
+    _postsPage = 1; // reset pagination on fresh load
     renderFeed();
     renderExploreFeed();
-    if(currentView==='profile') refreshProfile();
+    if(currentView==='profile')  refreshProfile();
     if(currentView==='settings') refreshAdmin();
     if(!window._orphanCheckDone && Object.keys(allUsers).length){
-      window._orphanCheckDone=true;
-      setTimeout(checkOrphanCommentHandles,1500);
+      window._orphanCheckDone = true;
+      setTimeout(checkOrphanCommentHandles, 1500);
     }
   }, function(err){
-    console.warn('Firestore listener error:',err.code,err.message);
-    if(err.code==='permission-denied'){
-      toast('⚠️ Firebase rules blocking access');
+    console.warn('Firestore listener error:', err.code, err.message);
+    if(err.code === 'permission-denied'){
+      toast('⚠️ Firebase rules blocking access — check your Firestore rules');
     } else {
-      toast('⚠️ Could not reach database: '+err.message);
+      toast('⚠️ Could not reach database: ' + err.message);
     }
   });
 }
@@ -2243,13 +2231,13 @@ function watchUsers(){
   let _firstSnap = true;
 
   // SAFETY: If Firestore profiles listener never fires (bad rules, offline, etc.)
-  // resolve the gate after 6 seconds so init() can continue instead of hanging forever
+  // resolve the gate after 3 seconds so init() can continue instead of hanging forever
   var _usersTimeout = setTimeout(function(){
     if(_watchUsersResolve){
       console.warn('watchUsers: timed out waiting for profiles snapshot - continuing anyway');
       _watchUsersResolve(); _watchUsersResolve = null;
     }
-  }, 6000);
+  }, 3000);
 
   db.collection('profiles').onSnapshot(function(snap){
     clearTimeout(_usersTimeout);
