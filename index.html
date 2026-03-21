@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Kez Media</title>
 
 <!-- PWA manifest -->
@@ -958,8 +958,29 @@
 <!-- ── POST EDIT MODAL ────────────────────────────── -->
 <div id="editPostModal" onclick="if(event.target===this)closeEditPost()">
   <div class="epm-box">
-    <div class="epm-title">Edit Caption</div>
-    <textarea class="epm-textarea" id="epmText" placeholder="Write a caption..."></textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="epm-title" style="margin-bottom:0;">Edit Post</div>
+      <button onclick="closeEditPost()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:22px;line-height:1;">×</button>
+    </div>
+
+    <!-- Current media preview -->
+    <div id="epmPreview" style="margin-bottom:14px;border-radius:12px;overflow:hidden;background:var(--bg2);min-height:80px;display:flex;align-items:center;justify-content:center;"></div>
+
+    <!-- Thumbnail change (photo posts only) -->
+    <div id="epmThumbSection" style="display:none;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Change Thumbnail</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="epmThumbOptions"></div>
+      <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:7px 14px;border-radius:10px;border:1.5px dashed var(--border);cursor:pointer;font-size:13px;color:var(--text2);">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Upload new image
+        <input type="file" accept="image/*" id="epmNewImageInput" style="display:none;" onchange="epmHandleNewImage(this)">
+      </label>
+    </div>
+
+    <!-- Caption -->
+    <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Caption</div>
+    <textarea class="epm-textarea" id="epmText" placeholder="Write a caption..." oninput="handleMentionInput(this,'epm')"></textarea>
+
     <div class="epm-actions">
       <button class="epm-cancel" onclick="closeEditPost()">Cancel</button>
       <button class="epm-save" onclick="saveEditPost()">Save Changes</button>
