@@ -747,7 +747,7 @@ function buildCard(p,i){
           +'<svg width="56" height="40" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
         +'</div>'
       +'</div>'
-      +'<div class="yt-embed-title">'+esc(p.ytTitle||'YouTube Video')+(p.caption?'<div style="font-size:12px;color:var(--text3);font-weight:400;margin-top:3px;">'+esc(p.caption)+'</div>':'')+'</div>'
+      +'<div class="yt-embed-title">'+esc(p.ytTitle||'YouTube Video')+'</div>'
     +'</div>';
   } else if(imgs.length===1){
     mediaHTML='<div class="carousel-wrap"><img class="card-img-click" data-src="'+encodeURIComponent(imgs[0])+'" style="width:100%;max-height:520px;object-fit:cover;display:block;cursor:pointer;" src="'+imgs[0]+'" alt="post"></div>';
@@ -765,7 +765,11 @@ function buildCard(p,i){
     setTimeout(function(){startFeedAutoSlide(pid,imgs.length);},600+i*80);
   }
 
-  const pinnedBadge=p.pinned?'<div class="pinned-badge">📌 Pinned</div>':''; const captionRow=(!p.isStatus&&p.caption)?'<div class="post-content"><div class="post-caption"><span class="uname">@'+userHandle+'</span>'+linkifyCaption(p.caption)+'</div></div>':'';
+  const pinnedBadge=p.pinned?'<div class="pinned-badge">📌 Pinned</div>':'';
+  // Caption row — always ABOVE media, with clickable @mentions and #hashtags
+  const captionRow=(!p.isStatus&&p.caption)
+    ?'<div class="post-content"><div class="post-caption"><span class="uname" data-uid="'+(p.uid||'')+'" style="cursor:pointer;">@'+userHandle+'</span> '+linkifyCaption(p.caption)+'</div></div>'
+    :'';
   const commentList=(p.showComments?p.comments:p.comments.slice(-1)).map(commentHTML).join('');
   const viewAll=p.comments.length>2&&!p.showComments?'<div class="view-all" data-pid="'+pid+'">View all '+p.comments.length+' comments</div>':'';
 
@@ -780,12 +784,13 @@ function buildCard(p,i){
         +'<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>'
       +'</button>'
       +'<div class="post-menu" id="pm-'+pid+'">'
-        +(own?'<div class="pm-item" data-editpost="'+pid+'">Edit Caption</div><div class="pm-item" data-pinpost="'+pid+'">'+(p.pinned?'Unpin Post':'Pin to Top')+'</div><div class="pm-item danger" data-delete="'+pid+'">Delete</div>':'')
+        +(own?'<div class="pm-item" data-editpost="'+pid+'">Edit Post</div><div class="pm-item" data-pinpost="'+pid+'">'+(p.pinned?'Unpin Post':'Pin to Top')+'</div><div class="pm-item danger" data-delete="'+pid+'">Delete</div>':'')
         +(!own?'<div class="pm-item card-dm" data-uid="'+(p.uid||'')+'" data-name="'+esc((p.user&&p.user.name)||userHandle||'User')+'">Message</div>':'')
         +'<div class="pm-item" data-action="copylink">Copy Link</div>'
         +'<div class="pm-item" data-action="report">Report</div>'
       +'</div>'
     +'</div>'
+    +captionRow
     +mediaHTML
     +'<div class="post-actions">'
       +'<button class="act '+(p.liked?'liked':'')+'" data-like="'+pid+'">'
@@ -808,7 +813,6 @@ function buildCard(p,i){
       +'</button>'
     +'</div>'
     +(pinnedBadge?'<div style="padding:0 14px 4px;">'+pinnedBadge+'</div>':'')
-    +captionRow
     +'<div class="comments-wrap" id="cw-'+pid+'">'
       +viewAll
       +'<div id="cl-'+pid+'">'+commentList+'</div>'
@@ -819,6 +823,10 @@ function buildCard(p,i){
       +'</div>'
     +'</div>';
 
+  // Wire uname click in caption to open profile
+  card.querySelectorAll('.uname[data-uid]').forEach(function(el){
+    el.addEventListener('click',function(){ viewProfile(el.dataset.uid); });
+  });
   // Attach all event listeners via JS — no inline onclick with dynamic strings needed
   card.querySelectorAll('.card-open-profile').forEach(function(el){
     el.addEventListener('click',function(){viewProfile(el.dataset.uid);});
@@ -1742,7 +1750,7 @@ function openLightbox(pid){
       +'</div>'
       +((()=>{
         var lbLive2 = (p.uid && allUsers[p.uid]) ? allUsers[p.uid] : (p.user||{});
-        return p.caption?'<div class="lb-caption"><span style="font-weight:600;margin-right:6px;">@'+esc(lbLive2.handle||'')+'</span>'+esc(p.caption)+'</div>':'';
+        return p.caption?'<div class="lb-caption"><span class="card-open-profile-lb" data-uid="'+(p.uid||'')+'" style="font-weight:600;margin-right:6px;cursor:pointer;">@'+esc(lbLive2.handle||'')+'</span>'+linkifyCaption(p.caption)+'</div>':'';
       })())
       +'<div class="lb-comments" id="lbComments">'+(p.comments||[]).map(function(c){return '<div class="comment" style="margin-bottom:10px;">'+commentHTML(c)+'</div>';}).join('')+'</div>'
       +'<div class="lb-actions">'
@@ -2540,7 +2548,7 @@ function renderOtherProfileGrid(feedPosts){
   const fc = document.getElementById('opuFeedContent');
   if(!fc) return;
   if(!feedPosts || !feedPosts.length){
-    fc.innerHTML = '<div class="opu-empty">No posts yet 🌸</div>';
+    fc.innerHTML = '<div class="opu-empty">No posts yet.</div>';
     return;
   }
   const grid = document.createElement('div');
@@ -2551,9 +2559,27 @@ function renderOtherProfileGrid(feedPosts){
     const iPid = _r(String(p.id));
     const item = document.createElement('div');
     item.className = 'opu-grid-item';
-    item.innerHTML = img
-      ? '<img src="'+img+'" alt=""><div class="opu-grid-overlay"><span>❤️ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>'
-      : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:28px;">'+(p.isStatus?'💬':'🖼️')+'</div>';
+    // YouTube: show actual thumbnail
+    if(p.isYoutube && p.ytThumb){
+      item.innerHTML = '<img src="'+esc(p.ytThumb)+'" alt="" style="width:100%;height:100%;object-fit:cover;">'
+        +'<div class="opu-grid-overlay" style="background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;">'
+        +'<svg width="28" height="20" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
+        +'</div>';
+    }
+    // Video: show dark tile with play icon
+    else if(p.isVideo && p.videoUrl){
+      item.innerHTML = '<div style="width:100%;height:100%;background:#111;display:flex;align-items:center;justify-content:center;">'
+        +'<svg width="32" height="32" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" fill="none"/></svg>'
+        +'</div>';
+    }
+    // Photo: show image
+    else if(img){
+      item.innerHTML = '<img src="'+esc(img)+'" alt=""><div class="opu-grid-overlay"><span>❤ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>';
+    }
+    // Status or no media
+    else {
+      item.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px;background:var(--bg2);">💬</div>';
+    }
     item.addEventListener('click', function(){ openLightbox(_g(iPid)); });
     grid.appendChild(item);
   });
@@ -2610,11 +2636,27 @@ function toggleFollowUser(uid,name){
     me.following.splice(idx,1);
     if(btn){btn.textContent='Follow';btn.classList.remove('following');}
     toast('Unfollowed '+name);
+    // Remove from both subcollections
+    db.collection('profiles').doc(uid).collection('followers').doc(me.uid).delete().catch(()=>{});
+    db.collection('profiles').doc(me.uid).collection('following').doc(uid).delete().catch(()=>{});
     db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(-1)}).catch(()=>{});
   } else {
     me.following.push(uid);
     if(btn){btn.textContent='Following';btn.classList.add('following');}
-    toast('Following '+name+'! 🌸');
+    toast('Following '+name+'!');
+    // Write full user data to subcollections so the followers list shows names/avatars
+    db.collection('profiles').doc(uid).collection('followers').doc(me.uid).set({
+      uid:me.uid, name:me.name||'', handle:me.handle||'', color:me.color||'',
+      initial:me.initial||'', avatar:me.avatar||null,
+      ts:firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(()=>{});
+    // Also write who I'm following to MY following subcollection
+    var targetUser = allUsers[uid]||{};
+    db.collection('profiles').doc(me.uid).collection('following').doc(uid).set({
+      uid:uid, name:targetUser.name||name||'', handle:targetUser.handle||'',
+      color:targetUser.color||'', initial:targetUser.initial||'', avatar:targetUser.avatar||null,
+      ts:firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(()=>{});
     db.collection('profiles').doc(uid).update({followersCount:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
     sendNotification(uid,'follow',me,'');
   }
@@ -3289,24 +3331,151 @@ function closeStoryArchive(){ document.getElementById('storyArchive').classList.
 
 // ── POST EDITING ───────────────────────────────────────
 var _editPostId=null;
+// ── EDIT POST (caption + thumbnail) ───────────────────
+var _editPostId = null;
+var _editNewThumb = null; // new thumbnail chosen by user
+
 function openEditPost(id){
-  _editPostId=String(id);
-  var p=posts.find(function(x){return String(x.id)===_editPostId;});
-  if(!p)return;
-  document.getElementById('epmText').value=p.caption||'';
+  _editPostId = String(id);
+  _editNewThumb = null;
+  var p = posts.find(function(x){ return String(x.id) === _editPostId; });
+  if(!p) return;
+
+  // Fill caption
+  document.getElementById('epmText').value = p.caption || '';
+
+  // Build preview
+  var preview = document.getElementById('epmPreview');
+  var imgs = p.images||(p.image?[p.image]:[]);
+  if(p.isYoutube && p.ytThumb){
+    preview.innerHTML = '<img src="'+esc(p.ytThumb)+'" style="width:100%;max-height:200px;object-fit:cover;display:block;">'
+      +'<div style="padding:8px 12px;font-size:12.5px;color:var(--text2);font-weight:600;">'+esc(p.ytTitle||'YouTube Video')+'</div>';
+  } else if(p.isVideo && p.videoUrl){
+    preview.innerHTML = '<video src="'+esc(p.videoUrl)+'" style="width:100%;max-height:200px;display:block;" controls playsinline></video>';
+  } else if(imgs.length){
+    preview.innerHTML = '<img id="epmMainThumb" src="'+esc(imgs[0])+'" style="width:100%;max-height:220px;object-fit:cover;display:block;border-radius:10px;">';
+  } else if(p.isStatus){
+    preview.innerHTML = '<div style="padding:20px;font-size:14px;color:var(--text);text-align:center;line-height:1.6;">'+esc(p.caption||'Status post')+'</div>';
+  } else {
+    preview.style.display = 'none';
+  }
+
+  // Thumbnail options — only for photo posts
+  var thumbSection = document.getElementById('epmThumbSection');
+  var thumbOptions = document.getElementById('epmThumbOptions');
+  if(imgs.length > 0 && !p.isVideo && !p.isYoutube){
+    thumbSection.style.display = 'block';
+    thumbOptions.innerHTML = '';
+    imgs.forEach(function(src, i){
+      var img = document.createElement('img');
+      img.src = src;
+      img.className = 'epm-thumb-option' + (i===0?' selected':'');
+      img.title = 'Set as thumbnail';
+      img.addEventListener('click', function(){
+        // Select this image as new primary thumbnail
+        thumbOptions.querySelectorAll('.epm-thumb-option').forEach(function(x){ x.classList.remove('selected'); });
+        img.classList.add('selected');
+        _editNewThumb = src;
+        // Update preview
+        var mt = document.getElementById('epmMainThumb');
+        if(mt) mt.src = src;
+      });
+      thumbOptions.appendChild(img);
+    });
+  } else {
+    thumbSection.style.display = 'none';
+  }
+
   document.getElementById('editPostModal').classList.add('open');
 }
-function closeEditPost(){ document.getElementById('editPostModal').classList.remove('open'); }
+
+// Handle new image upload for thumbnail
+function epmHandleNewImage(input){
+  var file = input.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    _editNewThumb = e.target.result;
+    // Show it as selected in preview
+    var mt = document.getElementById('epmMainThumb');
+    if(mt) mt.src = _editNewThumb;
+    // Add to thumb options as selected
+    var opts = document.getElementById('epmThumbOptions');
+    opts.querySelectorAll('.epm-thumb-option').forEach(function(x){ x.classList.remove('selected'); });
+    var newOpt = document.createElement('img');
+    newOpt.src = _editNewThumb;
+    newOpt.className = 'epm-thumb-option selected';
+    opts.insertBefore(newOpt, opts.firstChild);
+    document.getElementById('epmThumbSection').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function closeEditPost(){
+  document.getElementById('editPostModal').classList.remove('open');
+  _editPostId = null;
+  _editNewThumb = null;
+}
+
 async function saveEditPost(){
-  if(!_editPostId)return;
-  var txt=document.getElementById('epmText').value.trim();
-  var p=posts.find(function(x){return String(x.id)===_editPostId;});
-  if(!p)return;
-  p.caption=txt;
-  await updatePostField(_editPostId,{caption:txt});
-  closeEditPost();
-  renderFeed();renderExploreFeed();
-  toast('Caption updated ✓');
+  if(!_editPostId) return;
+  var txt = document.getElementById('epmText').value.trim();
+  var p = posts.find(function(x){ return String(x.id) === _editPostId; });
+  if(!p) return;
+
+  var btn = document.querySelector('.epm-save');
+  if(btn){ btn.disabled = true; btn.textContent = 'Saving...'; }
+
+  try {
+    var updates = { caption: txt };
+
+    // If a new thumbnail was chosen, update the images array
+    if(_editNewThumb){
+      var imgs = p.images||(p.image?[p.image]:[]);
+      // If the new thumb is an uploaded file (base64), upload to Cloudinary first
+      if(_editNewThumb.startsWith('data:')){
+        try{
+          var uploaded = await uploadToStorage(_editNewThumb, 'posts/'+me.uid+'/edit_'+Date.now());
+          if(uploaded){
+            // Put the new image first in the array
+            var newImgs = [uploaded].concat(imgs.filter(function(x){ return x !== uploaded; }));
+            updates.images = newImgs;
+            updates.image = uploaded;
+            p.images = newImgs;
+            p.image = uploaded;
+          }
+        }catch(e){ toast('Image upload failed — caption still saved'); }
+      } else {
+        // Reorder existing images so chosen thumb is first
+        var existing = p.images||(p.image?[p.image]:[]);
+        var newOrder = [_editNewThumb].concat(existing.filter(function(x){ return x !== _editNewThumb; }));
+        updates.images = newOrder;
+        updates.image = _editNewThumb;
+        p.images = newOrder;
+        p.image = _editNewThumb;
+      }
+    }
+
+    // Apply caption update
+    p.caption = txt;
+
+    // Save to Firestore
+    await updatePostField(_editPostId, updates);
+
+    // Notify all followers this post was edited
+    sendMentionNotifications(txt, _editPostId);
+
+    closeEditPost();
+    renderFeed();
+    renderExploreFeed();
+    refreshProfile();
+    toast('Post updated!');
+  } catch(e){
+    toast('Could not save — try again');
+    console.error(e);
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = 'Save Changes'; }
+  }
 }
 
 // ── PINNED POST ────────────────────────────────────────
@@ -3913,16 +4082,38 @@ async function authSubmit(){
   }
 }
 async function authGoogle(){
+  // Detect WebView (Median.co, WebToNative, Capacitor, Android apps)
+  const ua = navigator.userAgent;
+  const isWebView = /wv/.test(ua) || /WebView/.test(ua) ||
+    (ua.includes('Android') && !ua.includes('Chrome/') && ua.includes('Version/')) ||
+    typeof window.median !== 'undefined' ||
+    typeof window.gonative !== 'undefined';
   try{
-    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-  } catch(err){
-    if(err.code === 'auth/popup-blocked'){
+    if(isWebView){
+      // WebViews can't do popups — must use redirect
       await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
     } else {
-      showAuthErr('Google sign-in failed — try email instead');
+      await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    }
+  } catch(err){
+    if(err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request'){
+      await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+    } else if(err.code === 'auth/operation-not-supported-in-this-environment'){
+      showAuthErr('Google sign-in unavailable here. Please use email and password.');
+    } else {
+      showAuthErr('Google sign-in failed — try email and password instead');
     }
   }
 }
+
+// Handle Google redirect result when app reloads after redirect
+auth.getRedirectResult().then(function(result){
+  // onAuthStateChanged handles the rest — nothing needed here
+}).catch(function(err){
+  if(err.code && err.code !== 'auth/no-such-provider' && err.code !== 'auth/null-user'){
+    console.warn('Google redirect error:', err.code);
+  }
+});
 function doSignOut(){ if(confirm('Sign out of Kez Media?')) auth.signOut(); }
 
 // ── AUTH / SPLASH ────────────────────────────────────
@@ -3965,22 +4156,36 @@ setTimeout(function(){
 
 async function runAppInit(user){
   try {
-    me = {
-      name:        user.displayName || 'Kez User',
-      handle:      (user.displayName||'user').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
-      color:       'linear-gradient(135deg,#e2688a,#f0a0b8)',
-      initial:     (user.displayName||'K')[0].toUpperCase(),
-      bio:         '✨ Welcome to my Kez Media profile!',
-      bannerColor: 'linear-gradient(135deg,#f4a8c0,#e2688a,#c93f6e)',
-      uid:         user.uid,
-      email:       user.email
-    };
-    // Show the app immediately after basic setup - don't wait for everything to load
+    // STEP 1: Set uid/email immediately so loadProfile can fetch the doc
+    me = { uid: user.uid, email: user.email };
+
+    // STEP 2: Load saved profile from Firestore FIRST before anything else
+    await loadProfile(user.uid);
+
+    // STEP 3: Only fill in defaults for fields that are genuinely missing
+    // Never overwrite a saved handle/name with the Gmail display name
+    if(!me.name)   me.name   = user.displayName || 'Kez User';
+    if(!me.handle) me.handle = (user.displayName||'user').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') + '_' + Math.floor(Math.random()*999);
+    if(!me.color)  me.color  = 'linear-gradient(135deg,#e2688a,#f0a0b8)';
+    if(!me.initial)me.initial= (me.name||'K')[0].toUpperCase();
+    if(!me.bio)    me.bio    = '';
+    if(!me.bannerColor) me.bannerColor = 'linear-gradient(135deg,#f4a8c0,#e2688a,#c93f6e)';
+    me.uid   = user.uid;
+    me.email = user.email;
+
+    // Update lastLogin without touching other fields
+    db.collection('profiles').doc(user.uid).set({
+      lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+      lastLoginDevice: navigator.userAgent,
+      uid: user.uid,
+      email: user.email
+    }, { merge: true }).catch(()=>{});
+
+    // Show app immediately
     _appReady = true;
     document.getElementById('authOverlay').style.display = 'none';
     _hideSplash();
     await init();
-    // Re-hide in case something showed it again
     document.getElementById('authOverlay').style.display = 'none';
     var admin = isAdmin();
     var badge = document.querySelector('.admin-badge');
@@ -3996,7 +4201,6 @@ async function runAppInit(user){
     }
   } catch(err){
     console.error('App init error:', err);
-    // Crash = show login, never leave user stuck
     _hideSplash();
     document.getElementById('authOverlay').style.display = 'flex';
   }
