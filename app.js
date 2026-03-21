@@ -3,6 +3,15 @@ const _reg = [];
 function _r(val){ const i = _reg.length; _reg.push(val); return i; }
 function _g(i){ return _reg[i]; }
 
+// ── EARLY VARIABLE DECLARATIONS ───────────────────────
+// These must be at the top so they're initialized before any function runs
+var POSTS_PER_PAGE = 15;
+var _postsPage = 1;
+var _loadingMore = false;
+var _blockedUsers = [];
+try{ _blockedUsers = JSON.parse(localStorage.getItem('kez_blocked')||'[]'); }catch(e){ _blockedUsers=[]; }
+function isBlocked(uid){ return _blockedUsers.includes(uid); }
+
 // ── FIREBASE INIT ─────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyCxDRIL9XOeA7d-yqXF84tndWPZY8JxLSY",
@@ -5432,8 +5441,6 @@ function openReply(postId, commentIdx){
 // ══════════════════════════════════════════════════════
 // BLOCK USER
 // ══════════════════════════════════════════════════════
-var _blockedUsers=JSON.parse(localStorage.getItem('kez_blocked')||'[]');
-function isBlocked(uid){return _blockedUsers.includes(uid);}
 
 async function blockUser(uid,name){
   if(!uid||uid===me.uid)return;
@@ -5496,9 +5503,6 @@ function initPullToRefresh(){
 // ══════════════════════════════════════════════════════
 // INFINITE SCROLL / PAGINATION
 // ══════════════════════════════════════════════════════
-var POSTS_PER_PAGE=15;
-var _postsPage=1;
-var _loadingMore=false;
 
 function renderFeedPaged(){
   _postsPage=_postsPage||1;
