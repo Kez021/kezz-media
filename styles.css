@@ -1206,18 +1206,48 @@ textarea.form-input{resize:none;min-height:80px;}
   .msg-back-btn{display:flex !important;min-width:44px !important;min-height:44px !important;}
 
   /* ── Own Profile — clean mobile layout ── */
-  .profile-card{border-radius:0;border-left:none;border-right:none;margin-bottom:0;}
-  .profile-banner{height:140px;border-radius:0;overflow:hidden;}
-  .profile-banner-edit{
-    position:absolute;bottom:10px;right:10px;
-    padding:8px 14px;font-size:12.5px;border-radius:12px;
-    background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.3);
-    color:white;display:flex;align-items:center;gap:6px;
-    font-family:'Jost',sans-serif;font-weight:600;cursor:pointer;
-    min-height:40px;min-width:44px;touch-action:manipulation;
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  .profile-card{
+    border-radius:0;
+    border-left:none;
+    border-right:none;
+    margin-bottom:0;
+    max-width:100vw;
+    overflow-x:hidden;
   }
-  .profile-top{padding:0 16px 16px;}
+  .profile-banner{
+    height:140px;
+    border-radius:0;
+    overflow:hidden;
+    width:100%;
+  }
+  .profile-banner-edit{
+    position:absolute;
+    bottom:10px;
+    right:10px;
+    padding:8px 14px;
+    font-size:12.5px;
+    border-radius:12px;
+    background:rgba(0,0,0,.65);
+    border:1px solid rgba(255,255,255,.3);
+    color:white;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'Jost',sans-serif;
+    font-weight:600;
+    cursor:pointer;
+    min-height:40px;
+    min-width:44px;
+    touch-action:manipulation;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .profile-top{
+    padding:0 16px 16px;
+    max-width:100%;
+    box-sizing:border-box;
+    overflow-x:hidden;
+  }
 
   /* Avatar row — avatar lifts out of banner, buttons float right */
   .profile-av-wrap{
@@ -1226,21 +1256,47 @@ textarea.form-input{resize:none;min-height:80px;}
     display:flex;
     align-items:flex-end;
     justify-content:space-between;
-    gap:10px;
-    padding:0 2px;
+    gap:8px;
+    padding:0;
+    width:100%;
+    box-sizing:border-box;
   }
-  .profile-av{width:80px;height:80px;font-size:24px;border-width:4px;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,.15);}
+  .profile-av{
+    width:80px;
+    height:80px;
+    font-size:24px;
+    border-width:4px;
+    flex-shrink:0;
+    box-shadow:0 4px 16px rgba(0,0,0,.15);
+    margin-left:0;
+  }
 
   /* Edit + Share buttons — right side, same row as avatar */
   .profile-actions{
-    display:flex;gap:8px;align-items:center;
-    padding-bottom:6px;flex-shrink:0;
+    display:flex;
+    gap:6px;
+    align-items:center;
+    padding-bottom:6px;
+    flex-shrink:0;
+    max-width:calc(100% - 90px);
   }
   .edit-profile-btn{
-    font-size:13px;padding:9px 16px;border-radius:22px;
-    white-space:nowrap;min-height:40px;min-width:44px;
+    font-size:12.5px;
+    padding:8px 14px;
+    border-radius:22px;
+    white-space:nowrap;
+    min-height:38px;
+    min-width:44px;
+    flex-shrink:1;
   }
-  .share-profile-btn{width:40px;height:40px;border-radius:50%;min-width:40px;min-height:40px;}
+  .share-profile-btn{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    min-width:38px;
+    min-height:38px;
+    flex-shrink:0;
+  }
 
   /* Name, handle, bio */
   .profile-name{font-size:19px;margin-bottom:2px;font-weight:700;}
@@ -1269,23 +1325,93 @@ textarea.form-input{resize:none;min-height:80px;}
   .stat-label{font-size:11.5px;color:var(--text3);margin-top:2px;white-space:nowrap;}
 
   /* Highlights — horizontal scroll, compact, after stats */
-  #highlightsSection{margin-top:12px;margin-bottom:4px;padding:0 16px;}
+  #highlightsSection{
+    margin-top:12px;
+    margin-bottom:4px;
+    padding:0;
+    width:100%;
+    overflow:hidden;
+  }
   #profileHighlights{
     overflow-x:auto;
+    overflow-y:hidden;
     -webkit-overflow-scrolling:touch;
     scrollbar-width:none;
-    padding-bottom:4px;
-    margin:0 -16px;
-    padding-left:16px;
-    padding-right:16px;
+    padding:8px 16px;
+    margin:0;
+    display:flex;
+    gap:14px;
+    scroll-behavior:smooth;
   }
   #profileHighlights::-webkit-scrollbar{display:none;}
 
+  /* Individual highlight items - ensure proper sizing */
+  .highlight-item{
+    flex-shrink:0;
+    width:64px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+  }
+  .highlight-ring{
+    width:64px;
+    height:64px;
+    min-width:64px;
+    min-height:64px;
+    border-radius:50%;
+    border:2px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .highlight-img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+  .highlight-name{
+    font-size:11px;
+    color:var(--text2);
+    text-align:center;
+    max-width:64px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
   /* Grid / tabs */
   .profile-grid{grid-template-columns:repeat(3,1fr);gap:2px;}
-  .profile-tabs-bar{padding:8px 10px 0;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .ptab{padding:10px 14px;font-size:13px;white-space:nowrap;min-height:44px;display:flex;align-items:center;justify-content:center;}
-  .profile-layout-btns{gap:4px;}
+  .profile-tabs-bar{
+    padding:8px 16px 0;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    width:100%;
+    box-sizing:border-box;
+    scrollbar-width:none;
+  }
+  .profile-tabs-bar::-webkit-scrollbar{display:none;}
+  .profile-tabs{
+    flex:1;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .profile-tabs::-webkit-scrollbar{display:none;}
+  .ptab{
+    padding:10px 16px;
+    font-size:13px;
+    white-space:nowrap;
+    min-height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .profile-layout-btns{gap:4px;flex-shrink:0;}
   .layout-btn{width:36px;height:36px;min-width:36px;min-height:36px;}
 
   /* ── Other User Profile ── */
@@ -1491,6 +1617,27 @@ textarea.form-input{resize:none;min-height:80px;}
   .mob-nav-item{font-size:10px;padding:5px 8px;min-width:52px;}
   .profile-av{width:76px;height:76px;}
   .stat-num{font-size:18px;}
+
+  /* Tighter profile layout for small screens */
+  .profile-top{padding:0 12px 12px;}
+  .profile-av-wrap{gap:6px;}
+  .profile-actions{gap:4px;max-width:calc(100% - 85px);}
+  .edit-profile-btn{
+    font-size:11.5px;
+    padding:7px 12px;
+    min-height:36px;
+  }
+  .share-profile-btn{
+    width:36px;
+    height:36px;
+    min-width:36px;
+    min-height:36px;
+  }
+
+  /* Adjust highlights for smaller screens */
+  .highlight-item{width:58px;}
+  .highlight-ring{width:58px;height:58px;min-width:58px;min-height:58px;}
+  #profileHighlights{padding:6px 12px;gap:10px;}
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1778,6 +1925,15 @@ textarea.form-input{resize:none;min-height:80px;}
 .chat-msg-media img,.chat-msg-media video{width:100%;display:block;border-radius:10px;}
 
 /* Mobile stories - extra rule for very narrow phones */
+/* ── SCREEN SIZE 390px (iPhone 12/13/14) ────────────── */
+@media (max-width:395px) and (min-width:381px){
+  .profile-top{padding:0 14px 14px;}
+  .profile-av{width:78px;height:78px;}
+  .profile-av-wrap{gap:7px;}
+  .edit-profile-btn{font-size:12px;padding:7px 13px;}
+  .share-profile-btn{width:37px;height:37px;min-width:37px;min-height:37px;}
+}
+
 @media(max-width:380px){
   .story-item{width:60px !important;min-width:60px !important;}
   .story-ring{width:52px !important;height:52px !important;min-width:52px !important;min-height:52px !important;}
@@ -1785,10 +1941,33 @@ textarea.form-input{resize:none;min-height:80px;}
   .mob-nav-item{padding:4px 6px;min-width:48px;font-size:9.5px;}
   .mob-nav-item svg{width:22px;height:22px;}
   .mob-create-btn{width:52px;height:52px;}
+
+  /* Ultra-compact profile for tiny screens */
+  .profile-top{padding:0 10px 10px;}
+  .profile-av{width:72px;height:72px;}
+  .profile-av-wrap{gap:5px;}
+  .edit-profile-btn{
+    font-size:11px;
+    padding:6px 10px;
+    min-height:34px;
+  }
+  .share-profile-btn{
+    width:34px;
+    height:34px;
+    min-width:34px;
+    min-height:34px;
+  }
 }
 
 /* ── MOBILE-SPECIFIC ENHANCEMENTS ───────────────────── */
 @media (max-width:700px){
+  /* Prevent horizontal overflow */
+  html,body{
+    max-width:100vw;
+    overflow-x:hidden;
+    position:relative;
+  }
+
   /* Smooth scrolling everywhere */
   *{-webkit-overflow-scrolling:touch;}
 
@@ -1799,6 +1978,7 @@ textarea.form-input{resize:none;min-height:80px;}
   textarea{
     -webkit-appearance:none;
     appearance:none;
+    max-width:100%;
   }
 
   /* Prevent zoom on input focus */
@@ -1806,6 +1986,16 @@ textarea.form-input{resize:none;min-height:80px;}
   textarea:focus,
   select:focus{
     font-size:16px;
+  }
+
+  /* Ensure all containers respect viewport */
+  .view,
+  .main-content,
+  .profile-card,
+  .post-card,
+  .settings-card{
+    max-width:100vw;
+    box-sizing:border-box;
   }
 
   /* Better safe area handling */
