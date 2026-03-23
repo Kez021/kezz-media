@@ -338,8 +338,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;background:var(-
 .grid-edit-btn{position:absolute;top:5px;left:5px;width:26px;height:26px;background:rgba(0,0,0,.55);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;transition:background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .grid-edit-btn:hover,.grid-edit-btn:active{background:var(--pink);}
 /* Feed edit bar — shows below media on own posts */
-.feed-edit-bar{display:flex;align-items:center;gap:5px;padding:5px 14px;font-size:11.5px;font-weight:500;color:var(--text3);cursor:pointer;border-top:1px solid var(--border);background:transparent;transition:color .15s,background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
-.feed-edit-bar:hover,.feed-edit-bar:active{color:var(--pink);background:var(--pink-pale);}
+/* feed-edit-bar removed */
 
 /* tabs — managed inside .profile-tabs-bar above */
 
@@ -1153,7 +1152,7 @@ textarea.form-input{resize:none;min-height:80px;}
 
   /* Feed */
   .view{padding:0;}
-  #homeFeedWrap{padding:0 0 80px;display:flex;flex-direction:column;gap:clamp(8px,2vw,12px);width:100%;}
+  #homeFeedWrap{padding:0 clamp(12px,4vw,18px) 80px;display:flex;flex-direction:column;gap:clamp(8px,2vw,12px);width:100%;box-sizing:border-box;}
   #feed{padding:0;}
   #exploreFeed{padding:0 12px 16px;}
 
@@ -1198,12 +1197,12 @@ textarea.form-input{resize:none;min-height:80px;}
   .profile-banner{height:clamp(110px,30vw,160px);border-radius:0;overflow:hidden;}
   .profile-banner-edit{
     position:absolute;
-    bottom:10px;
-    right:12px;
+    top:10px;
+    right:10px;
     padding:5px 10px;
     font-size:11px;
     border-radius:8px;
-    background:rgba(0,0,0,.55);
+    background:rgba(0,0,0,.5);
     border:1px solid rgba(255,255,255,.25);
     color:white;
     display:flex;
@@ -1251,8 +1250,8 @@ textarea.form-input{resize:none;min-height:80px;}
   .share-profile-btn{width:36px;height:36px;min-width:36px;border-radius:50%;flex-shrink:0;}
 
   /* Name, handle, bio */
-  .profile-name{font-size:clamp(15px,4.5vw,19px);margin-bottom:1px;}
-  .profile-handle{font-size:clamp(11px,3.2vw,13.5px);margin-bottom:3px;}
+  .profile-name{font-size:clamp(15px,4.5vw,19px);margin-bottom:1px;text-align:left;}
+  .profile-handle{font-size:clamp(11px,3.2vw,13.5px);margin-bottom:3px;text-align:left;display:block;}
   .profile-bio{font-size:clamp(12px,3.4vw,14px);margin-bottom:4px;}
 
   /* Stats — 3 equal columns, nothing cut off */
@@ -1603,12 +1602,15 @@ textarea.form-input{resize:none;min-height:80px;}
 /* Comment actions row */
 .c-actions{display:flex;align-items:center;gap:8px;margin-top:4px;}
 .c-react-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:8px;transition:color .15s;font-family:'Jost',sans-serif;}
+.c-reactions{display:none;flex-wrap:nowrap;gap:6px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,.18);position:absolute;bottom:30px;left:0;z-index:100;white-space:nowrap;animation:fadeUp .15s ease both;}
+.c-like-btn{position:relative;}
 .c-react-btn:hover{color:var(--pink);}
 .c-like-count{font-size:10.5px;}
 
 /* Verified badge - glossy pink */
-#profileVerifiedBadge{display:none;align-items:center;cursor:default;}
-#profileVerifiedBadge svg{display:block;filter:drop-shadow(0 2px 6px rgba(226,104,138,.8));}
+#profileVerifiedBadge{display:inline-flex;align-items:center;cursor:default;}
+#profileVerifiedBadge svg{display:block;filter:drop-shadow(0 2px 8px rgba(226,104,138,1)) drop-shadow(0 0 12px rgba(255,180,220,.9));animation:badgeShimmer 2.5s ease-in-out infinite;}
+@keyframes badgeShimmer{0%,100%{filter:drop-shadow(0 2px 8px rgba(226,104,138,1)) drop-shadow(0 0 12px rgba(255,180,220,.9)) brightness(1);}50%{filter:drop-shadow(0 2px 12px rgba(255,150,200,1)) drop-shadow(0 0 20px rgba(255,200,230,1)) brightness(1.2);}}
 
 /* Edited label on posts */
 .post-edited-label{font-size:10.5px;color:var(--text3);margin-left:6px;}
@@ -1751,5 +1753,3 @@ textarea.form-input{resize:none;min-height:80px;}
 .chat-msg-media img,.chat-msg-media video{width:100%;display:block;border-radius:10px;}
 
 /* Mobile stories - extra rule for very narrow phones */
-
-
