@@ -560,7 +560,7 @@ function applyUserProfile(){
   }
   // Verified badge — admin only
   const vb=document.getElementById('profileVerifiedBadge');
-  if(vb) vb.style.display=isAdmin()?'inline-flex':'none';
+  if(vb) vb.style.display='inline-flex';
   // followers count — read real count from subcollection
   const sf=document.getElementById('statFollowers');
   const sfw=document.getElementById('statFollowing');
@@ -857,10 +857,7 @@ function buildCard(p,i){
     +'</div>'
     +captionRow
     +mediaHTML
-    +(own?'<div class="feed-edit-bar" data-editpost="'+pid+'">'
-      +'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
-      +' Edit post &amp; thumbnail'
-      +'</div>':'')
+    // No edit bar in feed — edit is only accessible from profile grid
     +'<div class="post-actions">'
       +'<button class="act '+(p.liked?'liked':'')+'" data-like="'+pid+'">'
         +'<svg width="17" height="17" fill="'+(p.liked?'var(--pink)':'none')+'" stroke="'+(p.liked?'var(--pink)':'currentColor')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
@@ -938,10 +935,7 @@ function buildCard(p,i){
   card.querySelectorAll('[data-pinpost]').forEach(function(el){
     el.addEventListener('click',function(){togglePin(el.dataset.pinpost);});
   });
-  // Feed edit bar — quick access edit for own posts
-  card.querySelectorAll('.feed-edit-bar[data-editpost]').forEach(function(el){
-    el.addEventListener('click',function(){ openEditPost(el.dataset.editpost); });
-  });
+  // Feed edit bar removed — edit only from profile grid
   card.querySelectorAll('.card-dm').forEach(function(el){
     el.addEventListener('click',function(){openDMFromPost(el.dataset.uid,el.dataset.name);closeMenus();});
   });
@@ -1022,10 +1016,10 @@ function commentHTML(c, postId, commentIdx){
         +(c.edited?'<div style="font-size:10px;color:var(--text3);margin-top:2px;">Edited</div>':'')
       +'</div>'
       // Reaction bar under comment
-      +'<div class="c-reactions" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;margin-left:2px;">'+reactionBar+'</div>'
+      +'<div class="c-reactions" id="creact-'+String(postId)+'-'+commentIdx+'" style="display:none;flex-wrap:wrap;gap:4px;margin-top:6px;margin-left:2px;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:0 4px 16px rgba(0,0,0,.12);position:absolute;bottom:28px;left:0;z-index:50;">'+reactionBar+'</div>'
       // Action row: Like count + Reply
       +'<div style="display:flex;align-items:center;gap:12px;margin-top:4px;margin-left:2px;">'
-        +'<button class="c-like-btn'+(myLike?' active':'')+'" onclick="likeComment(\''+String(postId)+'\','+commentIdx+')" style="background:none;border:none;cursor:pointer;font-size:11.5px;color:'+(myLike?'var(--pink)':'var(--text3)')+';display:flex;align-items:center;gap:3px;font-family:Jost,sans-serif;padding:0;">'
+        +'<button class="c-like-btn'+(myLike?' active':'')+'" onclick="likeComment(\''+String(postId)+'\','+commentIdx+')" style="background:none;border:none;cursor:pointer;font-size:11.5px;color:'+(myLike?'var(--pink)':'var(--text3)')+';display:flex;align-items:center;gap:3px;font-family:Jost,sans-serif;padding:0;position:relative;">'
           +'<svg width="12" height="12" fill="'+(myLike?'var(--pink)':'none')+'" stroke="'+(myLike?'var(--pink)':'currentColor')+'" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
           +(likes>0?likes:'Like')
         +'</button>'
@@ -2474,7 +2468,7 @@ function _drawOtherProfile(uid, prof){
           +'<div class="profile-handle">@'+esc(prof.handle||'user')+'</div>'
           +(prof.bio?'<div class="profile-bio">'+esc(prof.bio)+'</div>':'')
           +(prof.website?'<div class="opu-link-bio" style="margin-top:4px;"><a href="'+esc(prof.website)+'" target="_blank" rel="noopener"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'+esc(prof.website.replace(/^https?:\/\//,'').split('/')[0])+'</a></div>':'')
-          +(prof.website?'<div style="margin-top:4px;"><a href="'+esc(prof.website)+'" target="_blank" rel="noopener" style="color:var(--pink);font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'+esc(prof.website.replace(/^https?:\/\//,'').slice(0,30))+'</a></div>':'')
+          // duplicate link removed
           +'<div class="profile-stats">'
             +'<div class="stat-item" id="opuStatPosts"><div class="stat-num">'+photoPosts.length+'</div><div class="stat-label">Posts</div></div>'
             +'<div class="stat-item" id="opuStatFollowers" style="cursor:pointer;"><div class="stat-num">'+displayFollowers+'</div><div class="stat-label">Followers</div></div>'
@@ -4315,7 +4309,7 @@ async function runAppInit(user){
     // STEP 3: Only fill in defaults for fields that are genuinely missing
     // Never overwrite a saved handle/name with the Gmail display name
     if(!me.name)   me.name   = user.displayName || 'Kez User';
-    if(!me.handle) me.handle = (user.displayName||'user').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') + '_' + Math.floor(Math.random()*999);
+    if(!me.handle || me.handle.trim() === '' || me.handle === 'undefined') me.handle = (user.displayName||'user').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').substring(0,15) + '_' + Math.floor(Math.random()*99);
     if(!me.color)  me.color  = 'linear-gradient(135deg,#e2688a,#f0a0b8)';
     if(!me.initial)me.initial= (me.name||'K')[0].toUpperCase();
     if(!me.bio)    me.bio    = '';
@@ -5453,6 +5447,17 @@ async function adminRestoreUserPosts(uid, name){
 // ══════════════════════════════════════════════════════
 var COMMENT_REACTIONS=['❤️','😂','😮','😢','🔥','👏'];
 
+function showCommentReactions(e, postId, commentIdx){
+  if(e){ e.preventDefault(); e.stopPropagation(); }
+  document.querySelectorAll('.c-reactions').forEach(function(el){ el.style.display='none'; });
+  var id = 'creact-'+String(postId)+'-'+commentIdx;
+  var el = document.getElementById(id);
+  if(el){
+    el.style.display = (el.style.display==='flex') ? 'none' : 'flex';
+    setTimeout(function(){ if(el) el.style.display='none'; }, 4000);
+  }
+}
+
 function likeComment(postId, commentIdx){
   postId=String(postId);
   var p=posts.find(function(x){return String(x.id)===postId;});
@@ -5645,7 +5650,11 @@ async function sendDMMedia(convoId,file){
 // ══════════════════════════════════════════════════════
 function updateVerifiedBadge(){
   var vb=document.getElementById('profileVerifiedBadge');
-  if(vb)vb.style.display=isAdmin()?'inline-flex':'none';
+  if(vb){
+    // Show to everyone — it visually indicates a verified/established account
+    // Admin gets it always; regular users see it on their own profile too
+    vb.style.display='inline-flex';
+  }
 }
 
 // ══════════════════════════════════════════════════════
