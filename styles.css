@@ -285,7 +285,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;background:var(-
 .profile-banner-edit:hover,.profile-banner-edit:active{background:rgba(0,0,0,.88);border-color:rgba(255,255,255,.6);}
 /* Profile card must NOT clip the banner buttons */
 .profile-card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:16px;box-shadow:var(--card-shadow);overflow:visible;}
-.profile-top{padding:0 20px 16px;position:relative;}
+.profile-top{padding:0 20px 16px;position:relative;text-align:left;}
 .profile-av-wrap{margin-top:-48px;margin-bottom:12px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;}
 .profile-av{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-soft));border:4px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:white;overflow:hidden;position:relative;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.12);flex-shrink:0;}
 .profile-av img{width:100%;height:100%;object-fit:cover;}
@@ -1162,9 +1162,9 @@ textarea.form-input{resize:none;min-height:80px;}
 
   /* Feed */
   .view{padding:0;}
-  #homeFeedWrap{padding:0 8px 80px;display:flex;flex-direction:column;gap:8px;width:100%;box-sizing:border-box;}
+  #homeFeedWrap{padding:0 10px 80px;display:flex;flex-direction:column;gap:8px;width:100%;box-sizing:border-box;}
   #feed{padding:0;}
-  #exploreFeed{padding:0 8px 16px;}
+  #exploreFeed{padding:0 10px 16px;}
 
   /* Posts */
   .post-card{border-radius:14px;margin-bottom:0;max-width:100%;margin-left:0;margin-right:0;}
@@ -1174,6 +1174,11 @@ textarea.form-input{resize:none;min-height:80px;}
     margin-bottom:0;
     box-sizing:border-box;
     width:100%;
+  }
+  /* Slightly shrink post card so side spaces show */
+  #feed .post-card, #homeFeedWrap .post-card{
+    margin-left:0;
+    margin-right:0;
   }
   .post-grid img{border-radius:10px;}
   .create-bar{margin-bottom:0;}
@@ -1208,7 +1213,7 @@ textarea.form-input{resize:none;min-height:80px;}
     position:absolute;
     bottom:10px;
     right:10px;
-    padding:7px 14px;
+    padding:7px clamp(12px,3.5vw,18px);
     font-size:clamp(11px,3vw,13px);
     border-radius:20px;
     background:rgba(0,0,0,.55);
@@ -1457,10 +1462,10 @@ textarea.form-input{resize:none;min-height:80px;}
   }
 
   /* Post action buttons — bigger and easier to tap on mobile */
-  .post-actions{padding:clamp(6px,2vw,10px) clamp(8px,2.8vw,14px) 4px;gap:0;}
-  .act{padding:clamp(7px,2.2vw,10px) clamp(8px,2.5vw,11px);font-size:clamp(12px,3.5vw,14px);min-height:44px;min-width:44px;border-radius:10px;}
-  .act svg{width:20px;height:20px;}
-  .lc,.cc{font-size:13px;font-weight:600;}
+  .post-actions{padding:clamp(6px,2vw,10px) clamp(8px,2.8vw,14px) 4px;gap:2px;}
+  .act{padding:clamp(9px,2.8vw,12px) clamp(10px,3vw,14px);font-size:clamp(13px,3.8vw,15px);min-height:48px;min-width:48px;border-radius:12px;}
+  .act svg{width:22px;height:22px;}
+  .lc,.cc{font-size:14px;font-weight:600;}
   /* Comment input row bigger */
   .c-input-row{padding:8px 12px 10px;gap:8px;}
   .c-input{font-size:14px;padding:clamp(8px,2.5vw,11px) clamp(11px,3.5vw,15px);min-height:42px;}
@@ -1793,7 +1798,7 @@ textarea.form-input{resize:none;min-height:80px;}
 .hl-story-item.selected .hl-check{display:flex;}
 
 .verified-inline{display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;}
-.verified-inline svg{display:block;}
+.verified-inline svg{display:block;filter:drop-shadow(0 2px 8px rgba(226,104,138,1)) drop-shadow(0 0 12px rgba(255,180,220,.9));animation:badgeShimmer 2.5s ease-in-out infinite;}
 
 /* Edited label on posts */
 .post-edited-label{font-size:10.5px;color:var(--text3);font-style:italic;margin-left:4px;}
