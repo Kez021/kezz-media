@@ -323,7 +323,7 @@
           </div>
 
           <!-- ROW 3: Name + verified badge -->
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-start;">
             <div class="profile-name" id="profileName">Your Name</div>
             <div id="profileVerifiedBadge" style="display:inline-flex;align-items:center;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1052,17 +1052,8 @@
         <input type="file" accept="image/*" id="epmNewImageInput" style="display:none;" onchange="epmHandleNewImage(this)">
       </label>
     </div>
-    <!-- Video/URL change (video/YouTube posts only) -->
-    <div id="epmVideoSection" style="display:none;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Change Video/URL</div>
-      <input type="text" id="epmVideoUrl" placeholder="Enter new video URL or YouTube link..." style="width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-family:'Jost',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box;margin-bottom:8px;">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">Or upload a new video:</div>
-      <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;border:1.5px dashed var(--border);cursor:pointer;font-size:13px;color:var(--text2);">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-        Upload new video
-        <input type="file" accept="video/*" id="epmNewVideoInput" style="display:none;" onchange="epmHandleNewVideo(this)">
-      </label>
-    </div>
+    <!-- Video/URL change section hidden — removed per request -->
+    <div id="epmVideoSection" style="display:none;"></div>
 
 
     <!-- Caption -->
@@ -1292,5 +1283,5 @@
 <div id="notifPopup"></div>
 
 <script src="app.js"></script>
-<script src="https://replit-cdn.com/replit-pill/replit-pill.global.js" data-repl-id="287b33b7-4726-4df6-9d68-0a3cfe9bb69c"></script></body>
+</body>
 </html>
