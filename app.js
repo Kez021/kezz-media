@@ -311,9 +311,10 @@ function watchNotifications(){
 
 // Show a sliding popup card for an incoming notification
 function showNotifPopup(nid, n){
-  const icons  = {like:'❤️', comment:'💬', follow:'👤', message:'✉️', mention:'@'};
+  const icons  = {like:'❤️', comment:'💬', follow:'👤', message:'✉️', mention:'@', repost:'🔁', share:'📤'};
   const texts  = {like:'liked your post', comment:'commented on your post',
-                  follow:'started following you', message:'sent you a message', mention:'mentioned you'};
+                  follow:'started following you', message:'sent you a message', mention:'mentioned you',
+                  repost:'reposted your post', share:'shared your post'};
   const container = document.getElementById('notifPopup');
   if(!container) return;
 
@@ -333,12 +334,26 @@ function showNotifPopup(nid, n){
     +'</div>'
     +'<button class="notif-popup-close" title="Dismiss">×</button>';
 
-  // Click popup body → go to notifications
+  // Click popup body → go to post or notifications
   item.addEventListener('click', function(e){
     if(e.target.classList.contains('notif-popup-close')) return;
-    goTo('notifs');
     db.collection('notifications').doc(nid).update({read:true}).catch(()=>{});
     dismissPopup(item);
+    if(n.postId && (n.type==='like'||n.type==='comment'||n.type==='repost'||n.type==='share'||n.type==='mention')){
+      goTo('home');
+      setTimeout(function(){
+        var card=document.getElementById('pc-'+n.postId);
+        if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.style.outline='2.5px solid var(--pink)';card.style.boxShadow='0 0 0 4px rgba(226,104,138,.18)';setTimeout(function(){card.style.outline='';card.style.boxShadow='';},2500);}
+        else{openLightbox(n.postId);}
+      },350);
+    } else if(n.type==='follow' && n.fromUid){
+      viewProfile(n.fromUid);
+    } else if(n.type==='message'){
+      goTo('messages');
+      if(n.fromUid) setTimeout(function(){openDMWith(n.fromUid,n.fromName||'');},150);
+    } else {
+      goTo('notifs');
+    }
   });
 
   // Click × → just dismiss
@@ -384,8 +399,8 @@ function renderNotifs(docs){
     list.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;">No notifications yet 🌸</div>';
     return;
   }
-  const icons={like:'❤️',comment:'💬',follow:'👤',message:'✉️',mention:'@'};
-  const texts={like:'liked your post',comment:'commented on your post',follow:'started following you',message:'sent you a message',mention:'mentioned you'};
+  const icons={like:'❤️',comment:'💬',follow:'👤',message:'✉️',mention:'@',repost:'🔁',share:'📤'};
+  const texts={like:'liked your post',comment:'commented on your post',follow:'started following you',message:'sent you a message',mention:'mentioned you',repost:'reposted your post',share:'shared your post'};
   docs.forEach(d=>{
     const n=d.data(); const nid=d.id;
     const div=document.createElement('div');
@@ -401,8 +416,8 @@ function renderNotifs(docs){
     div.addEventListener('click',function(){
       if(!n.read) db.collection('notifications').doc(nid).update({read:true}).catch(()=>{});
       div.classList.remove('unread');
-      // Deep-link: if notification has a postId, navigate directly to that post
-      if(n.postId && n.type!=='follow' && n.type!=='message'){
+      // Deep-link: if notification has a postId and type is post-related, go to that post
+      if(n.postId && (n.type==='like'||n.type==='comment'||n.type==='repost'||n.type==='share'||n.type==='mention')){
         goTo('home');
         setTimeout(function(){
           var card=document.getElementById('pc-'+n.postId);
@@ -420,6 +435,14 @@ function renderNotifs(docs){
       } else if(n.type==='message'){
         goTo('messages');
         if(n.fromUid) setTimeout(function(){openDMWith(n.fromUid,n.fromName||'');},150);
+      } else if(n.postId){
+        // fallback: any other type with postId still goes to post
+        goTo('home');
+        setTimeout(function(){
+          var card=document.getElementById('pc-'+n.postId);
+          if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); }
+          else { openLightbox(n.postId); }
+        },350);
       }
     });
     list.appendChild(div);
@@ -607,7 +630,7 @@ function applyUserProfile(){
         +esc(cleanUrl.length>30?cleanUrl.slice(0,30)+'…':cleanUrl)+'</a>';
     } else { plb.style.display='none'; }
   }
-  // Verified badge — admin only
+  // Verified badge — visible to everyone when admin profile is viewed
   const vb=document.getElementById('profileVerifiedBadge');
   if(vb) vb.style.display=isAdmin()?'inline-flex':'none';
   // followers count — read real count from subcollection
@@ -1165,7 +1188,7 @@ async function doRepost(id){
     p.repostCount=(p.repostCount||0)+1;
     toast('Reposted!');
     // Notify post owner
-    if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'repost',me,'reposted your post');
+    if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'repost',me,'reposted your post',id);
     // Save to activity log
     db.collection('activityLog').add({type:'repost',fromUid:me.uid,fromHandle:me.handle,postId:id,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
   }
@@ -1788,7 +1811,7 @@ async function submitPost(){
     const p={id:postId, uid, user:{...me}, images:imageUrls, image:imageUrls[0]||null, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
     await savePostToFirestore(p);
     if(cap) sendMentionNotifications(cap, postId);
-    db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),images:imageUrls.length,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+    db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),images:imageUrls.length,imageUrls:imageUrls,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
     toast('Post shared! 🌸');
   } else if(postMode==='video'){
     const cap=(document.getElementById('videoCaptionInput').value||'').trim();
@@ -1800,7 +1823,7 @@ async function submitPost(){
       const p={id:postId, uid, user:{...me}, images:[], image:null, videoUrl, isVideo:true, caption:cap||'', likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
       await savePostToFirestore(p);
       if(cap) sendMentionNotifications(cap, postId);
-      db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),isVideo:true,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+      db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),isVideo:true,videoUrl:videoUrl,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
       toast('Video shared! 🎬');
     }catch(e){ toast('Video upload failed. Try a shorter clip.'); }
   } else if(postMode==='youtube'){
@@ -2515,7 +2538,7 @@ function _drawOtherProfile(uid, prof){
           +(isOnline?'<div class="opu-online-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#22c55e;font-weight:600;margin-bottom:4px;">● Active now</div>':'')
           +'<div style="display:flex;align-items:center;justify-content:center;gap:6px;">'
             +'<div class="profile-name">'+esc(profName)+'</div>'
-            +(prof.isAdmin?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#e2688a"/><polyline points="7 13 10 16 17 9" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+            +(isAdminProfile?'<div class="verified-inline" title="Verified"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="vbg2" cx="35%" cy="25%" r="70%"><stop offset="0%" stop-color="#fde8f2"/><stop offset="30%" stop-color="#f0a0b8"/><stop offset="65%" stop-color="#e2688a"/><stop offset="100%" stop-color="#be185d"/></radialGradient><radialGradient id="vsh2" cx="30%" cy="20%" r="50%"><stop offset="0%" stop-color="white" stop-opacity="0.7"/><stop offset="100%" stop-color="white" stop-opacity="0"/></radialGradient></defs><path d="M12 2l2.4 3.2 3.9-.8-1 3.8 3.2 2.3-3.2 2.3 1 3.8-3.9-.8L12 22l-2.4-3.2-3.9.8 1-3.8L3.5 13.5l3.2-2.3-1-3.8 3.9.8z" fill="url(#vbg2)"/><path d="M12 2l2.4 3.2 3.9-.8-1 3.8 3.2 2.3-3.2 2.3 1 3.8-3.9-.8L12 22l-2.4-3.2-3.9.8 1-3.8L3.5 13.5l3.2-2.3-1-3.8 3.9.8z" fill="url(#vsh2)"/><polyline points="8.5 12.5 10.8 14.8 15.5 10" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>':'')
           +'</div>'
           +'<div class="profile-handle">@'+esc(prof.handle||'user')+'</div>'
           +(prof.bio?'<div class="profile-bio">'+esc(prof.bio)+'</div>':'')
@@ -3703,9 +3726,9 @@ async function saveEditPost(){
       }
     }
 
-    // Handle video/URL changes
+    // Handle video/URL changes (section removed from UI, keeping for backward compat)
     var newVideoUrl = document.getElementById('epmVideoUrl');
-    if(newVideoUrl && newVideoUrl.value.trim() && (p.isVideo || p.isYoutube)){
+    if(newVideoUrl && newVideoUrl.value && newVideoUrl.value.trim() && (p.isVideo || p.isYoutube)){
       var url = newVideoUrl.value.trim();
       // Check if it's a YouTube URL
       if(url.includes('youtube.com') || url.includes('youtu.be')){
@@ -3750,9 +3773,23 @@ async function saveEditPost(){
 
     // Apply caption update
     p.caption = txt;
+    p.edited = true;
 
     // Save to Firestore
     await updatePostField(_editPostId, updates);
+
+    // Force immediate local re-render so owner sees thumbnail change right away
+    // This prevents the "black image for owner" bug
+    var updatedPost = posts.find(function(x){ return String(x.id) === _editPostId; });
+    if(updatedPost && updates.image){
+      // Add cache-busting timestamp to force browser to reload the new image
+      var cacheBust = '?cb=' + Date.now();
+      var freshUrl = updates.image.includes('?') ? updates.image : updates.image + cacheBust;
+      // Don't cache-bust Cloudinary URLs since they use their own CDN
+      // Just ensure local posts array is fully up to date
+      updatedPost.image = updates.image;
+      updatedPost.images = updates.images || updatedPost.images;
+    }
 
     // Notify all followers this post was edited
     sendMentionNotifications(txt, _editPostId);
@@ -3762,6 +3799,14 @@ async function saveEditPost(){
     renderExploreFeed();
     refreshProfile();
     toast('Post updated!');
+    // Re-render again after a short delay to catch CDN propagation for new thumbnails
+    if(updates.image){
+      setTimeout(function(){
+        renderFeed();
+        renderExploreFeed();
+        refreshProfile();
+      }, 1500);
+    }
   } catch(e){
     toast('Could not save — try again');
     console.error(e);
@@ -5392,7 +5437,7 @@ async function sendPostViaDM(postId, toUser){
     sendNotification(toUser.uid, 'message', me, shareText.slice(0,60));
     // Also notify original post owner if different
     if(p && p.uid && p.uid !== me.uid && p.uid !== toUser.uid){
-      sendNotification(p.uid, 'repost', me, me.name+' shared your post with someone');
+      sendNotification(p.uid, 'share', me, me.name+' shared your post with someone', postId);
     }
     toast('Shared to '+esc(toUser.name||'user')+'! 💌');
   }, 400);
@@ -6147,4 +6192,3 @@ function submitReply(postId, commentIdx){
   }
   toast('Reply posted!');
 }
-
