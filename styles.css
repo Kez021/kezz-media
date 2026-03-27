@@ -781,7 +781,7 @@ textarea.form-input{resize:none;min-height:80px;}
 .opu-banner img{width:100%;height:100%;object-fit:cover;}
 .opu-back{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.35);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;transition:background .2s;}
 .opu-back:hover{background:rgba(0,0,0,.55);}
-.opu-top{padding:0 20px 20px;position:relative;}
+.opu-top{padding:0 20px 20px;position:relative;text-align:left;}
 .opu-av{width:80px;height:80px;border-radius:50%;border:4px solid var(--card);margin-top:-40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:26px;color:white;overflow:hidden;position:relative;z-index:1;}
 .opu-av img{width:100%;height:100%;object-fit:cover;}
 .opu-online-dot{position:absolute;bottom:4px;right:4px;width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid var(--card);}
@@ -1175,10 +1175,11 @@ textarea.form-input{resize:none;min-height:80px;}
     box-sizing:border-box;
     width:100%;
   }
-  /* Slightly shrink post card so side spaces show */
+  /* Shrink post card width so side spaces are visible */
   #feed .post-card, #homeFeedWrap .post-card{
-    margin-left:0;
-    margin-right:0;
+    width:92%;
+    margin-left:auto;
+    margin-right:auto;
   }
   .post-grid img{border-radius:10px;}
   .create-bar{margin-bottom:0;}
@@ -1211,26 +1212,28 @@ textarea.form-input{resize:none;min-height:80px;}
   .profile-banner{height:clamp(110px,30vw,150px);border-radius:0;overflow:hidden;position:relative;}
   .profile-banner-edit{
     position:absolute;
-    bottom:10px;
-    right:10px;
-    padding:7px clamp(12px,3.5vw,18px);
-    font-size:clamp(11px,3vw,13px);
-    border-radius:20px;
-    background:rgba(0,0,0,.55);
+    bottom:8px;
+    right:8px;
+    padding:6px 12px;
+    font-size:11px;
+    border-radius:16px;
+    background:rgba(0,0,0,.6);
     border:1px solid rgba(255,255,255,.3);
     color:white;
     display:flex;
     align-items:center;
-    gap:6px;
+    gap:5px;
     font-family:'Jost',sans-serif;
     font-weight:600;
     cursor:pointer;
-    min-height:36px;
+    min-height:32px;
+    max-width:calc(100% - 16px);
     touch-action:manipulation;
     backdrop-filter:blur(6px);
     -webkit-backdrop-filter:blur(6px);
     z-index:5;
     white-space:nowrap;
+    box-sizing:border-box;
   }
   .profile-top{padding:0 clamp(12px,3.8vw,18px) 14px;}
 
