@@ -2510,7 +2510,8 @@ function _drawOtherProfile(uid, prof){
     // prof.isAdmin is saved to Firestore the first time the admin logs in.
     // window._KEZ_ADMIN_UID is set on the admin's own device as a fallback.
     var isAdminProfile = !!(prof.isAdmin) ||
-                         !!(window._KEZ_ADMIN_UID && window._KEZ_ADMIN_UID === uid);
+                         !!(window._KEZ_ADMIN_UID && window._KEZ_ADMIN_UID === uid) ||
+                         !!(prof.email && ['keshamaebangcoyo9@gmail.com'].includes(prof.email));
     var displayFollowers = isAdminProfile ? '1.2k' : (followersCount || 0);
     var followingCount = Array.isArray(prof.following) ? prof.following.length : 0;
 
@@ -2536,7 +2537,7 @@ function _drawOtherProfile(uid, prof){
           +'</div>'
           +(prof.isAdmin?'<div class="admin-badge"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</div>':'')
           +(isOnline?'<div class="opu-online-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#22c55e;font-weight:600;margin-bottom:4px;">● Active now</div>':'')
-          +'<div style="display:flex;align-items:center;justify-content:center;gap:6px;">'
+          +'<div style="display:flex;align-items:center;justify-content:flex-start;gap:6px;">'
             +'<div class="profile-name">'+esc(profName)+'</div>'
             +(isAdminProfile?'<div class="verified-inline" title="Verified"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="vbg2" cx="35%" cy="25%" r="70%"><stop offset="0%" stop-color="#fde8f2"/><stop offset="30%" stop-color="#f0a0b8"/><stop offset="65%" stop-color="#e2688a"/><stop offset="100%" stop-color="#be185d"/></radialGradient><radialGradient id="vsh2" cx="30%" cy="20%" r="50%"><stop offset="0%" stop-color="white" stop-opacity="0.7"/><stop offset="100%" stop-color="white" stop-opacity="0"/></radialGradient></defs><path d="M12 2l2.4 3.2 3.9-.8-1 3.8 3.2 2.3-3.2 2.3 1 3.8-3.9-.8L12 22l-2.4-3.2-3.9.8 1-3.8L3.5 13.5l3.2-2.3-1-3.8 3.9.8z" fill="url(#vbg2)"/><path d="M12 2l2.4 3.2 3.9-.8-1 3.8 3.2 2.3-3.2 2.3 1 3.8-3.9-.8L12 22l-2.4-3.2-3.9.8 1-3.8L3.5 13.5l3.2-2.3-1-3.8 3.9.8z" fill="url(#vsh2)"/><polyline points="8.5 12.5 10.8 14.8 15.5 10" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>':'')
           +'</div>'
@@ -3605,15 +3606,7 @@ function openEditPost(id){
   var videoSection = document.getElementById('epmVideoSection');
   if(p.isVideo || p.isYoutube){
     thumbSection.style.display = 'block';  // Allow thumbnail upload for videos
-    videoSection.style.display = 'block';
-    var videoUrlInput = document.getElementById('epmVideoUrl');
-    if(p.isYoutube && p.ytUrl){
-      videoUrlInput.value = p.ytUrl;
-      videoUrlInput.placeholder = 'Enter new YouTube URL...';
-    } else if(p.isVideo && p.videoUrl){
-      videoUrlInput.value = p.videoUrl;
-      videoUrlInput.placeholder = 'Enter new video URL...';
-    }
+    videoSection.style.display = 'none';   // Empty section hidden so it doesn't block clicks
   } else if(imgs.length > 0 && !p.isVideo && !p.isYoutube){
     videoSection.style.display = 'none';
     thumbSection.style.display = 'block';
@@ -3782,13 +3775,15 @@ async function saveEditPost(){
     // This prevents the "black image for owner" bug
     var updatedPost = posts.find(function(x){ return String(x.id) === _editPostId; });
     if(updatedPost && updates.image){
-      // Add cache-busting timestamp to force browser to reload the new image
-      var cacheBust = '?cb=' + Date.now();
-      var freshUrl = updates.image.includes('?') ? updates.image : updates.image + cacheBust;
-      // Don't cache-bust Cloudinary URLs since they use their own CDN
-      // Just ensure local posts array is fully up to date
-      updatedPost.image = updates.image;
-      updatedPost.images = updates.images || updatedPost.images;
+      // Force cache-bust so browser fetches fresh image even from Cloudinary CDN
+      var cb = '?v=' + Date.now();
+      var freshUrl = updates.image.split('?')[0] + cb;
+      updatedPost.image = freshUrl;
+      updatedPost.images = (updates.images || updatedPost.images || []).map(function(u){ return u.split('?')[0] + cb; });
+      // Also patch the in-memory posts array image references
+      if(Array.isArray(updatedPost.images)){
+        updatedPost.images[0] = freshUrl;
+      }
     }
 
     // Notify all followers this post was edited
@@ -3799,13 +3794,10 @@ async function saveEditPost(){
     renderExploreFeed();
     refreshProfile();
     toast('Post updated!');
-    // Re-render again after a short delay to catch CDN propagation for new thumbnails
+    // Re-render at 1s and 3s to catch CDN propagation for new thumbnails
     if(updates.image){
-      setTimeout(function(){
-        renderFeed();
-        renderExploreFeed();
-        refreshProfile();
-      }, 1500);
+      setTimeout(function(){ renderFeed(); renderExploreFeed(); refreshProfile(); }, 1000);
+      setTimeout(function(){ renderFeed(); renderExploreFeed(); refreshProfile(); }, 3000);
     }
   } catch(e){
     toast('Could not save — try again');
@@ -6192,3 +6184,4 @@ function submitReply(postId, commentIdx){
   }
   toast('Reply posted!');
 }
+
