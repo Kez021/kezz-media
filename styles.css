@@ -1832,3 +1832,138 @@ textarea.form-input{resize:none;min-height:80px;}
     max-height: calc(100dvh - 150px) !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════
+   KEZZ MEDIA — NEW FEATURE STYLES
+   ══════════════════════════════════════════════════════════ */
+
+/* ── COMMENT PHOTO BUTTON ─────────────────────────────── */
+.c-photo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  cursor: pointer;
+  color: var(--text3);
+  border-radius: 8px;
+  transition: color .15s, background .15s;
+}
+.c-photo-btn:hover { color: var(--pink); background: var(--pink-pale); }
+.c-photo-preview {
+  display: flex;
+  align-items: center;
+  padding: 4px 14px 8px;
+  min-height: 0;
+  animation: fadeUp .2s ease;
+}
+
+/* ── GROUP CHAT CONVERSATION ITEM ─────────────────────── */
+.gc-conv-av {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── GROUP CHAT HEADER AVATARS ────────────────────────── */
+.gc-header-avatars {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+  padding-left: 6px;
+}
+
+/* ── ADMIN EDIT BUTTON ────────────────────────────────── */
+.admin-edit-btn {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  margin-right: 4px;
+}
+.admin-edit-btn:hover { background: var(--pink-pale); border-color: var(--pink); }
+
+/* ── MENTION STYLING (enforce clickable) ──────────────── */
+.mention {
+  color: var(--blue, #3b82f6);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0 2px;
+  transition: background .12s;
+}
+.mention:hover {
+  text-decoration: underline;
+  background: rgba(59,130,246,.09);
+}
+
+/* ── C-USER (commenter handle) always clickable look ──── */
+.c-user {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+  transition: color .12s;
+}
+.c-user:hover { color: var(--pink); }
+
+/* ── GROUP CHAT MESSAGES: sender labels ───────────────── */
+.chat-msg.theirs .gc-sender-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+.chat-msg.theirs .gc-sender-name:hover { color: var(--pink); }
+
+/* ── COMMENT IMAGE expand on hover ───────────────────── */
+.comment img[alt="comment photo"] {
+  transition: transform .2s;
+}
+.comment img[alt="comment photo"]:hover {
+  transform: scale(1.03);
+}
+
+/* ── NEW-GC Button polish ─────────────────────────────── */
+.new-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 28px);
+  margin: 8px 14px;
+  padding: 9px 14px;
+  background: var(--pink-pale);
+  border: 1.5px solid var(--pink);
+  border-radius: 12px;
+  color: var(--pink);
+  font-family: 'Jost', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.new-group-btn:hover { background: rgba(226,104,138,.18); }
+
+/* ── Dark mode tweaks ─────────────────────────────────── */
+[data-theme="dark"] .admin-edit-btn { border-color: rgba(226,104,138,.25); }
+[data-theme="dark"] .admin-edit-btn:hover { background: rgba(226,104,138,.12); border-color: var(--pink); }
+[data-theme="dark"] .c-photo-btn:hover { background: rgba(226,104,138,.12); }
+
+/* ── VIDEO upload progress toast ─────────────────────── */
+.video-uploading-bar {
+  height: 3px;
+  background: var(--pink);
+  border-radius: 99px;
+  animation: videoUploadPulse 1.2s ease-in-out infinite;
+  margin-top: 6px;
+}
+@keyframes videoUploadPulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: .4; }
+}
