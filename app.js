@@ -957,8 +957,13 @@ function buildCard(p,i){
       +'<div class="c-input-row">'
         +'<div class="c-avatar" style="background:'+me.color+';color:white;">'+me.initial+'</div>'
         +'<input class="c-input" id="ci-'+pid+'" placeholder="Add a comment...">'
+        +'<label class="c-photo-btn" title="Add photo to comment">'
+          +'<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+          +'<input type="file" accept="image/*" style="display:none;" onchange="attachCommentPhoto(\''+pid+'\',this)">'
+        +'</label>'
         +'<button class="chat-send" data-comment="'+pid+'"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
       +'</div>'
+      +'<div class="c-photo-preview" id="cprev-'+pid+'" style="display:none;"></div>'
     +'</div>';
 
   // Wire uname click in caption to open profile
@@ -1085,6 +1090,7 @@ function commentHTML(c, postId, commentIdx){
       +'<div class="c-bubble">'
         +'<div class="c-user"'+(uid?' onclick="viewProfile(_g('+iU+'))" style="cursor:pointer;"':'')+'>@'+esc(handle)+'</div>'
         +'<div class="c-text">'+linkifyCaption(c.text||'')+'</div>'
+        +(c.imageUrl?'<div style="margin-top:6px;"><img src="'+esc(c.imageUrl)+'" style="max-width:200px;max-height:200px;border-radius:10px;object-fit:cover;cursor:pointer;display:block;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}" alt="comment photo"></div>':'')
         +(c.edited?'<div style="font-size:10px;color:var(--text3);margin-top:2px;">Edited</div>':'')
       +'</div>'
       // Reaction picker bar (toggled via button)
@@ -1210,7 +1216,9 @@ function toggleComments(id){
 function addComment(id){
   id=String(id);
   const inp=document.getElementById('ci-'+id);
-  const txt=inp.value.trim();if(!txt)return;
+  const txt=inp.value.trim();
+  const pendingPhoto=_pendingCommentPhotos[id]||null;
+  if(!txt && !pendingPhoto)return;
   const p=posts.find(x=>String(x.id)===id);if(!p)return;
 
   // Check if this is a reply to a specific comment
@@ -1218,35 +1226,75 @@ function addComment(id){
   delete inp.dataset.replyTo;
   inp.value='';
 
-  if(replyToIdx>=0 && p.comments[replyToIdx]){
-    // Threaded reply — add under parent comment
-    var parent=p.comments[replyToIdx];
-    if(!parent.replies)parent.replies=[];
-    parent.replies.push({user:{uid:me.uid,name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt,ts:Date.now()});
-    updatePostField(id,{comments:p.comments,showComments:true});
-    // Re-render that comment in place
-    var el=document.getElementById('comment-'+id+'-'+replyToIdx);
-    if(el){var tmp=document.createElement('div');tmp.innerHTML=commentHTML(parent,id,replyToIdx);el.replaceWith(tmp.firstChild);}
-    // Notify original commenter
-    if(parent.user&&parent.user.uid&&parent.user.uid!==me.uid){
-      sendNotification(parent.user.uid,'comment',me,'Replied: '+txt.slice(0,40));
+  async function doAddComment(imageUrl){
+    if(replyToIdx>=0 && p.comments[replyToIdx]){
+      var parent=p.comments[replyToIdx];
+      if(!parent.replies)parent.replies=[];
+      parent.replies.push({user:{uid:me.uid,name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt,imageUrl:imageUrl||null,ts:Date.now()});
+      updatePostField(id,{comments:p.comments,showComments:true});
+      var el=document.getElementById('comment-'+id+'-'+replyToIdx);
+      if(el){var tmp=document.createElement('div');tmp.innerHTML=commentHTML(parent,id,replyToIdx);el.replaceWith(tmp.firstChild);}
+      if(parent.user&&parent.user.uid&&parent.user.uid!==me.uid){
+        sendNotification(parent.user.uid,'comment',me,'Replied: '+txt.slice(0,40));
+      }
+      sendMentionNotifications(txt,id);
+    } else {
+      const c={user:{uid:me.uid,name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt,imageUrl:imageUrl||null,likes:0,likedBy:[],reactions:{},replies:[],ts:Date.now()};
+      p.comments.push(c);p.showComments=true;
+      const cl=document.getElementById('cl-'+id);
+      if(cl){
+        const d=document.createElement('div');
+        d.innerHTML=commentHTML(c,id,p.comments.length-1);
+        cl.appendChild(d.firstChild);
+      }
+      document.querySelectorAll('#pc-'+id).forEach(card=>{const cc=card.querySelectorAll('.act')[1];if(cc)cc.querySelector('.cc').textContent=p.comments.length;});
+      updatePostField(id,{comments:p.comments,showComments:true});
+      if(p.uid&&p.uid!==me.uid) sendNotification(p.uid,'comment',me,txt.slice(0,60),id);
+      sendMentionNotifications(txt,id);
     }
-    sendMentionNotifications(txt,id);
-  } else {
-    // Top-level comment
-    const c={user:{uid:me.uid,name:me.name,handle:me.handle,color:me.color,initial:me.initial,avatar:me.avatar||null},text:txt,likes:0,likedBy:[],reactions:{},replies:[],ts:Date.now()};
-    p.comments.push(c);p.showComments=true;
-    const cl=document.getElementById('cl-'+id);
-    if(cl){
-      const d=document.createElement('div');
-      d.innerHTML=commentHTML(c,id,p.comments.length-1);
-      cl.appendChild(d.firstChild);
-    }
-    document.querySelectorAll('#pc-'+id).forEach(card=>{const cc=card.querySelectorAll('.act')[1];if(cc)cc.querySelector('.cc').textContent=p.comments.length;});
-    updatePostField(id,{comments:p.comments,showComments:true});
-    if(p.uid&&p.uid!==me.uid) sendNotification(p.uid,'comment',me,txt.slice(0,60),id);
-    sendMentionNotifications(txt,id);
+    // Clear photo preview
+    clearCommentPhoto(id);
   }
+
+  // Upload photo if pending, then add comment
+  if(pendingPhoto && pendingPhoto.dataUrl){
+    toast('Uploading photo... ⏳');
+    uploadToStorage(pendingPhoto.dataUrl, 'comment_photos/'+me.uid+'/'+Date.now())
+      .then(function(url){ doAddComment(url); })
+      .catch(function(){ doAddComment(null); });
+  } else {
+    doAddComment(null);
+  }
+}
+
+// ── COMMENT PHOTO ATTACHMENT ─────────────────────────
+var _pendingCommentPhotos = {}; // postId → { dataUrl, previewEl }
+
+function attachCommentPhoto(pid, input){
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var dataUrl = e.target.result;
+    _pendingCommentPhotos[pid] = { dataUrl: dataUrl };
+    // Show preview
+    var prev = document.getElementById('cprev-'+pid);
+    if(prev){
+      prev.style.display='flex';
+      prev.innerHTML=
+        '<div style="position:relative;display:inline-block;margin:6px 0 4px 48px;">'
+          +'<img src="'+dataUrl+'" style="max-height:80px;max-width:180px;border-radius:10px;object-fit:cover;display:block;">'
+          +'<button onclick="clearCommentPhoto(\''+pid+'\')" style="position:absolute;top:-6px;right:-6px;background:#e05577;border:none;border-radius:50%;width:18px;height:18px;color:white;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>'
+        +'</div>';
+    }
+    input.value=''; // reset file input
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearCommentPhoto(pid){
+  delete _pendingCommentPhotos[pid];
+  var prev=document.getElementById('cprev-'+pid);
+  if(prev){ prev.style.display='none'; prev.innerHTML=''; }
 }
 
 // Send notifications to all @mentioned users
@@ -3065,35 +3113,56 @@ async function sendDM(convoId){
 
 // Load DM conversations list from Firestore
 let dmConvoUnsubscribe = null;
-function loadDMConvos(){
-  if(dmConvoUnsubscribe){ dmConvoUnsubscribe(); dmConvoUnsubscribe=null; }
-  function renderConvos(snap){
-    const list=document.getElementById('convoList'); if(!list)return;
-    list.innerHTML='';
-    if(!snap.docs || !snap.docs.length){
-      list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No conversations yet.<br>Find someone to message! 💬</div>';
-      return;
-    }
-    snap.docs.forEach(function(d){
-      const c=d.data();
-      if(!c.participants || !Array.isArray(c.participants)) return;
-      const otherUid=c.participants.find(function(u){return u!==me.uid;});
-      if(!otherUid) return;
-      // Use OTHER person's display info (what THEY see of you vs what you see of them)
-      // name_X means "the name of the OTHER person as seen by user X"
-      const name=c['name_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].name||'User';
-      const color=c['color_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].color||'var(--pink)';
-      const initial=c['initial_'+me.uid]||(name?name.charAt(0):'U');
-      const avatar=c['avatar_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].avatar||null;
-      const lastMsg=c.lastMsg||'Say hello! 👋';
-      const lastTs = c.lastTs ? (c.lastTs.toMillis ? c.lastTs.toMillis() : c.lastTs.seconds ? c.lastTs.seconds*1000 : 0) : 0;
-      const lastTime = lastTs ? timeAgo(lastTs) : '';
-      const iU=_r(otherUid); const iN=_r(name);
-      const div=document.createElement('div');
+let gcConvoUnsubscribe = null;
+let activeGroupId = null; // track open group chat
+
+// Render combined DM + Group Chat conversations list
+function renderAllConvos(dmDocs, gcDocs){
+  const list=document.getElementById('convoList'); if(!list)return;
+  // Build combined items with a lastTs for sorting
+  var items=[];
+
+  // DM items
+  (dmDocs||[]).forEach(function(d){
+    var c=d.data();
+    if(!c.participants||!Array.isArray(c.participants)) return;
+    var otherUid=c.participants.find(function(u){return u!==me.uid;});
+    if(!otherUid) return;
+    var ts=c.lastTs?(c.lastTs.toMillis?c.lastTs.toMillis():c.lastTs.seconds?c.lastTs.seconds*1000:0):0;
+    items.push({type:'dm', id:d.id, data:c, otherUid:otherUid, ts:ts});
+  });
+
+  // Group chat items
+  (gcDocs||[]).forEach(function(d){
+    var c=d.data();
+    if(!c.members||!Array.isArray(c.members)) return;
+    var ts=c.lastTs?(c.lastTs.toMillis?c.lastTs.toMillis():c.lastTs.seconds?c.lastTs.seconds*1000:0):0;
+    items.push({type:'group', id:d.id, data:c, ts:ts});
+  });
+
+  // Sort newest first
+  items.sort(function(a,b){return b.ts-a.ts;});
+
+  if(!items.length){
+    list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No conversations yet.<br>Find someone to message! 💬</div>';
+    return;
+  }
+  list.innerHTML='';
+  items.forEach(function(item){
+    var div=document.createElement('div');
+    if(item.type==='dm'){
+      var c=item.data; var otherUid=item.otherUid;
+      var name=c['name_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].name||'User';
+      var color=c['color_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].color||'var(--pink)';
+      var initial=c['initial_'+me.uid]||(name?name.charAt(0):'U');
+      var avatar=c['avatar_'+me.uid]||allUsers[otherUid]&&allUsers[otherUid].avatar||null;
+      var lastMsg=c.lastMsg||'Say hello! 👋';
+      var lastTime=item.ts?timeAgo(item.ts):'';
+      var iU=_r(otherUid); var iN=_r(name);
       div.className='msg-conv'+(activeDMUid===otherUid?' active':'');
       div.innerHTML=
         '<div class="msg-conv-av-wrap"><div class="msg-conv-av" style="background:'+color+';color:white;">'
-          +(avatar?'<img src="'+avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(initial))
+          +(avatar?'<img src="'+esc(avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(initial))
         +'</div></div>'
         +'<div class="msg-conv-info" style="flex:1;min-width:0;">'
           +'<div style="display:flex;justify-content:space-between;align-items:center;">'
@@ -3103,41 +3172,278 @@ function loadDMConvos(){
           +'<div style="display:flex;justify-content:space-between;align-items:center;">'
             +'<div class="msg-conv-last" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(lastMsg.slice(0,40))+'</div>'
             +(function(){
-              var pres = onlineFriends[otherUid];
-              if(pres && pres.online)
-                return '<div style="font-size:10px;color:#22c55e;flex-shrink:0;white-space:nowrap;margin-left:6px;">● active now</div>';
-              if(pres && pres.lastSeen){
-                var lsMs = pres.lastSeen.toMillis ? pres.lastSeen.toMillis() : (pres.lastSeen.seconds ? pres.lastSeen.seconds*1000 : 0);
-                if(lsMs) return '<div style="font-size:10px;color:var(--text3);flex-shrink:0;white-space:nowrap;margin-left:6px;">'+timeAgo(lsMs)+'</div>';
-              }
+              var pres=onlineFriends[otherUid];
+              if(pres&&pres.online) return '<div style="font-size:10px;color:#22c55e;flex-shrink:0;white-space:nowrap;margin-left:6px;">● active now</div>';
+              if(pres&&pres.lastSeen){var lsMs=pres.lastSeen.toMillis?pres.lastSeen.toMillis():(pres.lastSeen.seconds?pres.lastSeen.seconds*1000:0);if(lsMs)return '<div style="font-size:10px;color:var(--text3);flex-shrink:0;white-space:nowrap;margin-left:6px;">'+timeAgo(lsMs)+'</div>';}
               return '';
             })()
           +'</div>'
         +'</div>';
-      div.addEventListener('click', function(){
-        openDMWith(_g(iU), _g(iN));
-        // Mobile: open chat panel
-        const ca=document.getElementById('chatArea');
-        if(ca && window.innerWidth<=700){ ca.classList.add('open'); }
+      div.addEventListener('click',function(){
+        activeGroupId=null;
+        openDMWith(_g(iU),_g(iN));
+        var ca=document.getElementById('chatArea');
+        if(ca&&window.innerWidth<=700) ca.classList.add('open');
       });
-      list.appendChild(div);
-    });
-  }
+    } else {
+      // Group chat item
+      var gc=item.data;
+      var gcId=item.id;
+      var gcName=gc.name||'Group Chat';
+      var memberCount=(gc.members||[]).length;
+      var lastMsg=gc.lastMsg||'Group created 🎉';
+      var lastTime=item.ts?timeAgo(item.ts):'';
+      var iGC=_r(gcId);
+      div.className='msg-conv'+(activeGroupId===gcId?' active':'');
+      div.innerHTML=
+        '<div class="msg-conv-av-wrap"><div class="msg-conv-av gc-conv-av" style="background:linear-gradient(135deg,var(--pink),var(--pink-soft));color:white;font-size:16px;">👥</div></div>'
+        +'<div class="msg-conv-info" style="flex:1;min-width:0;">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+            +'<div class="msg-conv-name">'+esc(gcName)+'</div>'
+            +(lastTime?'<div style="font-size:10.5px;color:var(--text3);flex-shrink:0;margin-left:6px;">'+lastTime+'</div>':'')
+          +'</div>'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+            +'<div class="msg-conv-last" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(lastMsg.slice(0,40))+'</div>'
+            +'<div style="font-size:10px;color:var(--text3);flex-shrink:0;margin-left:6px;">'+memberCount+' members</div>'
+          +'</div>'
+        +'</div>';
+      div.addEventListener('click',function(){
+        activeDMUid=null;
+        openGroupConvo(_g(iGC),gc);
+        var ca=document.getElementById('chatArea');
+        if(ca&&window.innerWidth<=700) ca.classList.add('open');
+      });
+    }
+    list.appendChild(div);
+  });
+}
 
-  // No orderBy - avoids Firestore composite index requirement
-  // Sort client-side instead
+function loadDMConvos(){
+  if(dmConvoUnsubscribe){ dmConvoUnsubscribe(); dmConvoUnsubscribe=null; }
+  if(gcConvoUnsubscribe){ gcConvoUnsubscribe(); gcConvoUnsubscribe=null; }
+  var dmDocs=[], gcDocs=[];
+
   dmConvoUnsubscribe = db.collection('dms')
     .where('participants','array-contains',me.uid)
     .onSnapshot(function(snap){
-      // sort newest first
-      var sorted = {docs: snap.docs.slice().sort(function(a,b){
-        var ad=a.data(), bd=b.data();
-        var ta=ad.lastTs?(ad.lastTs.toMillis?ad.lastTs.toMillis():ad.lastTs.seconds?ad.lastTs.seconds*1000:0):0;
-        var tb=bd.lastTs?(bd.lastTs.toMillis?bd.lastTs.toMillis():bd.lastTs.seconds?bd.lastTs.seconds*1000:0):0;
-        return tb-ta;
-      })};
-      renderConvos(sorted);
+      dmDocs=snap.docs||[];
+      renderAllConvos(dmDocs, gcDocs);
     }, function(err){ console.warn('DM listener error:', err.message); });
+
+  gcConvoUnsubscribe = db.collection('groups')
+    .where('members','array-contains',me.uid)
+    .onSnapshot(function(snap){
+      gcDocs=snap.docs||[];
+      renderAllConvos(dmDocs, gcDocs);
+    }, function(err){ console.warn('Group listener error:', err.message); });
+}
+
+// Open a group chat conversation
+async function openGroupConvo(gcId, gcData){
+  activeGroupId=gcId;
+  activeDMUid=null;
+  if(dmUnsubscribe){ dmUnsubscribe(); dmUnsubscribe=null; }
+
+  // Fetch latest gc data if not provided
+  if(!gcData||!gcData.name){
+    try{
+      var d=await db.collection('groups').doc(gcId).get();
+      if(d.exists) gcData=d.data();
+    }catch(e){}
+  }
+  var gcName=gcData&&gcData.name||'Group Chat';
+  var members=(gcData&&gcData.members)||[];
+  var memberCount=members.length;
+  var iGC=_r(gcId);
+
+  // Build member display for header
+  var memberAvatars=members.slice(0,3).map(function(uid){
+    var u=allUsers[uid]||{};
+    return '<div style="width:22px;height:22px;border-radius:50%;background:'+(u.color||'var(--pink)')+';color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-right:-6px;border:2px solid var(--card);">'
+      +(u.avatar?'<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':esc(u.initial||(u.name?u.name.charAt(0):'?')))
+    +'</div>';
+  }).join('');
+
+  const chatArea=document.getElementById('chatArea');
+  chatArea.innerHTML=
+    '<div class="chat-header">'
+      +'<button class="msg-back-btn" onclick="closeChatMobile()" title="Back">'
+        +'<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>'
+      +'</button>'
+      +'<div class="gc-header-avatars">'+memberAvatars+'</div>'
+      +'<div style="flex:1;">'
+        +'<div style="font-size:14px;font-weight:700;">'+esc(gcName)+'</div>'
+        +'<div style="font-size:11px;color:var(--text3);">'+memberCount+' members · tap to see all</div>'
+      +'</div>'
+      +'<button onclick="showGCMembers(_g('+iGC+'))" style="background:none;border:none;cursor:pointer;padding:6px;color:var(--text3);" title="Group info">'
+        +'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+      +'</button>'
+    +'</div>'
+    +'<div class="chat-msgs" id="chatMsgs"></div>'
+    +'<div class="chat-input-row">'
+      +'<input class="chat-input" id="gcInput" placeholder="Message the group..." onkeydown="if(event.key===\'Enter\')sendGroupMsg(_g('+iGC+'))">'
+      +'<label style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;" title="Send photo">'
+        +'<svg width="18" height="18" fill="none" stroke="var(--pink)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+        +'<input type="file" accept="image/*,video/*" style="display:none;" onchange="sendGroupMedia(_g('+iGC+'),this.files[0])">'
+      +'</label>'
+      +'<button class="chat-send" onclick="sendGroupMsg(_g('+iGC+'))"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
+    +'</div>';
+
+  // Mark conversation active in sidebar
+  document.querySelectorAll('.msg-conv').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.msg-conv').forEach(function(el){
+    if(el.querySelector('.gc-conv-av') && el.getAttribute('data-gcid')===gcId) el.classList.add('active');
+  });
+
+  // Real-time group messages listener
+  dmUnsubscribe = db.collection('groups').doc(gcId).collection('messages')
+    .onSnapshot(async function(snap){
+      var msgs=document.getElementById('chatMsgs'); if(!msgs)return;
+      var sorted=snap.docs.slice().sort(function(a,b){
+        var ta=a.data().ts?(a.data().ts.toMillis?a.data().ts.toMillis():a.data().ts.seconds?a.data().ts.seconds*1000:0):0;
+        var tb=b.data().ts?(b.data().ts.toMillis?b.data().ts.toMillis():b.data().ts.seconds?b.data().ts.seconds*1000:0):0;
+        return ta-tb;
+      });
+      msgs.innerHTML='';
+      var lastDateLabel='';
+      sorted.forEach(function(d){
+        var m=d.data();
+        if(!m.text&&!m.mediaUrl) return;
+        var mine=m.from===me.uid;
+        var tsMs=m.ts?(m.ts.toMillis?m.ts.toMillis():m.ts.seconds?m.ts.seconds*1000:0):0;
+        var timeStr=''; var dateLabel='';
+        if(tsMs){
+          var dt=new Date(tsMs);
+          timeStr=dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+          var now=new Date();
+          var msgDay=dt.toDateString(),today=now.toDateString(),yesterday=new Date(now-86400000).toDateString();
+          if(msgDay===today) dateLabel='Today';
+          else if(msgDay===yesterday) dateLabel='Yesterday';
+          else dateLabel=dt.toLocaleDateString([],{month:'short',day:'numeric'});
+        }
+        if(dateLabel&&dateLabel!==lastDateLabel){
+          lastDateLabel=dateLabel;
+          var sep=document.createElement('div');
+          sep.style.cssText='text-align:center;font-size:11px;color:var(--text3);margin:8px 0 4px;';
+          sep.textContent=dateLabel; msgs.appendChild(sep);
+        }
+        var senderProf=allUsers[m.from]||{};
+        var senderName=senderProf.name||m.fromName||'User';
+        var senderHandle=senderProf.handle||m.fromHandle||'user';
+        var senderColor=senderProf.color||'var(--pink)';
+        var senderInitial=senderProf.initial||(senderName?senderName.charAt(0):'?');
+        var senderAvatar=senderProf.avatar||null;
+        var div=document.createElement('div');
+        div.className='chat-msg '+(mine?'mine':'theirs');
+        var avHTML=senderAvatar?'<img src="'+esc(senderAvatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':esc(senderInitial);
+        var mediaHTML=m.mediaUrl?('<div style="margin-bottom:4px;"><img src="'+esc(m.mediaUrl)+'" style="max-width:220px;border-radius:10px;display:block;" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'220px\':\'100%\'"></div>'):'';
+        if(!mine){
+          div.innerHTML=
+            '<div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:2px;">'
+              +'<div style="width:28px;height:28px;border-radius:50%;background:'+senderColor+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;" title="'+esc(senderName)+'">'+avHTML+'</div>'
+              +'<div>'
+                +'<div style="font-size:10px;font-weight:600;color:var(--text3);margin-bottom:2px;cursor:pointer;" onclick="viewProfileByHandle(\''+esc(senderHandle)+'\')">@'+esc(senderHandle)+'</div>'
+                +'<div class="chat-bubble">'+mediaHTML+(m.text?esc(m.text):'')+'</div>'
+                +(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;">'+timeStr+'</div>':'')
+              +'</div>'
+            +'</div>';
+        } else {
+          div.innerHTML=
+            '<div class="chat-bubble">'+mediaHTML+(m.text?esc(m.text):'')+'</div>'
+            +(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;text-align:right;">'+timeStr+'</div>':'');
+        }
+        msgs.appendChild(div);
+      });
+      msgs.scrollTop=msgs.scrollHeight;
+    }, function(err){ console.warn('Group msg listener:', err.message); });
+
+  // Update group lastTs to show activity
+  db.collection('groups').doc(gcId).update({['lastSeen_'+me.uid]:firebase.firestore.FieldValue.serverTimestamp()}).catch(function(){});
+}
+
+async function sendGroupMsg(gcId){
+  var inp=document.getElementById('gcInput');
+  if(!inp) return;
+  var txt=inp.value.trim(); if(!txt) return;
+  inp.value='';
+  try{
+    await db.collection('groups').doc(gcId).collection('messages').add({
+      from:me.uid, fromName:me.name, fromHandle:me.handle,
+      text:txt, ts:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('groups').doc(gcId).update({
+      lastMsg:txt, lastTs:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // notify other members
+    var gcDoc=await db.collection('groups').doc(gcId).get();
+    if(gcDoc.exists){
+      var members=gcDoc.data().members||[];
+      members.forEach(function(uid){
+        if(uid!==me.uid) sendNotification(uid,'message',me,me.name+': '+txt.slice(0,50));
+      });
+    }
+  }catch(e){ toast('Could not send message.'); }
+}
+
+async function sendGroupMedia(gcId, file){
+  if(!file) return;
+  toast('Uploading... ⏳');
+  try{
+    var url;
+    if(file.type.startsWith('video/')) url=await uploadFileToStorage(file,'gc_media/'+gcId+'/'+Date.now());
+    else{
+      var reader=new FileReader();
+      url=await new Promise(function(res,rej){reader.onload=function(e){uploadToStorage(e.target.result,'gc_media/'+gcId+'/'+Date.now()).then(res).catch(rej);};reader.readAsDataURL(file);});
+    }
+    if(!url){toast('Upload failed');return;}
+    await db.collection('groups').doc(gcId).collection('messages').add({
+      from:me.uid, fromName:me.name, fromHandle:me.handle,
+      mediaUrl:url, text:'', ts:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('groups').doc(gcId).update({
+      lastMsg:'📷 Photo', lastTs:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast('Photo sent! 📷');
+  }catch(e){ toast('Could not send media.'); }
+}
+
+function showGCMembers(gcId){
+  db.collection('groups').doc(gcId).get().then(function(d){
+    if(!d.exists){toast('Group not found');return;}
+    var gc=d.data();
+    var members=gc.members||[];
+    var html='<div style="padding:16px;">'
+      +'<div style="font-size:15px;font-weight:700;margin-bottom:12px;">👥 '+esc(gc.name||'Group Chat')+'</div>'
+      +'<div style="font-size:12px;color:var(--text3);margin-bottom:10px;">'+members.length+' members</div>';
+    members.forEach(function(uid){
+      var u=allUsers[uid]||{};
+      var name=u.name||uid;
+      var handle=u.handle||uid;
+      var color=u.color||'var(--pink)';
+      var initial=u.initial||(name?name.charAt(0):'?');
+      var avatar=u.avatar||null;
+      var isCreator=uid===(gc.createdBy||'');
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="viewProfileByHandle(\''+esc(handle)+'\')">'
+        +'<div style="width:36px;height:36px;border-radius:50%;background:'+color+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;overflow:hidden;">'
+          +(avatar?'<img src="'+esc(avatar)+'" style="width:100%;height:100%;object-fit:cover;">':esc(initial))
+        +'</div>'
+        +'<div style="flex:1;">'
+          +'<div style="font-size:13px;font-weight:600;">'+esc(name)+(uid===me.uid?' <span style="color:var(--pink);font-size:10px;">(You)</span>':'')+'</div>'
+          +'<div style="font-size:11px;color:var(--text3);">@'+esc(handle)+(isCreator?' · <span style="color:var(--pink);">Creator</span>':'')+'</div>'
+        +'</div>'
+      +'</div>';
+    });
+    html+='</div>';
+    // Show in a simple overlay
+    var overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+    overlay.innerHTML='<div style="background:var(--card);border-radius:18px;max-width:360px;width:100%;max-height:80vh;overflow-y:auto;position:relative;">'
+      +'<button onclick="this.closest(\'div[style]\').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);">×</button>'
+      +html
+    +'</div>';
+    overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+    document.body.appendChild(overlay);
+  }).catch(function(){toast('Could not load group info.');});
 }
 
 function renderDMConvoList(activeUid){
@@ -4120,7 +4426,11 @@ async function loadAdminUsers(){
         + '<div style="font-weight:600;font-size:13px;">'+esc(u.name||'Unknown')+'</div>'
         + '<div style="font-size:12px;color:var(--text3);">@'+esc(u.handle||uid)+(isBanned?' · <span style="color:#e05577">Banned</span>':'')+'</div>'
       + '</div>'
+      + '<button class="admin-edit-btn" title="Edit user">✏️</button>'
       + '<button class="'+(isBanned?'unban-btn':'ban-btn')+'" onclick="toggleBanUser(\''+uid+'\','+isBanned+')">'+(isBanned?'Unban':'Ban')+'</button>';
+    row.querySelector('.admin-edit-btn').addEventListener('click', function(){
+      openAdminEditUser(uid, u);
+    });
     list.appendChild(row);
   });
 }
@@ -4131,6 +4441,106 @@ async function toggleBanUser(uid, currentlyBanned){
   await db.collection('profiles').doc(uid).update({banned: newVal}).catch(function(e){ toast('Error: '+e.message); return; });
   toast(newVal ? 'User banned 🚫' : 'User unbanned ✅');
   loadAdminUsers();
+}
+
+// ── ADMIN: EDIT USER ACCOUNT ──────────────────────────────
+function openAdminEditUser(uid, userData){
+  if(!isAdmin()) return;
+  // Remove existing modal if any
+  var existing = document.getElementById('adminEditUserModal');
+  if(existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'adminEditUserModal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:16px;';
+  var avBg = userData.color || 'var(--pink)';
+  var avHTML = userData.avatar
+    ? '<img src="'+esc(userData.avatar)+'" style="width:64px;height:64px;object-fit:cover;border-radius:50%;">'
+    : '<div style="width:64px;height:64px;border-radius:50%;background:'+avBg+';display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:white;">'+esc(userData.initial||'?')+'</div>';
+
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:22px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;max-height:90vh;overflow-y:auto;">'
+      +'<button onclick="document.getElementById(\'adminEditUserModal\').remove()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);">×</button>'
+      +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;">✏️ Edit User Account</div>'
+      // Avatar preview
+      +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">'
+        +avHTML
+        +'<div>'
+          +'<div style="font-size:14px;font-weight:600;color:var(--text);">'+esc(userData.name||'Unknown')+'</div>'
+          +'<div style="font-size:12px;color:var(--text3);">@'+esc(userData.handle||uid)+'</div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:2px;">UID: '+esc(uid.slice(0,16))+'…</div>'
+        +'</div>'
+      +'</div>'
+      // Form fields
+      +'<div style="display:flex;flex-direction:column;gap:12px;">'
+        +'<div>'
+          +'<label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;">Display Name</label>'
+          +'<input id="aeu-name" type="text" value="'+esc(userData.name||'')+'" style="width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-family:Jost,sans-serif;font-size:13.5px;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor=\'var(--pink)\'" onblur="this.style.borderColor=\'var(--border)\'">'
+        +'</div>'
+        +'<div>'
+          +'<label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;">Username (handle)</label>'
+          +'<input id="aeu-handle" type="text" value="'+esc(userData.handle||'')+'" style="width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-family:Jost,sans-serif;font-size:13.5px;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor=\'var(--pink)\'" onblur="this.style.borderColor=\'var(--border)\'" placeholder="no @ needed">'
+        +'</div>'
+        +'<div>'
+          +'<label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;">Bio</label>'
+          +'<textarea id="aeu-bio" style="width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-family:Jost,sans-serif;font-size:13.5px;outline:none;resize:vertical;min-height:70px;box-sizing:border-box;" onfocus="this.style.borderColor=\'var(--pink)\'" onblur="this.style.borderColor=\'var(--border)\'">'+esc(userData.bio||'')+'</textarea>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">'
+          +'<div>'
+            +'<div style="font-size:13px;font-weight:600;color:var(--text);">Verified Badge ✨</div>'
+            +'<div style="font-size:11px;color:var(--text3);">Show the star verified badge</div>'
+          +'</div>'
+          +'<label class="toggle"><input type="checkbox" id="aeu-verified"'+(userData.verified?' checked':'')+' style=""><div class="toggle-track"></div><div class="toggle-thumb"></div></label>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">'
+          +'<div>'
+            +'<div style="font-size:13px;font-weight:600;color:var(--text);">Admin Status 👑</div>'
+            +'<div style="font-size:11px;color:var(--text3);">Grant or revoke admin privileges</div>'
+          +'</div>'
+          +'<label class="toggle"><input type="checkbox" id="aeu-admin"'+(userData.isAdmin?' checked':'')+' style=""><div class="toggle-track"></div><div class="toggle-thumb"></div></label>'
+        +'</div>'
+      +'</div>'
+      // Action buttons
+      +'<div style="display:flex;gap:10px;margin-top:18px;">'
+        +'<button onclick="document.getElementById(\'adminEditUserModal\').remove()" style="flex:1;padding:11px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:Jost,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>'
+        +'<button onclick="saveAdminEditUser(\''+uid+'\')" style="flex:2;padding:11px;border-radius:12px;border:none;background:var(--pink);color:white;font-family:Jost,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Save Changes</button>'
+      +'</div>'
+    +'</div>';
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function saveAdminEditUser(uid){
+  if(!isAdmin()) return;
+  var name    = (document.getElementById('aeu-name')   ||{}).value||'';
+  var handle  = (document.getElementById('aeu-handle') ||{}).value||'';
+  var bio     = (document.getElementById('aeu-bio')    ||{}).value||'';
+  var verified= !!(document.getElementById('aeu-verified')||{}).checked;
+  var isAdminFlag = !!(document.getElementById('aeu-admin')||{}).checked;
+  handle = handle.trim().replace(/^@/,'').replace(/\s+/g,'').toLowerCase();
+  if(!name.trim()){ toast('Display name cannot be empty'); return; }
+  if(!handle){ toast('Username cannot be empty'); return; }
+  try{
+    await db.collection('profiles').doc(uid).update({
+      name: name.trim(),
+      handle: handle,
+      bio: bio.trim(),
+      verified: verified,
+      isAdmin: isAdminFlag,
+      initial: name.trim().charAt(0).toUpperCase()
+    });
+    // Update allUsers cache
+    if(allUsers[uid]){
+      allUsers[uid].name    = name.trim();
+      allUsers[uid].handle  = handle;
+      allUsers[uid].bio     = bio.trim();
+      allUsers[uid].verified= verified;
+      allUsers[uid].isAdmin = isAdminFlag;
+    }
+    toast('User updated ✅');
+    document.getElementById('adminEditUserModal').remove();
+    loadAdminUsers(); // refresh the list
+  } catch(e){ toast('Save failed: '+e.message); }
 }
 
 // ── ADMIN: POST MODERATION QUEUE ─────────────────────────
@@ -4790,14 +5200,19 @@ async function refreshAdminDashboard(){
             +'<div style="font-size:11px;color:var(--text3);">@'+esc(u.handle||'')+' · '+esc(u.email||'')+'</div>'
           +'</div>'
           +'<div style="font-size:11px;color:var(--text3);margin-right:8px;">'+(u.followersCount||0)+' followers</div>'
+          +'<button class="admin-edit-btn" title="Edit user">✏️</button>'
           +(d.id!==me.uid
             ? '<button class="admin-msg-btn">Message</button>'
             : '');
+        row.querySelector('.admin-edit-btn').addEventListener('click', function(){
+          openAdminEditUser(d.id, u);
+        });
         if(d.id !== me.uid){
           row.querySelector('.admin-msg-btn').addEventListener('click', function(){
             openDMFromPost(_g(iU), _g(iN));
           });
         }
+        ul.appendChild(row);
         ul.appendChild(row);
       });
     } catch(e){
@@ -5553,6 +5968,12 @@ async function createGroupChat(){
     db.collection('activityLog').add({type:'group_created',uid:me.uid,gcId,members:selected,name:groupName,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
     closeGroupChatModal();
     toast('Group "'+groupName+'" created! 🎉');
+    // Open the new group chat immediately
+    setTimeout(function(){
+      openGroupConvo(gcId, gcData);
+      var ca=document.getElementById('chatArea');
+      if(ca&&window.innerWidth<=700) ca.classList.add('open');
+    }, 400);
   }catch(e){ toast('Could not create group. Try again.'); }
 }
 
@@ -6184,4 +6605,3 @@ function submitReply(postId, commentIdx){
   }
   toast('Reply posted!');
 }
-
