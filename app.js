@@ -868,6 +868,50 @@ function buildCard(p,i){
   let mediaHTML='';
   if(p.isStatus){
     mediaHTML='<div class="status-body"><p class="status-text">'+esc(p.caption||'')+'</p>'+(p.mood?'<div class="status-mood-tag">'+esc(p.mood)+'</div>':'')+'</div>';
+  } else if(p.isPoll){
+    // Poll post rendering
+    var pollEnded = p.pollEndsAt && Date.now() > p.pollEndsAt;
+    var totalVotes = Object.values(p.pollVotes||{}).reduce(function(a,v){return a+(Array.isArray(v)?v.length:0);},0);
+    var myVote = Object.keys(p.pollVotes||{}).find(function(o){return Array.isArray(p.pollVotes[o])&&p.pollVotes[o].includes(me.uid);});
+    var iP = _r(pid);
+
+    // Optional head-to-head photos
+    var photosHTML='';
+    if(p.pollPhotoA || p.pollPhotoB){
+      photosHTML='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;margin-bottom:12px;align-items:center;">'
+        +(p.pollPhotoA?'<div style="aspect-ratio:1;border-radius:10px;overflow:hidden;border:2px solid '+(myVote===((p.pollOptions||[])[0]||'')?'var(--pink)':'var(--border)')+'"><img src="'+esc(p.pollPhotoA)+'" style="width:100%;height:100%;object-fit:cover;display:block;"></div>':'<div style="aspect-ratio:1;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;">No photo</div>')
+        +'<div style="font-size:13px;font-weight:800;color:var(--text3);text-align:center;">VS</div>'
+        +(p.pollPhotoB?'<div style="aspect-ratio:1;border-radius:10px;overflow:hidden;border:2px solid '+(myVote===((p.pollOptions||[])[1]||'')?'var(--pink)':'var(--border)')+'"><img src="'+esc(p.pollPhotoB)+'" style="width:100%;height:100%;object-fit:cover;display:block;"></div>':'<div style="aspect-ratio:1;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;">No photo</div>')
+      +'</div>';
+    }
+
+    var optionsHTML=(p.pollOptions||[]).map(function(opt){
+      var votes=Array.isArray((p.pollVotes||{})[opt])?(p.pollVotes[opt]).length:0;
+      var pct=totalVotes>0?Math.round(votes/totalVotes*100):0;
+      var isMyVote=myVote===opt;
+      var showResults=!!myVote||pollEnded;
+      if(showResults){
+        return '<div style="margin-bottom:8px;">'
+          +'<div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:'+(isMyVote?'700':'500')+';color:'+(isMyVote?'var(--pink)':'var(--text)')+';margin-bottom:4px;"><span>'+(isMyVote?'✓ ':'')+esc(opt)+'</span><span>'+pct+'%</span></div>'
+          +'<div style="background:var(--bg3);border-radius:8px;height:8px;overflow:hidden;">'
+            +'<div style="background:'+(isMyVote?'var(--pink)':'var(--border)')+';height:100%;border-radius:8px;width:'+pct+'%;transition:width .5s;"></div>'
+          +'</div>'
+        +'</div>';
+      } else {
+        return '<button onclick="votePoll(\''+pid+'\',\''+esc(opt)+'\')" style="display:block;width:100%;text-align:left;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:Jost,sans-serif;font-size:13.5px;cursor:pointer;margin-bottom:8px;transition:border-color .2s;" onmouseover="this.style.borderColor=\'var(--pink)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'+esc(opt)+'</button>';
+      }
+    }).join('');
+
+    mediaHTML='<div style="padding:12px 14px 4px;">'
+      +(p.caption&&!p.isPoll?'':'') // caption handled separately
+      +'<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">📊 '+esc(p.pollQuestion||'')+'</div>'
+      +photosHTML
+      +optionsHTML
+      +'<div style="font-size:11.5px;color:var(--text3);margin-top:4px;">'
+        +totalVotes+' vote'+(totalVotes!==1?'s':'')
+        +(pollEnded?' · Poll ended':p.pollEndsAt?' · Ends '+timeAgo(p.pollEndsAt):'')
+      +'</div>'
+    +'</div>';
   } else if(p.isVideo && p.videoUrl){
     mediaHTML='<div class="carousel-wrap">'
       +'<video class="video-preview" src="'+esc(p.videoUrl)+'" controls playsinline style="width:100%;max-height:500px;display:block;background:#000;border-radius:12px;"></video>'
@@ -1088,7 +1132,7 @@ function commentHTML(c, postId, commentIdx){
     +'<div class="c-avatar" style="background:'+color+';color:white;'+(uid?'cursor:pointer;':'')+'"'+(uid?' onclick="viewProfile(_g('+iU+'))"':'')+'>'+avHtml+'</div>'
     +'<div style="flex:1;">'
       +'<div class="c-bubble">'
-        +'<div class="c-user"'+(uid?' onclick="viewProfile(_g('+iU+'))" style="cursor:pointer;"':'')+'>@'+esc(handle)+'</div>'
+        +'<div class="c-user"'+(uid?' onclick="viewProfile(_g('+iU+'))" style="cursor:pointer;color:var(--pink);"':'')+'>@'+esc(handle)+'</div>'
         +'<div class="c-text">'+linkifyCaption(c.text||'')+'</div>'
         +(c.imageUrl?'<div style="margin-top:6px;"><img src="'+esc(c.imageUrl)+'" style="max-width:200px;max-height:200px;border-radius:10px;object-fit:cover;cursor:pointer;display:block;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}" alt="comment photo"></div>':'')
         +(c.edited?'<div style="font-size:10px;color:var(--text3);margin-top:2px;">Edited</div>':'')
@@ -1353,6 +1397,21 @@ function deletePost(id){
 function toggleMenu(e,mid){e.stopPropagation();closeMenus();document.getElementById(mid).classList.add('open');}
 function closeMenus(){document.querySelectorAll('.post-menu.open').forEach(m=>m.classList.remove('open'));}
 document.addEventListener('click',closeMenus);
+
+// ── POLL VOTE ─────────────────────────────────────────
+async function votePoll(postId, option){
+  postId=String(postId);
+  var p=posts.find(x=>String(x.id)===postId); if(!p||!p.isPoll) return;
+  if(!p.pollVotes) p.pollVotes={};
+  // remove any existing vote
+  Object.keys(p.pollVotes).forEach(function(o){
+    if(Array.isArray(p.pollVotes[o])) p.pollVotes[o]=p.pollVotes[o].filter(function(u){return u!==me.uid;});
+  });
+  if(!Array.isArray(p.pollVotes[option])) p.pollVotes[option]=[];
+  p.pollVotes[option].push(me.uid);
+  try{ await updatePostField(postId,{pollVotes:p.pollVotes}); }catch(e){}
+  renderFeed(); renderExploreFeed();
+}
 
 // ── PROFILE PAGE ──────────────────────────────────────
 function refreshProfile(){
@@ -1704,15 +1763,17 @@ function renderTrending(){
 }
 
 // ── POST MODAL ────────────────────────────────────────
-let postMode='status'; // 'status' | 'photo' | 'video' | 'youtube'
+let postMode='status'; // 'status' | 'photo' | 'video' | 'youtube' | 'poll'
 let selectedMood='';
 let feedAutoTimers={};
 let uploadVideoFile = null;
 let currentYtData = null;
+let pollPhotoA = null; // base64
+let pollPhotoB = null; // base64
 
 function switchPostType(mode){
   postMode=mode;
-  ['status','photo','video','youtube'].forEach(function(m){
+  ['status','photo','video','youtube','poll'].forEach(function(m){
     var btn=document.getElementById('ptt-'+m);
     if(btn) btn.classList.toggle('active',m===mode);
     var panel=document.getElementById(m+'Panel');
@@ -1734,6 +1795,7 @@ function toggleMood(el,mood){
 function openModal(){
   document.getElementById('overlay').classList.add('open');
   uploadImages=[];selectedMood='';postMode='status';uploadVideoFile=null;currentYtData=null;
+  pollPhotoA=null; pollPhotoB=null;
   document.getElementById('fileInput').value='';
   document.getElementById('uploadPreviews').innerHTML='';
   document.getElementById('captionInput').value='';
@@ -1741,6 +1803,14 @@ function openModal(){
   document.getElementById('statusChar').textContent='280';
   document.getElementById('uploadZone').style.display='block';
   document.getElementById('uploadPrompt').style.display='block';
+  // Reset poll panel
+  var pq=document.getElementById('pollQuestion'); if(pq) pq.value='';
+  var pc=document.getElementById('pollCaption'); if(pc) pc.value='';
+  var pa=document.getElementById('pollPhotoA-preview'); if(pa) pa.style.display='none';
+  var pb2=document.getElementById('pollPhotoB-preview'); if(pb2) pb2.style.display='none';
+  var pab=document.getElementById('pollPhotoA-btn'); if(pab) pab.style.display='flex';
+  var pbb=document.getElementById('pollPhotoB-btn'); if(pbb) pbb.style.display='flex';
+  document.querySelectorAll('.poll-option-input').forEach(function(i,idx){ i.value=idx===0?'Option A':idx===1?'Option B':''; });
   // Reset video panel
   var vp=document.getElementById('videoPreviewEl');
   if(vp){vp.src='';vp.style.display='none';}
@@ -1793,6 +1863,30 @@ function openModal(){
 }
 function closeModal(){document.getElementById('overlay').classList.remove('open');}
 function overlayClick(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+// ── POLL PHOTO HELPERS ────────────────────────────────
+function setPollPhoto(side, input){
+  var file=input.files[0]; if(!file) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    if(side==='A') pollPhotoA=e.target.result;
+    else pollPhotoB=e.target.result;
+    var preview=document.getElementById('pollPhoto'+side+'-preview');
+    var img=document.getElementById('pollPhoto'+side+'-img');
+    var btn=document.getElementById('pollPhoto'+side+'-btn');
+    if(img) img.src=e.target.result;
+    if(preview) preview.style.display='block';
+    if(btn) btn.style.display='none';
+  };
+  r.readAsDataURL(file);
+}
+function clearPollPhoto(side){
+  if(side==='A') pollPhotoA=null; else pollPhotoB=null;
+  var preview=document.getElementById('pollPhoto'+side+'-preview');
+  var btn=document.getElementById('pollPhoto'+side+'-btn');
+  if(preview) preview.style.display='none';
+  if(btn) btn.style.display='flex';
+}
 
 function handleFiles(inp){
   const files=Array.from(inp.files);
@@ -1883,8 +1977,30 @@ async function submitPost(){
     if(cap) sendMentionNotifications(cap, postId);
     db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:(cap||'').slice(0,100),isYoutube:true,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
     toast('YouTube post shared! ▶️');
+  } else if(postMode==='poll'){
+    var q=(document.getElementById('pollQuestion').value||'').trim();
+    var pcap=(document.getElementById('pollCaption')&&document.getElementById('pollCaption').value||'').trim();
+    var opts=Array.from(document.querySelectorAll('.poll-option-input')).map(function(i){return i.value.trim();}).filter(Boolean);
+    if(!q){toast('Write a question first');return;}
+    if(opts.length<2){toast('Add at least 2 options');return;}
+    var dur=parseInt(document.getElementById('pollDuration').value)||3;
+    closeModal();
+    toast('Posting poll... 📊');
+    var pollPhotoAUrl=null, pollPhotoBUrl=null;
+    if(pollPhotoA) try{ pollPhotoAUrl=await uploadToStorage(pollPhotoA,'poll_photos/'+uid+'/A_'+Date.now()); }catch(e){}
+    if(pollPhotoB) try{ pollPhotoBUrl=await uploadToStorage(pollPhotoB,'poll_photos/'+uid+'/B_'+Date.now()); }catch(e){}
+    var endsAt=Date.now()+dur*24*60*60*1000;
+    var pollVotes={};
+    opts.forEach(function(o){pollVotes[o]=[];});
+    const p={id:postId, uid, user:{...me}, images:[], image:null, isPoll:true,
+      caption:pcap||q, pollQuestion:q, pollOptions:opts, pollVotes:pollVotes, pollEndsAt:endsAt,
+      pollPhotoA:pollPhotoAUrl||null, pollPhotoB:pollPhotoBUrl||null,
+      likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
+    await savePostToFirestore(p);
+    db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:q.slice(0,100),isPoll:true,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+    toast('Poll posted! 📊');
   }
-  uploadImages=[];uploadVideoFile=null;currentYtData=null;
+  uploadImages=[];uploadVideoFile=null;currentYtData=null;pollPhotoA=null;pollPhotoBUrl=null;
 }
 
 // ── FEED AUTO-SLIDE (carousel in feed auto-advances) ─────
@@ -2981,6 +3097,9 @@ async function openDMWith(otherUid,otherName){
         <div style="font-size:14px;font-weight:600;">${esc(otherProf.name||'User')}</div>
         <div style="font-size:11px;">${dmPresenceLabel(otherUid)}</div>
       </div>
+      <button onclick="startCall('${esc(otherProf.name||'User')}','${otherUid}','${esc(otherProf.color||'var(--pink)')}','${esc(otherProf.avatar||'')}','${esc(otherProf.initial||'?')}')" style="background:none;border:none;cursor:pointer;padding:6px;color:var(--text3);" title="Voice Call">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.25 8.58 16.41 7.77 15.5A19.79 19.79 0 0 1 4.7 6.87 2 2 0 0 1 6.68 4.68h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L10.68 13.31a16 16 0 0 0 6.41 6.41l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </button>
     </div>
     <div class="chat-msgs" id="chatMsgs"></div>
     <div id="dmTypingIndicator" style="display:none;padding:6px 16px;align-items:center;gap:8px;">
@@ -3136,6 +3255,7 @@ function renderAllConvos(dmDocs, gcDocs){
   (gcDocs||[]).forEach(function(d){
     var c=d.data();
     if(!c.members||!Array.isArray(c.members)) return;
+    if(c.deleted) return; // skip deleted groups
     var ts=c.lastTs?(c.lastTs.toMillis?c.lastTs.toMillis():c.lastTs.seconds?c.lastTs.seconds*1000:0):0;
     items.push({type:'group', id:d.id, data:c, ts:ts});
   });
@@ -3270,13 +3390,16 @@ async function openGroupConvo(gcId, gcData){
       +'<button class="msg-back-btn" onclick="closeChatMobile()" title="Back">'
         +'<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>'
       +'</button>'
-      +'<div class="gc-header-avatars">'+memberAvatars+'</div>'
-      +'<div style="flex:1;">'
+      +'<div class="gc-header-avatars" style="cursor:pointer;" onclick="showGCMembers(_g('+iGC+'))">'+memberAvatars+'</div>'
+      +'<div style="flex:1;cursor:pointer;" onclick="showGCMembers(_g('+iGC+'))">'
         +'<div style="font-size:14px;font-weight:700;">'+esc(gcName)+'</div>'
-        +'<div style="font-size:11px;color:var(--text3);">'+memberCount+' members · tap to see all</div>'
+        +'<div style="font-size:11px;color:var(--text3);">'+memberCount+' members</div>'
       +'</div>'
-      +'<button onclick="showGCMembers(_g('+iGC+'))" style="background:none;border:none;cursor:pointer;padding:6px;color:var(--text3);" title="Group info">'
-        +'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+      +'<button onclick="startCall(\''+esc(gcName)+'\',null,\'var(--pink)\',null,\'👥\')" style="background:none;border:none;cursor:pointer;padding:6px;color:var(--text3);" title="Group Call">'
+        +'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.25 8.58 16.41 7.77 15.5A19.79 19.79 0 0 1 4.7 6.87 2 2 0 0 1 6.68 4.68h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L10.68 13.31a16 16 0 0 0 6.41 6.41l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
+      +'</button>'
+      +'<button onclick="openGCSettings(_g('+iGC+'))" style="background:none;border:none;cursor:pointer;padding:6px;color:var(--text3);" title="Group settings">'
+        +'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
       +'</button>'
     +'</div>'
     +'<div class="chat-msgs" id="chatMsgs"></div>'
@@ -3434,7 +3557,6 @@ function showGCMembers(gcId){
       +'</div>';
     });
     html+='</div>';
-    // Show in a simple overlay
     var overlay=document.createElement('div');
     overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;';
     overlay.innerHTML='<div style="background:var(--card);border-radius:18px;max-width:360px;width:100%;max-height:80vh;overflow-y:auto;position:relative;">'
@@ -3444,6 +3566,173 @@ function showGCMembers(gcId){
     overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
     document.body.appendChild(overlay);
   }).catch(function(){toast('Could not load group info.');});
+}
+
+// ── GC SETTINGS ───────────────────────────────────────
+var _activeGCId = null;
+
+function openGCSettings(gcId){
+  _activeGCId=gcId;
+  var modal=document.getElementById('gcSettingsModal');
+  if(modal){ modal.style.display='flex'; }
+  db.collection('groups').doc(gcId).get().then(function(d){
+    if(!d.exists) return;
+    var gc=d.data();
+    // Cover photo
+    var cp=document.getElementById('gcCoverPreview');
+    if(cp && gc.coverPhoto){
+      cp.innerHTML='<img src="'+esc(gc.coverPhoto)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+    }
+    // Nickname
+    var nn=document.getElementById('gcNicknameInput');
+    if(nn && gc['nickname_'+me.uid]) nn.value=gc['nickname_'+me.uid];
+    // Delete button: only for creator or admin
+    var del=document.getElementById('gcDeleteSection');
+    if(del) del.style.display=(gc.createdBy===me.uid||isAdmin())?'block':'none';
+    // Members list
+    var mem=document.getElementById('gcSettingsMembers');
+    if(mem){
+      mem.innerHTML='';
+      (gc.members||[]).forEach(function(uid){
+        var u=allUsers[uid]||{};
+        var div=document.createElement('div');
+        div.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;';
+        div.innerHTML='<div style="width:36px;height:36px;border-radius:50%;background:'+(u.color||'var(--pink)')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;overflow:hidden;">'
+          +(u.avatar?'<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;">':esc(u.initial||'?'))
+          +'</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+esc(u.name||uid)+(uid===me.uid?' <span style="color:var(--pink);font-size:10px;">(You)</span>':'')+'</div><div style="font-size:11px;color:var(--text3);">@'+esc(u.handle||uid)+'</div></div>';
+        div.onclick=function(){ if(u.handle) viewProfileByHandle(u.handle); };
+        mem.appendChild(div);
+      });
+    }
+    // Shared media
+    loadGCSharedMedia(gcId);
+  });
+}
+function closeGCSettings(){
+  var modal=document.getElementById('gcSettingsModal');
+  if(modal) modal.style.display='none';
+}
+function loadGCSharedMedia(gcId){
+  var grid=document.getElementById('gcSharedMedia');
+  var empty=document.getElementById('gcSharedMediaEmpty');
+  if(!grid) return;
+  grid.innerHTML='';
+  // Query messages with mediaUrl
+  db.collection('groups').doc(gcId).collection('messages').limit(60).get().then(function(snap){
+    var items=snap.docs.filter(function(d){ return d.data().mediaUrl; });
+    if(!items.length){ if(empty) empty.style.display='block'; if(grid) grid.style.display='none'; return; }
+    if(empty) empty.style.display='none';
+    grid.style.display='grid';
+    items.forEach(function(d){
+      var url=d.data().mediaUrl;
+      var div=document.createElement('div');
+      div.style.cssText='aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg3);';
+      var isVideo=url.match(/\.(mp4|mov|webm)/i);
+      if(isVideo){
+        div.innerHTML='<video src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;" muted playsinline onclick="this.paused?this.play():this.pause()"></video>';
+      } else {
+        div.innerHTML='<img src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=\''+esc(url)+'\';e.classList.add(\'open\')}">';
+      }
+      grid.appendChild(div);
+    });
+  }).catch(function(){ if(empty){empty.style.display='block';empty.textContent='Could not load media.';} });
+}
+function changeGCCoverPhoto(input){
+  var file=input.files[0]; if(!file||!_activeGCId) return;
+  toast('Uploading cover photo... ⏳');
+  var r=new FileReader();
+  r.onload=async function(e){
+    try{
+      var url=await uploadToStorage(e.target.result,'gc_covers/'+_activeGCId+'/'+Date.now());
+      await db.collection('groups').doc(_activeGCId).update({coverPhoto:url});
+      var cp=document.getElementById('gcCoverPreview');
+      if(cp) cp.innerHTML='<img src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      toast('Cover photo updated! ✓');
+    }catch(e){ toast('Could not upload photo'); }
+  };
+  r.readAsDataURL(file);
+}
+function saveGCNickname(){
+  if(!_activeGCId) return;
+  var val=(document.getElementById('gcNicknameInput')||{value:''}).value.trim();
+  db.collection('groups').doc(_activeGCId).update({['nickname_'+me.uid]:val})
+    .then(function(){ toast('Nickname saved! ✓'); })
+    .catch(function(){ toast('Could not save nickname'); });
+}
+function confirmDeleteGC(){
+  if(!_activeGCId) return;
+  if(!confirm('Delete this group chat for everyone? This cannot be undone.')) return;
+  var gcId=_activeGCId;
+  // Soft delete: mark as deleted so it disappears from all members' lists
+  db.collection('groups').doc(gcId).update({
+    deleted:true,
+    deletedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    deletedBy:me.uid
+  }).then(function(){
+    closeGCSettings();
+    toast('Group chat deleted.');
+    activeGroupId=null;
+    loadDMConvos();
+    var chatArea=document.getElementById('chatArea');
+    if(chatArea) chatArea.innerHTML='<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:14px;text-align:center;padding:20px;">Select a conversation to start chatting 💬</div>';
+  }).catch(function(){ toast('Could not delete group'); });
+}
+
+// ── CALL FEATURE ──────────────────────────────────────
+var _callTimer=null;
+var _callSeconds=0;
+var _callMuted=false;
+var _callSpeaker=true;
+
+function startCall(targetName, targetUid, targetColor, targetAvatar, targetInitial){
+  var modal=document.getElementById('callModal');
+  if(!modal) return;
+  modal.style.display='flex';
+  var av=document.getElementById('callAvatar');
+  var nm=document.getElementById('callName');
+  var st=document.getElementById('callStatus');
+  var ti=document.getElementById('callTimer');
+  var mb=document.getElementById('callMuteBtn');
+  var sb=document.getElementById('callSpeakerBtn');
+  if(av){
+    av.style.background=targetColor||'var(--pink)';
+    if(targetAvatar) av.innerHTML='<img src="'+esc(targetAvatar)+'" style="width:100%;height:100%;object-fit:cover;">';
+    else av.textContent=targetInitial||'?';
+  }
+  if(nm) nm.textContent=targetName||'User';
+  if(st) st.textContent='Calling...';
+  if(ti){ ti.style.display='none'; ti.textContent='0:00'; }
+  if(mb) mb.textContent='🎤';
+  if(sb){ sb.textContent='🔊'; sb.style.background='rgba(255,255,255,.15)'; }
+  _callSeconds=0; _callMuted=false; _callSpeaker=true;
+  clearInterval(_callTimer);
+  // Simulate answer after 2-4s
+  setTimeout(function(){
+    var m2=document.getElementById('callModal');
+    if(!m2||m2.style.display==='none') return;
+    if(st) st.textContent='Connected';
+    if(ti) ti.style.display='block';
+    _callTimer=setInterval(function(){
+      _callSeconds++;
+      var min=Math.floor(_callSeconds/60), sec=_callSeconds%60;
+      if(ti) ti.textContent=min+':'+(sec<10?'0':'')+sec;
+    },1000);
+  },2000+Math.random()*2000);
+}
+function endCall(){
+  clearInterval(_callTimer); _callTimer=null;
+  var modal=document.getElementById('callModal');
+  if(modal) modal.style.display='none';
+}
+function toggleCallMute(){
+  _callMuted=!_callMuted;
+  var btn=document.getElementById('callMuteBtn');
+  if(btn) btn.textContent=_callMuted?'🔇':'🎤';
+}
+function toggleCallSpeaker(){
+  _callSpeaker=!_callSpeaker;
+  var btn=document.getElementById('callSpeakerBtn');
+  if(btn){ btn.textContent=_callSpeaker?'🔊':'🔈'; btn.style.background=_callSpeaker?'rgba(255,255,255,.15)':'var(--pink)'; }
 }
 
 function renderDMConvoList(activeUid){
