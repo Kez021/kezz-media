@@ -875,14 +875,27 @@ function buildCard(p,i){
     var myVote = Object.keys(p.pollVotes||{}).find(function(o){return Array.isArray(p.pollVotes[o])&&p.pollVotes[o].includes(me.uid);});
     var iP = _r(pid);
 
-    // Optional head-to-head photos
+    // Optional head-to-head photos — up to 3
     var photosHTML='';
-    if(p.pollPhotoA || p.pollPhotoB){
-      photosHTML='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;margin-bottom:12px;align-items:center;">'
-        +(p.pollPhotoA?'<div style="aspect-ratio:1;border-radius:10px;overflow:hidden;border:2px solid '+(myVote===((p.pollOptions||[])[0]||'')?'var(--pink)':'var(--border)')+'"><img src="'+esc(p.pollPhotoA)+'" style="width:100%;height:100%;object-fit:cover;display:block;"></div>':'<div style="aspect-ratio:1;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;">No photo</div>')
-        +'<div style="font-size:13px;font-weight:800;color:var(--text3);text-align:center;">VS</div>'
-        +(p.pollPhotoB?'<div style="aspect-ratio:1;border-radius:10px;overflow:hidden;border:2px solid '+(myVote===((p.pollOptions||[])[1]||'')?'var(--pink)':'var(--border)')+'"><img src="'+esc(p.pollPhotoB)+'" style="width:100%;height:100%;object-fit:cover;display:block;"></div>':'<div style="aspect-ratio:1;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;">No photo</div>')
-      +'</div>';
+    var hasPhotos = p.pollPhotoA || p.pollPhotoB || p.pollPhotoC;
+    if(hasPhotos){
+      var photoCount = (p.pollPhotoA?1:0)+(p.pollPhotoB?1:0)+(p.pollPhotoC?1:0);
+      var labels = ['A','B','C'];
+      var pollPhotos = [p.pollPhotoA, p.pollPhotoB, p.pollPhotoC].filter(Boolean);
+      var pollOptsList = p.pollOptions||[];
+      photosHTML='<div style="display:grid;grid-template-columns:'+Array(pollPhotos.length).fill('1fr').join(' ')+';gap:6px;margin-bottom:12px;">';
+      pollPhotos.forEach(function(photoUrl, pi){
+        var optLabel = pollOptsList[pi]||labels[pi];
+        var isVotedThis = myVote===optLabel;
+        photosHTML+='<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;border:2.5px solid '+(isVotedThis?'var(--pink)':'transparent')+';transition:border-color .2s;">'
+          +'<img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;">'
+          +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:8px 6px 5px;display:flex;justify-content:space-between;align-items:flex-end;">'
+            +'<span style="color:white;font-size:11px;font-weight:800;background:rgba(0,0,0,.4);padding:1px 6px;border-radius:5px;">'+esc(labels[pi])+'</span>'
+            +(isVotedThis?'<span style="color:var(--pink);font-size:11px;font-weight:700;">✓</span>':'')
+          +'</div>'
+        +'</div>';
+      });
+      photosHTML+='</div>';
     }
 
     var optionsHTML=(p.pollOptions||[]).map(function(opt){
@@ -1770,6 +1783,7 @@ let uploadVideoFile = null;
 let currentYtData = null;
 let pollPhotoA = null; // base64
 let pollPhotoB = null; // base64
+let pollPhotoC = null; // base64
 
 function switchPostType(mode){
   postMode=mode;
@@ -1806,10 +1820,12 @@ function openModal(){
   // Reset poll panel
   var pq=document.getElementById('pollQuestion'); if(pq) pq.value='';
   var pc=document.getElementById('pollCaption'); if(pc) pc.value='';
-  var pa=document.getElementById('pollPhotoA-preview'); if(pa) pa.style.display='none';
+  var pc=document.getElementById('pollPhotoA-preview'); if(pc) pc.style.display='none';
   var pb2=document.getElementById('pollPhotoB-preview'); if(pb2) pb2.style.display='none';
+  var pc2=document.getElementById('pollPhotoC-preview'); if(pc2) pc2.style.display='none';
   var pab=document.getElementById('pollPhotoA-btn'); if(pab) pab.style.display='flex';
   var pbb=document.getElementById('pollPhotoB-btn'); if(pbb) pbb.style.display='flex';
+  var pcb=document.getElementById('pollPhotoC-btn'); if(pcb) pcb.style.display='flex';
   document.querySelectorAll('.poll-option-input').forEach(function(i,idx){ i.value=idx===0?'Option A':idx===1?'Option B':''; });
   // Reset video panel
   var vp=document.getElementById('videoPreviewEl');
@@ -1870,7 +1886,8 @@ function setPollPhoto(side, input){
   var r=new FileReader();
   r.onload=function(e){
     if(side==='A') pollPhotoA=e.target.result;
-    else pollPhotoB=e.target.result;
+    else if(side==='B') pollPhotoB=e.target.result;
+    else pollPhotoC=e.target.result;
     var preview=document.getElementById('pollPhoto'+side+'-preview');
     var img=document.getElementById('pollPhoto'+side+'-img');
     var btn=document.getElementById('pollPhoto'+side+'-btn');
@@ -1881,7 +1898,9 @@ function setPollPhoto(side, input){
   r.readAsDataURL(file);
 }
 function clearPollPhoto(side){
-  if(side==='A') pollPhotoA=null; else pollPhotoB=null;
+  if(side==='A') pollPhotoA=null;
+  else if(side==='B') pollPhotoB=null;
+  else pollPhotoC=null;
   var preview=document.getElementById('pollPhoto'+side+'-preview');
   var btn=document.getElementById('pollPhoto'+side+'-btn');
   if(preview) preview.style.display='none';
@@ -1986,21 +2005,22 @@ async function submitPost(){
     var dur=parseInt(document.getElementById('pollDuration').value)||3;
     closeModal();
     toast('Posting poll... 📊');
-    var pollPhotoAUrl=null, pollPhotoBUrl=null;
+    var pollPhotoAUrl=null, pollPhotoBUrl=null, pollPhotoCUrl=null;
     if(pollPhotoA) try{ pollPhotoAUrl=await uploadToStorage(pollPhotoA,'poll_photos/'+uid+'/A_'+Date.now()); }catch(e){}
     if(pollPhotoB) try{ pollPhotoBUrl=await uploadToStorage(pollPhotoB,'poll_photos/'+uid+'/B_'+Date.now()); }catch(e){}
+    if(pollPhotoC) try{ pollPhotoCUrl=await uploadToStorage(pollPhotoC,'poll_photos/'+uid+'/C_'+Date.now()); }catch(e){}
     var endsAt=Date.now()+dur*24*60*60*1000;
     var pollVotes={};
     opts.forEach(function(o){pollVotes[o]=[];});
     const p={id:postId, uid, user:{...me}, images:[], image:null, isPoll:true,
       caption:pcap||q, pollQuestion:q, pollOptions:opts, pollVotes:pollVotes, pollEndsAt:endsAt,
-      pollPhotoA:pollPhotoAUrl||null, pollPhotoB:pollPhotoBUrl||null,
+      pollPhotoA:pollPhotoAUrl||null, pollPhotoB:pollPhotoBUrl||null, pollPhotoC:pollPhotoCUrl||null,
       likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
     await savePostToFirestore(p);
     db.collection('activityLog').add({type:'post',uid:me.uid,handle:me.handle,postId,caption:q.slice(0,100),isPoll:true,ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
     toast('Poll posted! 📊');
   }
-  uploadImages=[];uploadVideoFile=null;currentYtData=null;pollPhotoA=null;pollPhotoBUrl=null;
+  uploadImages=[];uploadVideoFile=null;currentYtData=null;pollPhotoA=null;pollPhotoB=null;pollPhotoC=null;
 }
 
 // ── FEED AUTO-SLIDE (carousel in feed auto-advances) ─────
@@ -3314,9 +3334,12 @@ function renderAllConvos(dmDocs, gcDocs){
       var lastMsg=gc.lastMsg||'Group created 🎉';
       var lastTime=item.ts?timeAgo(item.ts):'';
       var iGC=_r(gcId);
+      var gcCoverHTML = gc.coverPhoto
+        ? '<img src="'+esc(gc.coverPhoto)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">'
+        : '👥';
       div.className='msg-conv'+(activeGroupId===gcId?' active':'');
       div.innerHTML=
-        '<div class="msg-conv-av-wrap"><div class="msg-conv-av gc-conv-av" style="background:linear-gradient(135deg,var(--pink),var(--pink-soft));color:white;font-size:16px;">👥</div></div>'
+        '<div class="msg-conv-av-wrap"><div class="msg-conv-av gc-conv-av" style="background:linear-gradient(135deg,var(--pink),var(--pink-soft));color:white;font-size:'+(gc.coverPhoto?'0':'16')+'px;">'+gcCoverHTML+'</div></div>'
         +'<div class="msg-conv-info" style="flex:1;min-width:0;">'
           +'<div style="display:flex;justify-content:space-between;align-items:center;">'
             +'<div class="msg-conv-name">'+esc(gcName)+'</div>'
@@ -3376,13 +3399,15 @@ async function openGroupConvo(gcId, gcData){
   var memberCount=members.length;
   var iGC=_r(gcId);
 
-  // Build member display for header
-  var memberAvatars=members.slice(0,3).map(function(uid){
-    var u=allUsers[uid]||{};
-    return '<div style="width:22px;height:22px;border-radius:50%;background:'+(u.color||'var(--pink)')+';color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-right:-6px;border:2px solid var(--card);">'
-      +(u.avatar?'<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':esc(u.initial||(u.name?u.name.charAt(0):'?')))
-    +'</div>';
-  }).join('');
+  // Build member display for header — use cover photo if set
+  var gcCoverHtml = (gcData&&gcData.coverPhoto)
+    ? '<img src="'+esc(gcData.coverPhoto)+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--card);">'
+    : members.slice(0,3).map(function(uid){
+        var u=allUsers[uid]||{};
+        return '<div style="width:22px;height:22px;border-radius:50%;background:'+(u.color||'var(--pink)')+';color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-right:-6px;border:2px solid var(--card);overflow:hidden;">'
+          +(u.avatar?'<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':esc(u.initial||(u.name?u.name.charAt(0):'?')))
+        +'</div>';
+      }).join('');
 
   const chatArea=document.getElementById('chatArea');
   chatArea.innerHTML=
@@ -3390,7 +3415,7 @@ async function openGroupConvo(gcId, gcData){
       +'<button class="msg-back-btn" onclick="closeChatMobile()" title="Back">'
         +'<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>'
       +'</button>'
-      +'<div class="gc-header-avatars" style="cursor:pointer;" onclick="showGCMembers(_g('+iGC+'))">'+memberAvatars+'</div>'
+      +'<div class="gc-header-avatars" style="cursor:pointer;" onclick="showGCMembers(_g('+iGC+'))">'+gcCoverHtml+'</div>'
       +'<div style="flex:1;cursor:pointer;" onclick="showGCMembers(_g('+iGC+'))">'
         +'<div style="font-size:14px;font-weight:700;">'+esc(gcName)+'</div>'
         +'<div style="font-size:11px;color:var(--text3);">'+memberCount+' members</div>'
@@ -3403,8 +3428,9 @@ async function openGroupConvo(gcId, gcData){
       +'</button>'
     +'</div>'
     +'<div class="chat-msgs" id="chatMsgs"></div>'
-    +'<div class="chat-input-row">'
-      +'<input class="chat-input" id="gcInput" placeholder="Message the group..." onkeydown="if(event.key===\'Enter\')sendGroupMsg(_g('+iGC+'))">'
+    +'<div class="chat-input-row" style="position:relative;">'
+      +'<div id="gcMentionDropdown" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 -4px 20px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;z-index:10;margin-bottom:4px;"></div>'
+      +'<input class="chat-input" id="gcInput" placeholder="Message the group... (@ to mention)" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey)sendGroupMsg(_g('+iGC+'))" oninput="handleGCMentionInput(this,\''+gcId+'\')">'
       +'<label style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;" title="Send photo">'
         +'<svg width="18" height="18" fill="none" stroke="var(--pink)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
         +'<input type="file" accept="image/*,video/*" style="display:none;" onchange="sendGroupMedia(_g('+iGC+'),this.files[0])">'
@@ -3460,19 +3486,22 @@ async function openGroupConvo(gcId, gcData){
         div.className='chat-msg '+(mine?'mine':'theirs');
         var avHTML=senderAvatar?'<img src="'+esc(senderAvatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':esc(senderInitial);
         var mediaHTML=m.mediaUrl?('<div style="margin-bottom:4px;"><img src="'+esc(m.mediaUrl)+'" style="max-width:220px;border-radius:10px;display:block;" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'220px\':\'100%\'"></div>'):'';
+        var textHTML = m.text ? esc(m.text).replace(/@(\w+)/g, function(match, handle){
+          return '<span style="color:var(--pink);font-weight:600;cursor:pointer;" onclick="viewProfileByHandle(\''+handle+'\')">@'+handle+'</span>';
+        }) : '';
         if(!mine){
           div.innerHTML=
             '<div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:2px;">'
               +'<div style="width:28px;height:28px;border-radius:50%;background:'+senderColor+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;" title="'+esc(senderName)+'">'+avHTML+'</div>'
               +'<div>'
                 +'<div style="font-size:10px;font-weight:600;color:var(--text3);margin-bottom:2px;cursor:pointer;" onclick="viewProfileByHandle(\''+esc(senderHandle)+'\')">@'+esc(senderHandle)+'</div>'
-                +'<div class="chat-bubble">'+mediaHTML+(m.text?esc(m.text):'')+'</div>'
+                +'<div class="chat-bubble">'+mediaHTML+textHTML+'</div>'
                 +(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;">'+timeStr+'</div>':'')
               +'</div>'
             +'</div>';
         } else {
           div.innerHTML=
-            '<div class="chat-bubble">'+mediaHTML+(m.text?esc(m.text):'')+'</div>'
+            '<div class="chat-bubble">'+mediaHTML+textHTML+'</div>'
             +(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;text-align:right;">'+timeStr+'</div>':'');
         }
         msgs.appendChild(div);
@@ -3580,26 +3609,44 @@ function openGCSettings(gcId){
     var gc=d.data();
     // Cover photo
     var cp=document.getElementById('gcCoverPreview');
-    if(cp && gc.coverPhoto){
-      cp.innerHTML='<img src="'+esc(gc.coverPhoto)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+    if(cp){
+      if(gc.coverPhoto) cp.innerHTML='<img src="'+esc(gc.coverPhoto)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      else cp.textContent='👥';
     }
-    // Nickname
-    var nn=document.getElementById('gcNicknameInput');
-    if(nn && gc['nickname_'+me.uid]) nn.value=gc['nickname_'+me.uid];
     // Delete button: only for creator or admin
     var del=document.getElementById('gcDeleteSection');
     if(del) del.style.display=(gc.createdBy===me.uid||isAdmin())?'block':'none';
+    // Nicknames for all members
+    var nnList=document.getElementById('gcNicknamesList');
+    if(nnList){
+      nnList.innerHTML='';
+      (gc.members||[]).forEach(function(uid){
+        var u=allUsers[uid]||{};
+        var currentNick=gc['nickname_'+uid]||'';
+        var row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:8px;';
+        row.innerHTML=
+          '<div style="width:30px;height:30px;border-radius:50%;background:'+(u.color||'var(--pink)')+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;overflow:hidden;flex-shrink:0;">'
+            +(u.avatar?'<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;">':esc(u.initial||'?'))
+          +'</div>'
+          +'<div style="font-size:12px;color:var(--text3);min-width:60px;flex-shrink:0;">@'+esc(u.handle||uid.slice(0,8))+(uid===me.uid?' (you)':'')+'</div>'
+          +'<input type="text" maxlength="30" placeholder="Set nickname..." value="'+esc(currentNick)+'" data-uid="'+esc(uid)+'" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:Jost,sans-serif;font-size:12.5px;outline:none;" onfocus="this.style.borderColor=\'var(--pink)\'" onblur="this.style.borderColor=\'var(--border)\'">'
+          +'<button data-uid="'+esc(uid)+'" onclick="saveGCMemberNickname(this)" style="background:var(--pink);color:white;border:none;border-radius:8px;padding:6px 10px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Save</button>';
+        nnList.appendChild(row);
+      });
+    }
     // Members list
     var mem=document.getElementById('gcSettingsMembers');
     if(mem){
       mem.innerHTML='';
       (gc.members||[]).forEach(function(uid){
         var u=allUsers[uid]||{};
+        var nick=gc['nickname_'+uid]||'';
         var div=document.createElement('div');
         div.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;';
         div.innerHTML='<div style="width:36px;height:36px;border-radius:50%;background:'+(u.color||'var(--pink)')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;overflow:hidden;">'
           +(u.avatar?'<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;">':esc(u.initial||'?'))
-          +'</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+esc(u.name||uid)+(uid===me.uid?' <span style="color:var(--pink);font-size:10px;">(You)</span>':'')+'</div><div style="font-size:11px;color:var(--text3);">@'+esc(u.handle||uid)+'</div></div>';
+          +'</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+(nick?esc(nick)+' ':'')+esc(u.name||uid)+(uid===me.uid?' <span style="color:var(--pink);font-size:10px;">(You)</span>':'')+'</div><div style="font-size:11px;color:var(--text3);">@'+esc(u.handle||uid)+'</div></div>';
         div.onclick=function(){ if(u.handle) viewProfileByHandle(u.handle); };
         mem.appendChild(div);
       });
@@ -3651,6 +3698,16 @@ function changeGCCoverPhoto(input){
     }catch(e){ toast('Could not upload photo'); }
   };
   r.readAsDataURL(file);
+}
+function saveGCMemberNickname(btn){
+  if(!_activeGCId) return;
+  var targetUid=btn.dataset.uid;
+  var row=btn.parentElement;
+  var input=row.querySelector('input[data-uid]');
+  var val=(input&&input.value||'').trim();
+  db.collection('groups').doc(_activeGCId).update({['nickname_'+targetUid]:val})
+    .then(function(){ toast('Nickname saved! ✓'); openGCSettings(_activeGCId); })
+    .catch(function(){ toast('Could not save nickname'); });
 }
 function saveGCNickname(){
   if(!_activeGCId) return;
@@ -3734,6 +3791,72 @@ function toggleCallSpeaker(){
   var btn=document.getElementById('callSpeakerBtn');
   if(btn){ btn.textContent=_callSpeaker?'🔊':'🔈'; btn.style.background=_callSpeaker?'rgba(255,255,255,.15)':'var(--pink)'; }
 }
+
+// ── GC @MENTION ───────────────────────────────────────
+var _gcMentionMembers = []; // cached member list for active GC
+
+async function handleGCMentionInput(inp, gcId){
+  var val = inp.value;
+  var dropdown = document.getElementById('gcMentionDropdown');
+  if(!dropdown) return;
+
+  // Find the last @ in the current text
+  var cursor = inp.selectionStart||val.length;
+  var textUpToCursor = val.slice(0, cursor);
+  var atMatch = textUpToCursor.match(/@(\w*)$/);
+
+  if(!atMatch){ dropdown.style.display='none'; return; }
+
+  var query = atMatch[1].toLowerCase();
+
+  // Load members if not cached for this GC
+  if(!_gcMentionMembers.length || _gcMentionMembers._gcId !== gcId){
+    try{
+      var doc = await db.collection('groups').doc(gcId).get();
+      if(doc.exists){
+        var memberIds = doc.data().members||[];
+        _gcMentionMembers = memberIds.map(function(uid){ return allUsers[uid]||{uid,handle:uid}; }).filter(function(u){ return u.handle; });
+        _gcMentionMembers._gcId = gcId;
+      }
+    }catch(e){ return; }
+  }
+
+  var filtered = _gcMentionMembers.filter(function(u){
+    return !query || (u.handle||'').toLowerCase().startsWith(query) || (u.name||'').toLowerCase().startsWith(query);
+  }).slice(0, 6);
+
+  if(!filtered.length){ dropdown.style.display='none'; return; }
+
+  dropdown.style.display='block';
+  dropdown.innerHTML='';
+  filtered.forEach(function(u){
+    var item = document.createElement('div');
+    item.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;transition:background .15s;';
+    item.onmouseenter=function(){ item.style.background='var(--pink-pale)'; };
+    item.onmouseleave=function(){ item.style.background=''; };
+    item.innerHTML='<div style="width:28px;height:28px;border-radius:50%;background:'+(u.color||'var(--pink)')+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;overflow:hidden;flex-shrink:0;">'
+      +(u.avatar?'<img src="'+esc(u.avatar)+'" style="width:100%;height:100%;object-fit:cover;">':esc(u.initial||'?'))
+    +'</div>'
+    +'<div><div style="font-size:13px;font-weight:600;color:var(--text);">'+esc(u.name||u.handle)+'</div><div style="font-size:11px;color:var(--text3);">@'+esc(u.handle)+'</div></div>';
+    item.onclick=function(){
+      // Replace the @partial with @handle
+      var before = textUpToCursor.slice(0, textUpToCursor.length - atMatch[0].length);
+      var after  = val.slice(cursor);
+      inp.value = before + '@' + u.handle + ' ' + after;
+      dropdown.style.display='none';
+      inp.focus();
+      var newPos = (before+'@'+u.handle+' ').length;
+      inp.setSelectionRange(newPos, newPos);
+    };
+    dropdown.appendChild(item);
+  });
+}
+
+// Close mention dropdown on click outside
+document.addEventListener('click', function(e){
+  var dd = document.getElementById('gcMentionDropdown');
+  if(dd && !dd.contains(e.target) && e.target.id!=='gcInput') dd.style.display='none';
+});
 
 function renderDMConvoList(activeUid){
   document.querySelectorAll('.msg-conv').forEach(el=>{
