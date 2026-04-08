@@ -126,7 +126,7 @@ async function seedDummyPosts() {
   }
 }
 
-// Track locally deleted post IDs — snapshot must never restore these
+// Tracks post IDs deleted this session — snapshot can never restore them
 var _locallyDeletedIds = new Set();
 
 function startPostsListener() {
@@ -140,16 +140,11 @@ function startPostsListener() {
       if(!data.comments) data.comments = [];
       return data;
     }).filter(function(p){
-      // Never show hidden posts on the feed — not even for admin
-      // (admin sees them in the admin dashboard instead)
-      if(p.hidden) return false;
-      // Never restore a post the user just deleted this session
-      if(_locallyDeletedIds.has(String(p.id))) return false;
-      // Never show blocked users posts
-      if(isBlocked(p.uid)) return false;
+      if(p.hidden) return false;                              // never show deleted posts
+      if(_locallyDeletedIds.has(String(p.id))) return false; // never restore session deletes
       return true;
     });
-    _postsPage = 1;
+    _postsPage = 1; // reset pagination on fresh load
     renderFeed();
     renderExploreFeed();
     if(currentView==='profile')  refreshProfile();
@@ -1403,37 +1398,35 @@ function reportPost(id){
   closeMenus();
 }
 function deletePost(id){
-  id=String(id);
+  id = String(id);
   closeMenus();
 
-  // Register in session-level deleted set so snapshot never restores it
+  // 1. Track in session set so snapshot NEVER restores this post
   _locallyDeletedIds.add(id);
 
-  // Remove from local posts array immediately
+  // 2. Remove from in-memory posts array immediately
   posts = posts.filter(function(p){ return String(p.id) !== id; });
 
-  // Animate cards out and remove from DOM
+  // 3. Visually remove all matching cards from DOM
   document.querySelectorAll('#pc-'+id).forEach(function(card){
-    card.style.cssText='opacity:0;transform:scale(.96);transition:all .28s ease;pointer-events:none;';
-    setTimeout(function(){ card.remove(); }, 300);
+    card.style.cssText = 'opacity:0;transform:scale(.96);transition:all .3s ease;pointer-events:none;';
+    setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 320);
   });
 
-  // Soft-delete in Firestore: marked hidden=true so admin can still see it
-  // but it will NEVER appear on any feed again (snapshot filter blocks it)
+  // 4. Soft-delete in Firestore: hidden=true keeps it for admin dashboard
   postsCol().doc(id).update({
     hidden: true,
     hiddenAt: firebase.firestore.FieldValue.serverTimestamp(),
     hiddenBy: me.uid
   }).catch(function(){
-    // Fallback: hard delete if doc is already gone
     postsCol().doc(id).delete().catch(function(){});
   });
 
-  // Re-render feed and profile to reflect removal
+  // 5. Re-render feed and profile cleanly
   setTimeout(function(){
     renderFeed();
     renderExploreFeed();
-    refreshProfile();
+    if(currentView === 'profile') refreshProfile();
   }, 350);
 
   toast('Post deleted');
@@ -1485,25 +1478,30 @@ function renderPostGrid(){
     if(p.isYoutube && p.ytThumb){
       item.innerHTML=`<img src="${p.ytThumb}" alt=""><div class="grid-overlay"><svg width="18" height="18" viewBox="0 0 68 48" style="display:block"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg></div>${editBtn}`;
     } else if(p.isVideo && p.videoUrl){
-      // Generate real video thumbnail using a hidden video + canvas
-      item.innerHTML=`<div class="grid-video-thumb" style="width:100%;height:100%;position:relative;background:#111;"><video src="${esc(p.videoUrl)}" style="display:none;" preload="metadata" crossorigin="anonymous"></video><canvas style="width:100%;height:100%;object-fit:cover;display:block;"></canvas><div class="grid-overlay" style="background:rgba(0,0,0,.3);"><svg width="16" height="16" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>${editBtn}`;
+      item.innerHTML = '<div style="position:relative;width:100%;height:100%;background:#111;">'
+        + '<canvas style="width:100%;height:100%;object-fit:cover;display:block;"></canvas>'
+        + '<video preload="metadata" crossorigin="anonymous" style="display:none;position:absolute;"></video>'
+        + '<div class="grid-overlay" style="background:rgba(0,0,0,.25);">'
+          + '<svg width="18" height="18" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+        + '</div>'
+        + '</div>' + editBtn;
+      // Draw actual first frame onto canvas
       (function(el, url){
         var vid = el.querySelector('video');
-        var canvas = el.querySelector('canvas');
-        vid.addEventListener('loadeddata', function(){
-          vid.currentTime = Math.min(1, vid.duration * 0.1);
-        });
+        var cvs = el.querySelector('canvas');
+        vid.addEventListener('loadeddata', function(){ vid.currentTime = 0.5; });
         vid.addEventListener('seeked', function(){
           try {
-            canvas.width = vid.videoWidth || 300;
-            canvas.height = vid.videoHeight || 300;
-            canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
-          } catch(e) {
-            canvas.parentElement.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>';
-          }
+            cvs.width = vid.videoWidth || 300; cvs.height = vid.videoHeight || 300;
+            cvs.getContext('2d').drawImage(vid, 0, 0, cvs.width, cvs.height);
+          } catch(e){}
+          vid.src = '';
+        });
+        vid.addEventListener('error', function(){
+          cvs.parentNode.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>';
         });
         vid.src = url;
-      })(item.querySelector('.grid-video-thumb'), p.videoUrl);
+      })(item, p.videoUrl);
     } else if(firstImg){
       item.innerHTML=`<img src="${firstImg}" alt="">${multiIcon}<div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span><svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${p.comments.length}</span></div>${editBtn}`;
     } else {
@@ -3003,22 +3001,31 @@ function renderOtherProfileGrid(feedPosts){
         +'<svg width="28" height="20" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
         +'</div>'+editBtn;
     }
-    // Video — show real thumbnail via canvas
+    // Video — real thumbnail via canvas
     else if(p.isVideo && p.videoUrl){
-      item.innerHTML = '<div class="grid-video-thumb" style="width:100%;height:100%;position:relative;background:#111;"><video style="display:none;" preload="metadata" crossorigin="anonymous"></video><canvas style="width:100%;height:100%;object-fit:cover;display:block;"></canvas><div class="opu-grid-overlay" style="background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>'+editBtn;
+      item.innerHTML = '<div style="position:relative;width:100%;height:100%;background:#111;">'
+        + '<canvas style="width:100%;height:100%;object-fit:cover;display:block;"></canvas>'
+        + '<video preload="metadata" crossorigin="anonymous" style="display:none;position:absolute;"></video>'
+        + '<div class="opu-grid-overlay" style="background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;">'
+          + '<svg width="18" height="18" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+        + '</div>'
+        + '</div>' + editBtn;
       (function(el, url){
         var vid = el.querySelector('video');
-        var canvas = el.querySelector('canvas');
-        vid.addEventListener('loadeddata', function(){ vid.currentTime = Math.min(1, vid.duration * 0.1); });
+        var cvs = el.querySelector('canvas');
+        vid.addEventListener('loadeddata', function(){ vid.currentTime = 0.5; });
         vid.addEventListener('seeked', function(){
           try {
-            canvas.width = vid.videoWidth || 300;
-            canvas.height = vid.videoHeight || 300;
-            canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
-          } catch(e) {}
+            cvs.width = vid.videoWidth || 300; cvs.height = vid.videoHeight || 300;
+            cvs.getContext('2d').drawImage(vid, 0, 0, cvs.width, cvs.height);
+          } catch(e){}
+          vid.src = '';
+        });
+        vid.addEventListener('error', function(){
+          cvs.parentNode.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>';
         });
         vid.src = url;
-      })(item.querySelector('.grid-video-thumb'), p.videoUrl);
+      })(item, p.videoUrl);
     }
     // Photo
     else if(img){
@@ -3241,22 +3248,7 @@ async function openDMWith(otherUid,otherName){
 
         var div = document.createElement('div');
         div.className = 'chat-msg ' + (mine ? 'mine' : 'theirs');
-        // Sticker/GIF support in DMs
-        var dmBubbleContent = '';
-        var dmBubbleStyle = '';
-        if(m.stickerUrl){
-          // GIF
-          dmBubbleContent = '<img src="'+esc(m.stickerUrl)+'" style="max-width:180px;border-radius:14px;display:block;cursor:zoom-in;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}">';
-          dmBubbleStyle = 'background:transparent!important;padding:0!important;';
-        } else if(m.isEmoji && m.text && [...m.text].length <= 2){
-          // Big emoji sticker
-          dmBubbleContent = '<span style="font-size:38px;line-height:1.2;">'+esc(m.text)+'</span>';
-          dmBubbleStyle = 'background:transparent!important;border:none!important;box-shadow:none!important;padding:4px!important;';
-        } else {
-          // Normal text with mention linking
-          dmBubbleContent = m.text ? linkifyCaption(m.text) : '';
-        }
-        div.innerHTML = '<div class="chat-bubble" style="'+dmBubbleStyle+'">'+dmBubbleContent+'</div>'
+        div.innerHTML = '<div class="chat-bubble">'+esc(m.text)+'</div>'
           + (timeStr ? '<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;'+(mine?'text-align:right;':'')+'">'+timeStr+'</div>' : '');
         msgs.appendChild(div);
       });
@@ -3561,46 +3553,22 @@ async function openGroupConvo(gcId, gcData){
         div.className='chat-msg '+(mine?'mine':'theirs');
         var avHTML=senderAvatar?'<img src="'+esc(senderAvatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':esc(senderInitial);
         var mediaHTML=m.mediaUrl?('<div style="margin-bottom:4px;"><img src="'+esc(m.mediaUrl)+'" style="max-width:220px;border-radius:10px;display:block;" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'220px\':\'100%\'"></div>'):'';
-        // Sticker/GIF support
-        var stickerHTML='';
-        if(m.stickerUrl){
-          stickerHTML='<img src="'+esc(m.stickerUrl)+'" style="max-width:180px;border-radius:14px;display:block;cursor:zoom-in;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}">';
-        }
-        var rawText = m.text || '';
-        // Detect big emoji sticker
-        var isEmojiSticker = m.isEmoji && rawText && [...rawText].length <= 2;
-        var textHTML = rawText ? rawText.replace(/@everyone/g,'<span class="gc-everyone-mention">@everyone</span>').replace(/@(\w+)/g, function(match, handle){
-          if(handle==='everyone') return match;
+        var textHTML = m.text ? esc(m.text).replace(/@(\w+)/g, function(match, handle){
           return '<span style="color:var(--pink);font-weight:600;cursor:pointer;" onclick="viewProfileByHandle(\''+handle+'\')">@'+handle+'</span>';
         }) : '';
-        // Reply-to context (if message starts with [Replying to @...])
-        var replyContextHTML='';
-        var replyMatch=rawText.match(/^\[Replying to @(\w+)\]\s*/);
-        if(replyMatch){
-          var replyHandle=replyMatch[1];
-          replyContextHTML='<div class="gc-reply-context"><strong>@'+esc(replyHandle)+'</strong></div>';
-          textHTML=textHTML.replace(/^\[Replying to @\w+\]\s*/,'');
-        }
-        // Reply button (only on theirs messages)
-        var replyBtnHTML = !mine
-          ? '<button class="gc-reply-msg-btn" data-from="'+esc(senderHandle)+'" data-text="'+esc(rawText.slice(0,60))+'" title="Reply">↩ Reply</button>'
-          : '';
-        var bubbleContent = replyContextHTML + mediaHTML + stickerHTML + (isEmojiSticker ? '<span style="font-size:38px;line-height:1.2;">'+esc(rawText)+'</span>' : textHTML);
-        var bubbleStyle = isEmojiSticker ? 'background:transparent!important;border:none!important;box-shadow:none!important;padding:4px!important;' : '';
         if(!mine){
           div.innerHTML=
             '<div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:2px;">'
-              +'<div style="width:28px;height:28px;border-radius:50%;background:'+senderColor+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;cursor:pointer;" title="'+esc(senderName)+'" onclick="viewProfileByHandle(\''+esc(senderHandle)+'\')">'+avHTML+'</div>'
-              +'<div style="max-width:85%;">'
-                +'<div style="font-size:10px;font-weight:600;color:var(--pink);margin-bottom:2px;cursor:pointer;" onclick="viewProfileByHandle(\''+esc(senderHandle)+'\')">@'+esc(senderHandle)+'</div>'
-                +'<div class="chat-bubble" style="'+bubbleStyle+'">'+bubbleContent+'</div>'
+              +'<div style="width:28px;height:28px;border-radius:50%;background:'+senderColor+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;" title="'+esc(senderName)+'">'+avHTML+'</div>'
+              +'<div>'
+                +'<div style="font-size:10px;font-weight:600;color:var(--text3);margin-bottom:2px;cursor:pointer;" onclick="viewProfileByHandle(\''+esc(senderHandle)+'\')">@'+esc(senderHandle)+'</div>'
+                +'<div class="chat-bubble">'+mediaHTML+textHTML+'</div>'
                 +(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;">'+timeStr+'</div>':'')
               +'</div>'
-              +replyBtnHTML
             +'</div>';
         } else {
           div.innerHTML=
-            '<div class="chat-bubble" style="'+bubbleStyle+'">'+bubbleContent+'</div>'
+            '<div class="chat-bubble">'+mediaHTML+textHTML+'</div>'
             +(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;text-align:right;">'+timeStr+'</div>':'');
         }
         msgs.appendChild(div);
@@ -6689,11 +6657,11 @@ function renderFeedPaged(){
   _postsPage=_postsPage||1;
   var feed=document.getElementById('feed');
   if(!feed)return;
-  var visible=posts.filter(function(p){return !p.hidden;}).filter(function(p){return !isBlocked(p.uid);}).slice(0,_postsPage*POSTS_PER_PAGE);
+  var visible=posts.filter(function(p){return !p.hidden&&!_locallyDeletedIds.has(String(p.id));}).filter(function(p){return !isBlocked(p.uid);}).slice(0,_postsPage*POSTS_PER_PAGE);
   feed.innerHTML='';
   if(!visible.length){feed.innerHTML='<div class="empty"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><p>No posts yet!</p></div>';return;}
   visible.forEach(function(p,i){feed.appendChild(buildCard(p,i));});
-  var total=posts.filter(function(p){return !p.hidden;}).length;
+  var total=posts.filter(function(p){return !p.hidden&&!_locallyDeletedIds.has(String(p.id));}).length;
   if(total>_postsPage*POSTS_PER_PAGE){
     var sentinel=document.createElement('div');
     sentinel.id='feed-sentinel';
