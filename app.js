@@ -3181,7 +3181,22 @@ async function openDMWith(otherUid,otherName){
 
         var div = document.createElement('div');
         div.className = 'chat-msg ' + (mine ? 'mine' : 'theirs');
-        div.innerHTML = '<div class="chat-bubble">'+esc(m.text)+'</div>'
+        // Sticker/GIF support in DMs
+        var dmBubbleContent = '';
+        var dmBubbleStyle = '';
+        if(m.stickerUrl){
+          // GIF
+          dmBubbleContent = '<img src="'+esc(m.stickerUrl)+'" style="max-width:180px;border-radius:14px;display:block;cursor:zoom-in;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}">';
+          dmBubbleStyle = 'background:transparent!important;padding:0!important;';
+        } else if(m.isEmoji && m.text && [...m.text].length <= 2){
+          // Big emoji sticker
+          dmBubbleContent = '<span style="font-size:38px;line-height:1.2;">'+esc(m.text)+'</span>';
+          dmBubbleStyle = 'background:transparent!important;border:none!important;box-shadow:none!important;padding:4px!important;';
+        } else {
+          // Normal text with mention linking
+          dmBubbleContent = m.text ? linkifyCaption(m.text) : '';
+        }
+        div.innerHTML = '<div class="chat-bubble" style="'+dmBubbleStyle+'">'+dmBubbleContent+'</div>'
           + (timeStr ? '<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;'+(mine?'text-align:right;':'')+'">'+timeStr+'</div>' : '');
         msgs.appendChild(div);
       });
@@ -3486,22 +3501,46 @@ async function openGroupConvo(gcId, gcData){
         div.className='chat-msg '+(mine?'mine':'theirs');
         var avHTML=senderAvatar?'<img src="'+esc(senderAvatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':esc(senderInitial);
         var mediaHTML=m.mediaUrl?('<div style="margin-bottom:4px;"><img src="'+esc(m.mediaUrl)+'" style="max-width:220px;border-radius:10px;display:block;" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'220px\':\'100%\'"></div>'):'';
-        var textHTML = m.text ? esc(m.text).replace(/@(\w+)/g, function(match, handle){
+        // Sticker/GIF support
+        var stickerHTML='';
+        if(m.stickerUrl){
+          stickerHTML='<img src="'+esc(m.stickerUrl)+'" style="max-width:180px;border-radius:14px;display:block;cursor:zoom-in;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}">';
+        }
+        var rawText = m.text || '';
+        // Detect big emoji sticker
+        var isEmojiSticker = m.isEmoji && rawText && [...rawText].length <= 2;
+        var textHTML = rawText ? rawText.replace(/@everyone/g,'<span class="gc-everyone-mention">@everyone</span>').replace(/@(\w+)/g, function(match, handle){
+          if(handle==='everyone') return match;
           return '<span style="color:var(--pink);font-weight:600;cursor:pointer;" onclick="viewProfileByHandle(\''+handle+'\')">@'+handle+'</span>';
         }) : '';
+        // Reply-to context (if message starts with [Replying to @...])
+        var replyContextHTML='';
+        var replyMatch=rawText.match(/^\[Replying to @(\w+)\]\s*/);
+        if(replyMatch){
+          var replyHandle=replyMatch[1];
+          replyContextHTML='<div class="gc-reply-context"><strong>@'+esc(replyHandle)+'</strong></div>';
+          textHTML=textHTML.replace(/^\[Replying to @\w+\]\s*/,'');
+        }
+        // Reply button (only on theirs messages)
+        var replyBtnHTML = !mine
+          ? '<button class="gc-reply-msg-btn" data-from="'+esc(senderHandle)+'" data-text="'+esc(rawText.slice(0,60))+'" title="Reply">↩ Reply</button>'
+          : '';
+        var bubbleContent = replyContextHTML + mediaHTML + stickerHTML + (isEmojiSticker ? '<span style="font-size:38px;line-height:1.2;">'+esc(rawText)+'</span>' : textHTML);
+        var bubbleStyle = isEmojiSticker ? 'background:transparent!important;border:none!important;box-shadow:none!important;padding:4px!important;' : '';
         if(!mine){
           div.innerHTML=
             '<div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:2px;">'
-              +'<div style="width:28px;height:28px;border-radius:50%;background:'+senderColor+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;" title="'+esc(senderName)+'">'+avHTML+'</div>'
-              +'<div>'
-                +'<div style="font-size:10px;font-weight:600;color:var(--text3);margin-bottom:2px;cursor:pointer;" onclick="viewProfileByHandle(\''+esc(senderHandle)+'\')">@'+esc(senderHandle)+'</div>'
-                +'<div class="chat-bubble">'+mediaHTML+textHTML+'</div>'
+              +'<div style="width:28px;height:28px;border-radius:50%;background:'+senderColor+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;cursor:pointer;" title="'+esc(senderName)+'" onclick="viewProfileByHandle(\''+esc(senderHandle)+'\')">'+avHTML+'</div>'
+              +'<div style="max-width:85%;">'
+                +'<div style="font-size:10px;font-weight:600;color:var(--pink);margin-bottom:2px;cursor:pointer;" onclick="viewProfileByHandle(\''+esc(senderHandle)+'\')">@'+esc(senderHandle)+'</div>'
+                +'<div class="chat-bubble" style="'+bubbleStyle+'">'+bubbleContent+'</div>'
                 +(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;">'+timeStr+'</div>':'')
               +'</div>'
+              +replyBtnHTML
             +'</div>';
         } else {
           div.innerHTML=
-            '<div class="chat-bubble">'+mediaHTML+textHTML+'</div>'
+            '<div class="chat-bubble" style="'+bubbleStyle+'">'+bubbleContent+'</div>'
             +(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;text-align:right;">'+timeStr+'</div>':'');
         }
         msgs.appendChild(div);
