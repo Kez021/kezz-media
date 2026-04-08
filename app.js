@@ -126,6 +126,9 @@ async function seedDummyPosts() {
   }
 }
 
+// Track locally deleted post IDs — snapshot must never restore these
+var _locallyDeletedIds = new Set();
+
 function startPostsListener() {
   showSkeletons('feed', 4);
   postsCol().orderBy('createdAt','desc').onSnapshot(function(snap){
@@ -136,8 +139,17 @@ function startPostsListener() {
       data.likedBy = likedBy;
       if(!data.comments) data.comments = [];
       return data;
-    }).filter(function(p){ return !p.hidden || isAdmin(); });
-    _postsPage = 1; // reset pagination on fresh load
+    }).filter(function(p){
+      // Never show hidden posts on the feed — not even for admin
+      // (admin sees them in the admin dashboard instead)
+      if(p.hidden) return false;
+      // Never restore a post the user just deleted this session
+      if(_locallyDeletedIds.has(String(p.id))) return false;
+      // Never show blocked users posts
+      if(isBlocked(p.uid)) return false;
+      return true;
+    });
+    _postsPage = 1;
     renderFeed();
     renderExploreFeed();
     if(currentView==='profile')  refreshProfile();
@@ -1393,18 +1405,37 @@ function reportPost(id){
 function deletePost(id){
   id=String(id);
   closeMenus();
-  document.querySelectorAll(`#pc-${id}`).forEach(card=>{card.style.cssText='opacity:0;transform:scale(.96);transition:all .28s ease;';});
-  // Soft delete: hides from all feeds but keeps data in Firestore for admin
+
+  // Register in session-level deleted set so snapshot never restores it
+  _locallyDeletedIds.add(id);
+
+  // Remove from local posts array immediately
+  posts = posts.filter(function(p){ return String(p.id) !== id; });
+
+  // Animate cards out and remove from DOM
+  document.querySelectorAll('#pc-'+id).forEach(function(card){
+    card.style.cssText='opacity:0;transform:scale(.96);transition:all .28s ease;pointer-events:none;';
+    setTimeout(function(){ card.remove(); }, 300);
+  });
+
+  // Soft-delete in Firestore: marked hidden=true so admin can still see it
+  // but it will NEVER appear on any feed again (snapshot filter blocks it)
+  postsCol().doc(id).update({
+    hidden: true,
+    hiddenAt: firebase.firestore.FieldValue.serverTimestamp(),
+    hiddenBy: me.uid
+  }).catch(function(){
+    // Fallback: hard delete if doc is already gone
+    postsCol().doc(id).delete().catch(function(){});
+  });
+
+  // Re-render feed and profile to reflect removal
   setTimeout(function(){
-    postsCol().doc(id).update({
-      hidden: true,
-      hiddenAt: firebase.firestore.FieldValue.serverTimestamp(),
-      hiddenBy: me.uid
-    }).catch(function(){
-      // Fallback: hard delete if update fails (e.g. post already gone)
-      postsCol().doc(id).delete().catch(()=>{});
-    });
-  }, 300);
+    renderFeed();
+    renderExploreFeed();
+    refreshProfile();
+  }, 350);
+
   toast('Post deleted');
 }
 function toggleMenu(e,mid){e.stopPropagation();closeMenus();document.getElementById(mid).classList.add('open');}
@@ -1454,7 +1485,25 @@ function renderPostGrid(){
     if(p.isYoutube && p.ytThumb){
       item.innerHTML=`<img src="${p.ytThumb}" alt=""><div class="grid-overlay"><svg width="18" height="18" viewBox="0 0 68 48" style="display:block"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg></div>${editBtn}`;
     } else if(p.isVideo && p.videoUrl){
-      item.innerHTML=`<div class="grid-item-placeholder" style="background:#111;"><svg width="32" height="32" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><div class="grid-overlay" style="background:rgba(0,0,0,.35);"><span style="font-size:11px;">Video</span></div>${editBtn}`;
+      // Generate real video thumbnail using a hidden video + canvas
+      item.innerHTML=`<div class="grid-video-thumb" style="width:100%;height:100%;position:relative;background:#111;"><video src="${esc(p.videoUrl)}" style="display:none;" preload="metadata" crossorigin="anonymous"></video><canvas style="width:100%;height:100%;object-fit:cover;display:block;"></canvas><div class="grid-overlay" style="background:rgba(0,0,0,.3);"><svg width="16" height="16" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>${editBtn}`;
+      (function(el, url){
+        var vid = el.querySelector('video');
+        var canvas = el.querySelector('canvas');
+        vid.addEventListener('loadeddata', function(){
+          vid.currentTime = Math.min(1, vid.duration * 0.1);
+        });
+        vid.addEventListener('seeked', function(){
+          try {
+            canvas.width = vid.videoWidth || 300;
+            canvas.height = vid.videoHeight || 300;
+            canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
+          } catch(e) {
+            canvas.parentElement.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>';
+          }
+        });
+        vid.src = url;
+      })(item.querySelector('.grid-video-thumb'), p.videoUrl);
     } else if(firstImg){
       item.innerHTML=`<img src="${firstImg}" alt="">${multiIcon}<div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span><svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${p.comments.length}</span></div>${editBtn}`;
     } else {
@@ -2954,11 +3003,22 @@ function renderOtherProfileGrid(feedPosts){
         +'<svg width="28" height="20" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
         +'</div>'+editBtn;
     }
-    // Video
+    // Video — show real thumbnail via canvas
     else if(p.isVideo && p.videoUrl){
-      item.innerHTML = '<div style="width:100%;height:100%;background:#111;display:flex;align-items:center;justify-content:center;">'
-        +'<svg width="32" height="32" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" fill="none"/></svg>'
-        +'</div>'+editBtn;
+      item.innerHTML = '<div class="grid-video-thumb" style="width:100%;height:100%;position:relative;background:#111;"><video style="display:none;" preload="metadata" crossorigin="anonymous"></video><canvas style="width:100%;height:100%;object-fit:cover;display:block;"></canvas><div class="opu-grid-overlay" style="background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>'+editBtn;
+      (function(el, url){
+        var vid = el.querySelector('video');
+        var canvas = el.querySelector('canvas');
+        vid.addEventListener('loadeddata', function(){ vid.currentTime = Math.min(1, vid.duration * 0.1); });
+        vid.addEventListener('seeked', function(){
+          try {
+            canvas.width = vid.videoWidth || 300;
+            canvas.height = vid.videoHeight || 300;
+            canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
+          } catch(e) {}
+        });
+        vid.src = url;
+      })(item.querySelector('.grid-video-thumb'), p.videoUrl);
     }
     // Photo
     else if(img){
@@ -6629,11 +6689,11 @@ function renderFeedPaged(){
   _postsPage=_postsPage||1;
   var feed=document.getElementById('feed');
   if(!feed)return;
-  var visible=posts.filter(function(p){return !p.hidden||isAdmin();}).filter(function(p){return !isBlocked(p.uid);}).slice(0,_postsPage*POSTS_PER_PAGE);
+  var visible=posts.filter(function(p){return !p.hidden;}).filter(function(p){return !isBlocked(p.uid);}).slice(0,_postsPage*POSTS_PER_PAGE);
   feed.innerHTML='';
   if(!visible.length){feed.innerHTML='<div class="empty"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><p>No posts yet!</p></div>';return;}
   visible.forEach(function(p,i){feed.appendChild(buildCard(p,i));});
-  var total=posts.filter(function(p){return !p.hidden||isAdmin();}).length;
+  var total=posts.filter(function(p){return !p.hidden;}).length;
   if(total>_postsPage*POSTS_PER_PAGE){
     var sentinel=document.createElement('div');
     sentinel.id='feed-sentinel';
