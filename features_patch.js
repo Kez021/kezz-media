@@ -6,7 +6,6 @@
 // ══════════════════════════════════════════════════════
 
 // ── GIF/STICKER DATA ──────────────────────────────────
-// Curated sets of Tenor GIFs & emoji stickers grouped by mood
 var STICKER_SETS = {
   funny: ['😂','🤣','😹','🙈','💀','🤡','👻','🫠','😵','🤪'],
   love:  ['❤️','😍','🥰','💕','💖','💗','💓','💞','💌','🫶'],
@@ -16,18 +15,37 @@ var STICKER_SETS = {
   cute:  ['🌸','🌺','🦋','🐱','🐶','🐼','🦊','🐸','🌈','⭐'],
 };
 
-// Free Tenor GIF search API key (demo key, works for basic usage)
-var TENOR_KEY = 'AIzaSyAyimkuYQYF_FXVALexPzpnFRjFIr1RJZM';
+// Giphy public API — works without CORS issues
+var GIPHY_KEY = 'dc6zaTOxFJmzC'; // public beta key
 
 async function fetchGifs(query, limit){
   limit = limit || 12;
+  // Try Giphy first
   try {
-    var url = 'https://tenor.googleapis.com/v2/search?q='+encodeURIComponent(query)+'&key='+TENOR_KEY+'&limit='+limit+'&media_filter=gif';
+    var url = 'https://api.giphy.com/v1/gifs/search?api_key='+GIPHY_KEY+'&q='+encodeURIComponent(query)+'&limit='+limit+'&rating=pg-13&lang=en&bundle=messaging_non_clips';
     var res = await fetch(url);
-    var data = await res.json();
-    if(data.results) return data.results.map(function(r){ return r.media_formats&&r.media_formats.tinygif&&r.media_formats.tinygif.url || ''; }).filter(Boolean);
+    if(res.ok){
+      var data = await res.json();
+      if(data.data && data.data.length){
+        return data.data.map(function(g){
+          return g.images && g.images.fixed_height_small && g.images.fixed_height_small.url || g.images.original.url || '';
+        }).filter(Boolean);
+      }
+    }
   } catch(e) {}
-  // Fallback: return empty array
+  // Fallback: use Giphy trending
+  try {
+    var url2 = 'https://api.giphy.com/v1/gifs/trending?api_key='+GIPHY_KEY+'&limit='+limit+'&rating=pg-13';
+    var res2 = await fetch(url2);
+    if(res2.ok){
+      var data2 = await res2.json();
+      if(data2.data && data2.data.length){
+        return data2.data.map(function(g){
+          return g.images && g.images.fixed_height_small && g.images.fixed_height_small.url || '';
+        }).filter(Boolean);
+      }
+    }
+  } catch(e2) {}
   return [];
 }
 
@@ -211,8 +229,8 @@ openDMWith = async function(otherUid, otherName){
     var btn = document.createElement('button');
     btn.className = 'dm-sticker-btn';
     btn.title = 'Stickers & GIFs';
-    btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:22px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
-    btn.textContent = '🎭';
+    btn.style.cssText = 'background:none;border:none;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+    btn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
     btn.onclick = function(){ openStickerPicker('dm', convoId); };
     var sendBtn = row.querySelector('.chat-send');
     if(sendBtn) row.insertBefore(btn, sendBtn);
@@ -232,8 +250,8 @@ openGroupConvo = async function(gcId, gcData){
     var stickerBtn = document.createElement('button');
     stickerBtn.className = 'gc-sticker-btn';
     stickerBtn.title = 'Stickers & GIFs';
-    stickerBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:22px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
-    stickerBtn.textContent = '🎭';
+    stickerBtn.style.cssText = 'background:none;border:none;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+    stickerBtn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
     stickerBtn.onclick = function(){ openStickerPicker('gc', gcId); };
     var sendBtn = row.querySelector('.chat-send');
     if(sendBtn) row.insertBefore(stickerBtn, sendBtn);
@@ -344,23 +362,43 @@ function applyGCTheme(gcId, themeIdx){
 }
 
 // ── ADD THEME BTN TO GC SETTINGS ──────────────────────
-// Patch openGCSettings to include theme button
+// Patch openGCSettings — inject theme grid into gcSettingsBox (the real modal)
 var _origOpenGCSettings = typeof openGCSettings === 'function' ? openGCSettings : null;
 if(_origOpenGCSettings){
   openGCSettings = function(gcId){
     _origOpenGCSettings(gcId);
-    // Inject theme button after settings opens
     setTimeout(function(){
-      var settingsPanel = document.getElementById('gcSettingsPanel') || document.querySelector('[data-gc-settings]');
-      if(!settingsPanel) return;
-      if(settingsPanel.querySelector('.gc-theme-btn')) return;
-      var btn = document.createElement('button');
-      btn.className = 'gc-theme-btn';
-      btn.style.cssText = 'width:100%;margin-top:10px;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--pink);font-family:Jost,sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;justify-content:center;';
-      btn.innerHTML = '🎨 Change Chat Theme';
-      btn.onclick = function(){ openGCThemePicker(gcId); };
-      settingsPanel.appendChild(btn);
-    }, 200);
+      var box = document.getElementById('gcSettingsBox');
+      if(!box) return;
+      if(box.querySelector('#gcThemeSection')) return;
+      var activeId = gcId || window._activeGCId;
+      if(!activeId) return;
+      var TDEFS = [
+        {name:'Pink',    bg:'linear-gradient(135deg,#e2688a,#f0a0b8)', bubble:'var(--pink)',  text:'white'},
+        {name:'Ocean',   bg:'linear-gradient(135deg,#0f2027,#2c5364)',  bubble:'#00b4d8',    text:'white'},
+        {name:'Sunset',  bg:'linear-gradient(135deg,#f8b500,#c81d77)',  bubble:'#fff',        text:'#c81d77'},
+        {name:'Forest',  bg:'linear-gradient(135deg,#0a3d0a,#2e6b2e)',  bubble:'#56ab2f',    text:'white'},
+        {name:'Midnight',bg:'linear-gradient(135deg,#0d0d0d,#1a1a2e)', bubble:'#7c3aed',    text:'white'},
+        {name:'Bubble',  bg:'linear-gradient(135deg,#fce4ec,#f8bbd0)',  bubble:'#e91e63',    text:'white'},
+      ];
+      var section = document.createElement('div');
+      section.id = 'gcThemeSection';
+      section.style.cssText = 'margin:0 0 16px;padding-bottom:16px;border-bottom:1px solid var(--border);';
+      var btnHtml = TDEFS.map(function(t,i){
+        return '<button onclick="applyGCTheme(\''+activeId+'\','+i+');toast(\'Theme updated \u{1F3A8}\')" '
+          +'style="border:none;border-radius:12px;padding:10px 6px;cursor:pointer;background:'+t.bg+';'
+          +'display:flex;flex-direction:column;align-items:center;gap:4px;font-family:Jost,sans-serif;transition:transform .15s;" '
+          +'onmouseenter="this.style.transform=\'scale(1.06)\'" onmouseleave="this.style.transform=\'scale(1)\'">'
+          +'<div style="background:'+t.bubble+';color:'+t.text+';padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;">Hi!</div>'
+          +'<div style="font-size:10px;color:white;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.5);">'+t.name+'</div>'
+          +'</button>';
+      }).join('');
+      section.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Chat Theme</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">'+btnHtml+'</div>';
+      var inner = box.querySelector('div[style*="padding:14px"]');
+      if(inner) inner.insertBefore(section, inner.firstChild);
+      else box.appendChild(section);
+    }, 250);
   };
 }
 
@@ -497,7 +535,7 @@ function injectCommentStickerButtons(){
     btn.className = 'c-sticker-btn';
     btn.title = 'Stickers & GIFs';
     btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0;';
-    btn.textContent = '🎭';
+    btn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
     btn.onclick = function(){ openStickerPicker('comment', pid); };
     inp.parentElement.insertBefore(btn, inp.nextSibling);
   });
@@ -671,6 +709,131 @@ var _origInit2 = init;
 init = async function(){
   await _origInit2();
   setTimeout(watchForNewPosts, 2000);
+};
+
+
+// ── DM SETTINGS: THEME + NICKNAME ─────────────────────
+var DM_THEMES = [
+  {name:'Pink',    bg:'',                                              bubble:'linear-gradient(135deg,var(--pink),var(--pink-soft))'},
+  {name:'Ocean',   bg:'linear-gradient(135deg,#0f2027,#2c5364)',       bubble:'linear-gradient(135deg,#00b4d8,#0077b6)'},
+  {name:'Sunset',  bg:'linear-gradient(135deg,#f8b500,#c81d77)',       bubble:'linear-gradient(135deg,#fff,#fce4ec)'},
+  {name:'Forest',  bg:'linear-gradient(135deg,#0a3d0a,#2e6b2e)',       bubble:'linear-gradient(135deg,#56ab2f,#a8e063)'},
+  {name:'Midnight',bg:'linear-gradient(135deg,#0d0d0d,#1a1a2e)',      bubble:'linear-gradient(135deg,#7c3aed,#a78bfa)'},
+  {name:'Bubblegum',bg:'linear-gradient(135deg,#fce4ec,#f8bbd0)',     bubble:'linear-gradient(135deg,#e91e63,#f48fb1)'},
+];
+var _dmThemes = {}; // uid → theme index
+
+function openDMSettings(otherUid, otherName){
+  var existing = document.getElementById('dmSettingsModal');
+  if(existing) existing.remove();
+
+  var convoId = [me.uid, otherUid].sort().join('_');
+  var savedNick = '';
+  try { savedNick = JSON.parse(localStorage.getItem('dmNick_'+convoId)||'""'); } catch(e){}
+  var currentTheme = _dmThemes[otherUid] || 0;
+
+  var modal = document.createElement('div');
+  modal.id = 'dmSettingsModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;';
+
+  var TDEFS = DM_THEMES;
+  var themeGrid = TDEFS.map(function(t, i){
+    return '<button data-ti="'+i+'" onclick="applyDMTheme(''+otherUid+'','+i+');document.querySelectorAll('#dmThemeGrid button').forEach(function(b){b.style.outline='none'});this.style.outline='2.5px solid white'" style="border:none;border-radius:12px;padding:10px 6px;cursor:pointer;background:'+(t.bg||'var(--bg3)')+';display:flex;flex-direction:column;align-items:center;gap:4px;font-family:Jost,sans-serif;transition:transform .15s;min-height:60px;" onmouseenter="this.style.transform='scale(1.06)'" onmouseleave="this.style.transform='scale(1)'">'
+      +'<div style="background:'+t.bubble+';color:white;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.15);">Hi!</div>'
+      +'<div style="font-size:10px;'+(t.bg?'color:white;':'color:var(--text2);')+';font-weight:600;'+(t.bg?'text-shadow:0 1px 3px rgba(0,0,0,.5);':'')+'>'+t.name+'</div>'
+      +'</button>';
+  }).join('');
+
+  modal.innerHTML =
+    '<div style="background:var(--card);border-radius:22px 22px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);">'
+        +'<div style="font-size:16px;font-weight:700;font-family:Jost,sans-serif;">Chat Settings</div>'
+        +'<button onclick="document.getElementById('dmSettingsModal').remove()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:22px;line-height:1;">×</button>'
+      +'</div>'
+      +'<div style="padding:16px 18px;">'
+        // Nickname
+        +'<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">'
+          +'<div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Nickname for '+esc(otherName)+'</div>'
+          +'<div style="display:flex;gap:8px;">'
+            +'<input id="dmNickInput" type="text" value="'+esc(savedNick)+'" placeholder="Set a nickname..." maxlength="30" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-family:Jost,sans-serif;font-size:13.5px;outline:none;" onfocus="this.style.borderColor='var(--pink)'" onblur="this.style.borderColor='var(--border)'">'
+            +'<button onclick="saveDMNickname(''+convoId+'',''+otherUid+'')" style="background:var(--pink);color:white;border:none;border-radius:12px;padding:10px 16px;font-family:Jost,sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Save</button>'
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:6px;">Only visible to you.</div>'
+        +'</div>'
+        // Theme
+        +'<div>'
+          +'<div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Chat Theme</div>'
+          +'<div id="dmThemeGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">'+themeGrid+'</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  // Mark current theme
+  setTimeout(function(){
+    var btns = document.querySelectorAll('#dmThemeGrid button');
+    if(btns[currentTheme]) btns[currentTheme].style.outline = '2.5px solid var(--pink)';
+  }, 50);
+}
+
+function applyDMTheme(otherUid, idx){
+  _dmThemes[otherUid] = idx;
+  var theme = DM_THEMES[idx];
+  var msgs = document.getElementById('chatMsgs');
+  if(msgs){
+    msgs.style.background = theme.bg || '';
+  }
+  // Update my bubble colors
+  document.querySelectorAll('#chatMsgs .chat-msg.mine .chat-bubble').forEach(function(b){
+    b.style.background = theme.bubble;
+  });
+  // Save to localStorage
+  localStorage.setItem('dmTheme_'+otherUid, String(idx));
+  toast('Theme updated! 🎨');
+}
+
+function saveDMNickname(convoId, otherUid){
+  var inp = document.getElementById('dmNickInput');
+  if(!inp) return;
+  var val = inp.value.trim();
+  localStorage.setItem('dmNick_'+convoId, JSON.stringify(val));
+  toast(val ? 'Nickname saved: '+val+' ✓' : 'Nickname cleared ✓');
+  document.getElementById('dmSettingsModal').remove();
+  // Refresh DM header to show nickname
+  var header = document.querySelector('#chatArea .chat-header');
+  if(header){
+    var nameEl = header.querySelector('div[style*="font-size:14px"]');
+    if(nameEl && val) nameEl.textContent = val;
+  }
+}
+
+// Restore DM theme from localStorage when opening a DM
+var _origOpenDMWith2 = openDMWith;
+openDMWith = async function(otherUid, otherName){
+  await _origOpenDMWith2(otherUid, otherName);
+  // Restore saved theme
+  var savedThemeIdx = parseInt(localStorage.getItem('dmTheme_'+otherUid)||'0');
+  if(savedThemeIdx > 0){
+    setTimeout(function(){ applyDMTheme(otherUid, savedThemeIdx); }, 400);
+  }
+  // Inject settings button into DM header
+  setTimeout(function(){
+    var header = document.querySelector('#chatArea .chat-header');
+    if(!header || header.querySelector('.dm-settings-btn')) return;
+    var btn = document.createElement('button');
+    btn.className = 'dm-settings-btn';
+    btn.title = 'Chat settings';
+    btn.style.cssText = 'background:none;border:none;cursor:pointer;padding:6px;color:var(--text3);display:flex;align-items:center;justify-content:center;';
+    btn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+    var uName = otherName || '';
+    btn.onclick = function(){ openDMSettings(otherUid, uName); };
+    // Insert before the call button (last button in header)
+    var callBtn = header.querySelector('button[title="Voice Call"]');
+    if(callBtn) header.insertBefore(btn, callBtn);
+    else header.appendChild(btn);
+  }, 350);
 };
 
 console.log('[Kez Patch] Mega features loaded: stickers/GIFs, GC reply, GC theme, @everyone, push notifications, new-post banners ✓');
