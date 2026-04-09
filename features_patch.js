@@ -14,40 +14,124 @@ var STICKER_SETS = {
   cute:  ['🌸','🌺','🦋','🐱','🐶','🐼','🦊','🐸','🌈','⭐'],
 };
 
-// ── GIF via GIPHY (reliable, no CORS issues) ──────────
-var GIPHY_KEY = 'dc6zaTOxFJmzC';
+// ── GIF SEARCH — Tenor API v2 + large curated fallback ──
+var TENOR_KEY2 = 'AIzaSyAyimkuYQYF_FXVALexPzpnFRjFIr1RJZM';
+
+// Large curated GIF library (always works regardless of API)
+var CURATED_GIFS = {
+  funny: [
+    'https://i.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
+    'https://i.giphy.com/media/l41lISqMeRSQUQ2aY/giphy.gif',
+    'https://i.giphy.com/media/4PT6v3PQKG6Yg/giphy.gif',
+    'https://i.giphy.com/media/lszAB3TzFtRaU/giphy.gif',
+    'https://i.giphy.com/media/Wn74RUT0vjnoU/giphy.gif',
+    'https://i.giphy.com/media/11sBLVxNs7v6WA/giphy.gif',
+    'https://i.giphy.com/media/JMV7IKoqzxlrW/giphy.gif',
+    'https://i.giphy.com/media/5GoVLqeAOo6PK/giphy.gif',
+    'https://i.giphy.com/media/zcVOyJBHYZvX2/giphy.gif',
+  ],
+  love: [
+    'https://i.giphy.com/media/3ohzdIuqJoo8QdKlnW/giphy.gif',
+    'https://i.giphy.com/media/l0MYJlyOwdlT0SeKk/giphy.gif',
+    'https://i.giphy.com/media/3o7TKoXx6b4c9bTa9y/giphy.gif',
+    'https://i.giphy.com/media/26BRuo6sLetdllPAQ/giphy.gif',
+    'https://i.giphy.com/media/kHU8W94VS329y/giphy.gif',
+    'https://i.giphy.com/media/L95W4wv8nnb9K/giphy.gif',
+    'https://i.giphy.com/media/lnlAifQdenMxW/giphy.gif',
+    'https://i.giphy.com/media/dOl2LFzYEXSco/giphy.gif',
+  ],
+  sad: [
+    'https://i.giphy.com/media/ISOckXUybVfQ4/giphy.gif',
+    'https://i.giphy.com/media/OPU6wzx8JrHna/giphy.gif',
+    'https://i.giphy.com/media/7SF5scGB2AFrgsXxt0/giphy.gif',
+    'https://i.giphy.com/media/d2lcHJTG5Tscg/giphy.gif',
+    'https://i.giphy.com/media/jUwpNzg9IcyrK/giphy.gif',
+    'https://i.giphy.com/media/L95W4wv8nnb9K/giphy.gif',
+    'https://i.giphy.com/media/ROF8OQvDmxytW/giphy.gif',
+  ],
+  wow: [
+    'https://i.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
+    'https://i.giphy.com/media/l0HlHFRbmaZtBRhXG/giphy.gif',
+    'https://i.giphy.com/media/5VKbvrjxpVJCM/giphy.gif',
+    'https://i.giphy.com/media/OK27wINdQS5YQ/giphy.gif',
+    'https://i.giphy.com/media/3ohzdZMDMPVWGMaDNe/giphy.gif',
+    'https://i.giphy.com/media/WRQBXSCnEFJIuxktnw/giphy.gif',
+    'https://i.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif',
+  ],
+  meme: [
+    'https://i.giphy.com/media/ely3apij36BJhoZ234/giphy.gif',
+    'https://i.giphy.com/media/YQitE4YNQNahy/giphy.gif',
+    'https://i.giphy.com/media/oNRZuFhOEDPby/giphy.gif',
+    'https://i.giphy.com/media/26DN7fdyFGSfR25ao/giphy.gif',
+    'https://i.giphy.com/media/3ohjV3KahwmqwMtcpy/giphy.gif',
+    'https://i.giphy.com/media/26ufjV4fOXCjwblrC/giphy.gif',
+    'https://i.giphy.com/media/TlK63EQERmiAVzMEgO4/giphy.gif',
+    'https://i.giphy.com/media/l2JecLAolPDhm7f44/giphy.gif',
+  ],
+  cute: [
+    'https://i.giphy.com/media/BzyTuYCmvSORqs1ABM/giphy.gif',
+    'https://i.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif',
+    'https://i.giphy.com/media/l2JdZoJQOjAkMEThu/giphy.gif',
+    'https://i.giphy.com/media/sS2R5PW4WNpjq/giphy.gif',
+    'https://i.giphy.com/media/ICOgUNjpvO0PC/giphy.gif',
+    'https://i.giphy.com/media/gFwZfXIqD0eNW/giphy.gif',
+    'https://i.giphy.com/media/jpbnoe3UIa8TU8LM13/giphy.gif',
+  ],
+  fire: [
+    'https://i.giphy.com/media/26BRBKqUiq586bRVm/giphy.gif',
+    'https://i.giphy.com/media/l0HlNQ03J5JxX6lva/giphy.gif',
+    'https://i.giphy.com/media/3o7TKABpm8GVBjKuDm/giphy.gif',
+    'https://i.giphy.com/media/26gs8TP5RoKOBNZUA/giphy.gif',
+    'https://i.giphy.com/media/5GoVLqeAOo6PK/giphy.gif',
+    'https://i.giphy.com/media/5HZFOdE3YWGIM/giphy.gif',
+  ],
+  happy: [
+    'https://i.giphy.com/media/blSTtZehjAZ8I/giphy.gif',
+    'https://i.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif',
+    'https://i.giphy.com/media/QBC5foQmoit33bFfkL/giphy.gif',
+    'https://i.giphy.com/media/l0HlvtIPzPdt2usKs/giphy.gif',
+    'https://i.giphy.com/media/3oFzm0o2hNl5k7pHri/giphy.gif',
+    'https://i.giphy.com/media/26gsvRLqhJpAFuLgQ/giphy.gif',
+    'https://i.giphy.com/media/XreQmk7ETCak0/giphy.gif',
+  ],
+};
 
 async function fetchGifs(query, limit) {
-  limit = limit || 12;
+  limit = limit || 9;
+  var q = (query || 'funny').toLowerCase().trim();
+
+  // Try Tenor v2 API first (most up-to-date GIFs)
   try {
-    var url = 'https://api.giphy.com/v1/gifs/search?api_key=' + GIPHY_KEY
-      + '&q=' + encodeURIComponent(query)
-      + '&limit=' + limit + '&rating=pg-13&lang=en';
+    var url = 'https://tenor.googleapis.com/v2/search'
+      + '?q=' + encodeURIComponent(q)
+      + '&key=' + TENOR_KEY2
+      + '&limit=' + limit
+      + '&media_filter=gif'
+      + '&contentfilter=medium'
+      + '&locale=en_US';
     var res = await fetch(url);
     if (res.ok) {
       var data = await res.json();
-      if (data.data && data.data.length) {
-        return data.data.map(function(g) {
-          return (g.images && g.images.fixed_height_small && g.images.fixed_height_small.url)
-            || (g.images && g.images.original && g.images.original.url) || '';
-        }).filter(Boolean);
+      if (data.results && data.results.length) {
+        var urls = [];
+        data.results.forEach(function(r) {
+          var f = r.media_formats;
+          var u = (f && f.tinygif && f.tinygif.url) || (f && f.gif && f.gif.url) || '';
+          if (u) urls.push(u);
+        });
+        if (urls.length >= 3) return urls;
       }
     }
   } catch (e) {}
-  // Fallback to trending
-  try {
-    var url2 = 'https://api.giphy.com/v1/gifs/trending?api_key=' + GIPHY_KEY + '&limit=' + limit + '&rating=pg-13';
-    var res2 = await fetch(url2);
-    if (res2.ok) {
-      var data2 = await res2.json();
-      if (data2.data && data2.data.length) {
-        return data2.data.map(function(g) {
-          return (g.images && g.images.fixed_height_small && g.images.fixed_height_small.url) || '';
-        }).filter(Boolean);
-      }
-    }
-  } catch (e2) {}
-  return [];
+
+  // Fall back to curated GIFs — always works, no network needed
+  var cat = q;
+  // Try to match query to a category
+  if (!CURATED_GIFS[cat]) {
+    var keys = Object.keys(CURATED_GIFS);
+    cat = keys.find(function(k){ return q.includes(k) || k.includes(q); }) || 'funny';
+  }
+  return CURATED_GIFS[cat] || CURATED_GIFS['funny'];
 }
 
 // ── MINIMALIST SMILEY SVG ICON ────────────────────────
@@ -121,20 +205,26 @@ function renderGifPanel(body) {
         return '<button onclick="quickGifSearch(\'' + q + '\')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text2);font-family:Jost,sans-serif;">' + q + '</button>';
       }).join('')
     + '</div>'
-    + '<div id="gifGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"><div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:13px;padding:20px;">Tap a category or search above 👆</div></div>';
+    + '<div id="gifGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>';
 
   var inp = document.getElementById('gifSearchInput');
   if (inp) {
     inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') doGifSearch(); });
   }
-  // Auto-load trending
-  quickGifSearch('trending');
+  // Auto-load funny GIFs immediately
+  quickGifSearch('funny');
 }
 
 function quickGifSearch(q) {
   var inp = document.getElementById('gifSearchInput');
-  if (inp && q !== 'trending') inp.value = q;
-  doGifSearch(q === 'trending' ? 'cute' : q);
+  if (inp) inp.value = q;
+  // Highlight active category button
+  document.querySelectorAll('[id^="gifcat-"]').forEach(function(b){
+    b.style.background = 'var(--bg3)'; b.style.color = 'var(--text2)'; b.style.borderColor = 'var(--border)';
+  });
+  var activeBtn = document.getElementById('gifcat-' + q);
+  if(activeBtn){ activeBtn.style.background = 'var(--pink)'; activeBtn.style.color = 'white'; activeBtn.style.borderColor = 'var(--pink)'; }
+  doGifSearch(q);
 }
 
 async function doGifSearch(forceQuery) {
