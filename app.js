@@ -1478,30 +1478,25 @@ function renderPostGrid(){
     if(p.isYoutube && p.ytThumb){
       item.innerHTML=`<img src="${p.ytThumb}" alt=""><div class="grid-overlay"><svg width="18" height="18" viewBox="0 0 68 48" style="display:block"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg></div>${editBtn}`;
     } else if(p.isVideo && p.videoUrl){
-      item.innerHTML = '<div style="position:relative;width:100%;height:100%;background:#111;">'
-        + '<canvas style="width:100%;height:100%;object-fit:cover;display:block;"></canvas>'
-        + '<video preload="metadata" crossorigin="anonymous" style="display:none;position:absolute;"></video>'
-        + '<div class="grid-overlay" style="background:rgba(0,0,0,.25);">'
+      // Use video element directly as thumbnail — no canvas CORS issues
+      item.innerHTML = '<div style="position:relative;width:100%;height:100%;background:#111;overflow:hidden;">'
+        + '<video src="'+esc(p.videoUrl)+'" preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;"></video>'
+        + '<div class="grid-overlay" style="background:rgba(0,0,0,.3);">'
           + '<svg width="18" height="18" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
         + '</div>'
         + '</div>' + editBtn;
-      // Draw actual first frame onto canvas
-      (function(el, url){
-        var vid = el.querySelector('video');
-        var cvs = el.querySelector('canvas');
-        vid.addEventListener('loadeddata', function(){ vid.currentTime = 0.5; });
-        vid.addEventListener('seeked', function(){
-          try {
-            cvs.width = vid.videoWidth || 300; cvs.height = vid.videoHeight || 300;
-            cvs.getContext('2d').drawImage(vid, 0, 0, cvs.width, cvs.height);
-          } catch(e){}
-          vid.src = '';
+      // Seek to 1s to get a real frame
+      var vidEl = item.querySelector('video');
+      if(vidEl){
+        vidEl.addEventListener('loadedmetadata', function(){
+          vidEl.currentTime = Math.min(1, vidEl.duration * 0.1 || 1);
         });
-        vid.addEventListener('error', function(){
-          cvs.parentNode.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>';
+        vidEl.addEventListener('error', function(){
+          var wrap = vidEl.parentElement;
+          if(wrap) wrap.style.background = 'linear-gradient(135deg,#1a1a2e,#16213e)';
+          vidEl.style.display = 'none';
         });
-        vid.src = url;
-      })(item, p.videoUrl);
+      }
     } else if(firstImg){
       item.innerHTML=`<img src="${firstImg}" alt="">${multiIcon}<div class="grid-overlay"><svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.likes}</span><svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${p.comments.length}</span></div>${editBtn}`;
     } else {
@@ -1892,6 +1887,33 @@ function openModal(){
   if(vc) vc.value='';
   document.querySelectorAll('.mood-chip').forEach(c=>c.classList.remove('sel'));
   switchPostType('status');
+  // Hook mention dropdown to poll inputs too
+  var pollQ = document.getElementById('pollQuestion');
+  if(pollQ && !pollQ._mentionHooked){
+    pollQ._mentionHooked = true;
+    var pqWrap = pollQ.parentElement;
+    if(!pqWrap.classList.contains('c-input-wrap')){
+      var pqw = document.createElement('div');
+      pqw.className = 'c-input-wrap';
+      pqw.style.position = 'relative';
+      pollQ.parentNode.insertBefore(pqw, pollQ);
+      pqw.appendChild(pollQ);
+    }
+    pollQ.addEventListener('input', function(){ handleMentionInput(pollQ, 'new'); });
+  }
+  var pollCap = document.getElementById('pollCaption');
+  if(pollCap && !pollCap._mentionHooked){
+    pollCap._mentionHooked = true;
+    var pcWrap = pollCap.parentElement;
+    if(!pcWrap.classList.contains('c-input-wrap')){
+      var pcw = document.createElement('div');
+      pcw.className = 'c-input-wrap';
+      pcw.style.position = 'relative';
+      pollCap.parentNode.insertBefore(pcw, pollCap);
+      pcw.appendChild(pollCap);
+    }
+    pollCap.addEventListener('input', function(){ handleMentionInput(pollCap, 'new'); });
+  }
   // Hook mention dropdown to ALL caption inputs
   var cap = document.getElementById('captionInput');
   if(cap && !cap._mentionHooked){
@@ -3001,31 +3023,25 @@ function renderOtherProfileGrid(feedPosts){
         +'<svg width="28" height="20" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
         +'</div>'+editBtn;
     }
-    // Video — real thumbnail via canvas
+    // Video — use <video> directly as thumbnail (no canvas CORS issues)
     else if(p.isVideo && p.videoUrl){
-      item.innerHTML = '<div style="position:relative;width:100%;height:100%;background:#111;">'
-        + '<canvas style="width:100%;height:100%;object-fit:cover;display:block;"></canvas>'
-        + '<video preload="metadata" crossorigin="anonymous" style="display:none;position:absolute;"></video>'
-        + '<div class="opu-grid-overlay" style="background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;">'
+      item.innerHTML = '<div style="position:relative;width:100%;height:100%;background:#111;overflow:hidden;">'
+        + '<video src="'+esc(p.videoUrl)+'" preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;"></video>'
+        + '<div class="opu-grid-overlay" style="background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;">'
           + '<svg width="18" height="18" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
         + '</div>'
         + '</div>' + editBtn;
-      (function(el, url){
-        var vid = el.querySelector('video');
-        var cvs = el.querySelector('canvas');
-        vid.addEventListener('loadeddata', function(){ vid.currentTime = 0.5; });
-        vid.addEventListener('seeked', function(){
-          try {
-            cvs.width = vid.videoWidth || 300; cvs.height = vid.videoHeight || 300;
-            cvs.getContext('2d').drawImage(vid, 0, 0, cvs.width, cvs.height);
-          } catch(e){}
-          vid.src = '';
+      var vidEl2 = item.querySelector('video');
+      if(vidEl2){
+        vidEl2.addEventListener('loadedmetadata', function(){
+          vidEl2.currentTime = Math.min(1, vidEl2.duration * 0.1 || 1);
         });
-        vid.addEventListener('error', function(){
-          cvs.parentNode.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>';
+        vidEl2.addEventListener('error', function(){
+          var w2 = vidEl2.parentElement;
+          if(w2) w2.style.background = 'linear-gradient(135deg,#1a1a2e,#16213e)';
+          vidEl2.style.display = 'none';
         });
-        vid.src = url;
-      })(item, p.videoUrl);
+      }
     }
     // Photo
     else if(img){
@@ -7005,7 +7021,9 @@ async function submitPollPost(){
   closeModal();
   renderFeed();
   toast('Poll posted!');
-  sendMentionNotifications(question,postId);
+  sendMentionNotifications(question, postId);
+  var pc2 = document.getElementById('pollCaption');
+  if(pc2 && pc2.value) sendMentionNotifications(pc2.value, postId);
 }
 
 // ── ALIASES for inline HTML onclick handlers ──────────
