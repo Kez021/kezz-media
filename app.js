@@ -1628,24 +1628,34 @@ function switchTab(el,tabId){
   document.getElementById('status-tab').style.display=tabId==='status-tab'?'block':'none';
   var rt=document.getElementById('repost-tab');if(rt)rt.style.display=tabId==='repost-tab'?'block':'none';
   document.getElementById('saved-tab').style.display=tabId==='saved-tab'?'block':'none';
+  var pollTab=document.getElementById('poll-tab');if(pollTab)pollTab.style.display=tabId==='poll-tab'?'block':'none';
   if(tabId==='repost-tab') renderRepostGrid();
+  if(tabId==='poll-tab') renderPollsTab();
+}
+
+function renderPollsTab(){
+  var tab=document.getElementById('poll-tab');if(!tab)return;
+  var myPolls=posts.filter(function(p){ return p.uid===me.uid && p.isPoll && !p.hidden; });
+  myPolls.sort(function(a,b){
+    var ta=a.createdAt?(a.createdAt.toMillis?a.createdAt.toMillis():typeof a.createdAt==='number'?a.createdAt:a.createdAt.seconds?a.createdAt.seconds*1000:0):0;
+    var tb=b.createdAt?(b.createdAt.toMillis?b.createdAt.toMillis():typeof b.createdAt==='number'?b.createdAt:b.createdAt.seconds?b.createdAt.seconds*1000:0):0;
+    return tb-ta;
+  });
+  tab.innerHTML='';
+  if(!myPolls.length){tab.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;">No polls yet.</div>';return;}
+  myPolls.forEach(function(p,i){tab.appendChild(buildCard(p,i));});
 }
 function renderRepostGrid(){
-  var grid=document.getElementById('repostGrid');if(!grid)return;grid.innerHTML='';
+  // Show FULL post cards (not thumbnails) for reposts
+  var tab=document.getElementById('repost-tab');if(!tab)return;tab.innerHTML='';
   var reposts=posts.filter(function(p){return Array.isArray(p.repostedBy)&&p.repostedBy.includes(me.uid);});
-  if(!reposts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No reposts yet. Hit 🔁 on any post!</div>';return;}
-  reposts.forEach(function(p){
-    var imgs=p.images||(p.image?[p.image]:[]);
-    var item=document.createElement('div');item.className='grid-item';
-    if(p.isStatus){
-      item.style.cssText='aspect-ratio:1;background:var(--bg2);border-left:3px solid var(--pink);display:flex;align-items:center;padding:12px;cursor:pointer;';
-      item.innerHTML='<span style="font-size:13px;color:var(--text);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">'+esc(p.caption)+'</span>';
-    } else {
-      item.innerHTML=imgs[0]?'<img src="'+imgs[0]+'" alt=""><div class="grid-overlay"><span>❤️ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>':'<div class="grid-item-placeholder" style="font-size:24px;">🔁</div>';
-    }
-    item.onclick=function(){openLightbox(p.id);};
-    grid.appendChild(item);
+  reposts.sort(function(a,b){
+    var ta=a.createdAt?(a.createdAt.toMillis?a.createdAt.toMillis():typeof a.createdAt==='number'?a.createdAt:a.createdAt.seconds?a.createdAt.seconds*1000:0):0;
+    var tb=b.createdAt?(b.createdAt.toMillis?b.createdAt.toMillis():typeof b.createdAt==='number'?b.createdAt:b.createdAt.seconds?b.createdAt.seconds*1000:0):0;
+    return tb-ta;
   });
+  if(!reposts.length){tab.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;">No reposts yet. Hit 🔁 on any post!</div>';return;}
+  reposts.forEach(function(p,i){ tab.appendChild(buildCard(p,i)); });
 }
 function showFollowModal(type){
   document.getElementById('followModalTitle').textContent = type==='followers'?'Followers':type==='following'?'Following':'Posts';
@@ -3119,12 +3129,19 @@ function renderOtherProfileGrid(feedPosts){
       var vidEl2 = item.querySelector('video');
       if(vidEl2){
         vidEl2.addEventListener('loadedmetadata', function(){
-          vidEl2.currentTime = Math.min(1, vidEl2.duration * 0.1 || 1);
+          try { vidEl2.currentTime = Math.min(1, vidEl2.duration * 0.1 || 0.1); } catch(ve){}
+        });
+        vidEl2.addEventListener('seeked', function(){
+          // Frame is now rendered - video thumbnail is visible
         });
         vidEl2.addEventListener('error', function(){
+          // Show gradient with play icon on error
           var w2 = vidEl2.parentElement;
-          if(w2) w2.style.background = 'linear-gradient(135deg,#1a1a2e,#16213e)';
-          vidEl2.style.display = 'none';
+          if(w2){
+            w2.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;">'
+              +'<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+              +'</div>';
+          }
         });
       }
     }
@@ -3324,7 +3341,7 @@ async function openDMWith(otherUid,otherName){
       var lastDateLabel = '';
       sorted.forEach(function(d){
         var m = d.data();
-        if(!m.text) return;
+        if(!m.text && !m.mediaUrl && !m.stickerUrl) return;
         var mine = m.from === me.uid;
 
         // Compute timestamp info
@@ -3355,8 +3372,14 @@ async function openDMWith(otherUid,otherName){
 
         var div = document.createElement('div');
         div.className = 'chat-msg ' + (mine ? 'mine' : 'theirs');
-        div.innerHTML = '<div class="chat-bubble">'+esc(m.text)+'</div>'
-          + (timeStr ? '<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;'+(mine?'text-align:right;':'')+'">'+timeStr+'</div>' : '');
+        div.innerHTML = (function(){
+            var bc=''; var bs='';
+            if(m.mediaUrl){ var iv=/\.mp4|\.mov|\.webm/i.test(m.mediaUrl||''); bc=iv?'<video src="'+esc(m.mediaUrl)+'" controls playsinline muted style="max-width:220px;border-radius:10px;display:block;"></video>':'<img src="'+esc(m.mediaUrl)+'" style="max-width:220px;border-radius:10px;display:block;cursor:pointer;" onclick="var e=document.getElementById('imgExp');var s=document.getElementById('imgExpSrc');if(e&&s){s.src=this.src;e.classList.add('open')}">'; bs='background:transparent;padding:0;border:none;box-shadow:none;'; }
+            else if(m.stickerUrl){ bc='<img src="'+esc(m.stickerUrl)+'" style="max-width:180px;border-radius:12px;display:block;">'; bs='background:transparent;padding:0;border:none;'; }
+            else if(m.isEmoji&&m.text){ bc='<span style="font-size:38px;line-height:1.2;">'+esc(m.text)+'</span>'; bs='background:transparent;border:none;padding:4px;'; }
+            else{ bc=esc(m.text||''); }
+            return '<div class="chat-bubble" style="'+bs+'">'+bc+'</div>'+(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;'+(mine?'text-align:right;':'')+'">'+timeStr+'</div>':'');
+          })();
         msgs.appendChild(div);
       });
 
@@ -6372,20 +6395,54 @@ function openShareDmModal(postId){
   if(!modal || !list) return;
   modal.classList.add('open');
   closeMenus();
-  // Build list from allUsers (people the current user follows or is followed by)
   list.innerHTML = '';
+
+  // Section: Group Chats
+  db.collection('groups').where('members','array-contains',me.uid).get().then(function(snap){
+    var groups = snap.docs.map(function(d){return{id:d.id,...d.data()};}).filter(function(g){return !g.deleted;});
+    if(groups.length){
+      var hdr = document.createElement('div');
+      hdr.style.cssText='font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:10px 16px 4px;';
+      hdr.textContent='Group Chats';
+      list.insertBefore(hdr, list.firstChild);
+      groups.forEach(function(g){
+        var item = document.createElement('div');
+        item.className = 'share-dm-item';
+        var coverHTML = g.coverPhoto
+          ? '<img src="'+esc(g.coverPhoto)+'" alt="">'
+          : '<span style="font-size:18px;">👥</span>';
+        item.innerHTML =
+          '<div class="share-dm-av" style="background:linear-gradient(135deg,var(--pink),var(--pink-soft));">'+coverHTML+'</div>'
+          +'<div><div class="share-dm-name">'+esc(g.name||'Group')+'</div>'
+          +'<div class="share-dm-handle">'+((g.members||[]).length)+' members</div></div>';
+        item.addEventListener('click', function(){
+          sendPostViaGC(postId, g);
+          closeShareDmModal();
+        });
+        list.appendChild(item);
+      });
+      // Divider
+      var div = document.createElement('div');
+      div.style.cssText='height:1px;background:var(--border);margin:6px 0;';
+      list.appendChild(div);
+    }
+  }).catch(function(){});
+
+  // Section: Direct Messages
   var users = Object.values(allUsers).filter(function(u){ return u.uid && u.uid !== me.uid; });
   if(!users.length){
-    list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);">No users to share with yet.</div>';
+    list.innerHTML += '<div style="padding:30px;text-align:center;color:var(--text3);">No users to share with yet.</div>';
     return;
   }
+  var hdr2 = document.createElement('div');
+  hdr2.style.cssText='font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:10px 16px 4px;';
+  hdr2.textContent='Direct Message';
+  list.appendChild(hdr2);
   users.forEach(function(u){
     var item = document.createElement('div');
     item.className = 'share-dm-item';
     var avBg = u.color || 'var(--pink)';
-    var avHTML = u.avatar
-      ? '<img src="'+esc(u.avatar)+'" alt="">'
-      : esc(u.initial || (u.name&&u.name[0]) || '?');
+    var avHTML = u.avatar ? '<img src="'+esc(u.avatar)+'" alt="">' : esc(u.initial || (u.name&&u.name[0]) || '?');
     item.innerHTML =
       '<div class="share-dm-av" style="background:'+avBg+';">'+avHTML+'</div>'
       +'<div><div class="share-dm-name">'+esc(u.name||'User')+'</div>'
@@ -6396,6 +6453,27 @@ function openShareDmModal(postId){
     });
     list.appendChild(item);
   });
+}
+
+async function sendPostViaGC(postId, group){
+  var p = posts.find(function(x){ return String(x.id)===String(postId); });
+  var shareText = p
+    ? '[Shared post by @'+(p.user&&p.user.handle||'user')+']: '+(p.caption||'').slice(0,80)
+    : '[Shared post]';
+  try{
+    await db.collection('groups').doc(group.id).collection('messages').add({
+      from:me.uid, fromName:me.name, fromHandle:me.handle,
+      text:shareText, postId:postId,
+      ts:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('groups').doc(group.id).update({
+      lastMsg:shareText, lastTs:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Notify group members
+    var members=(group.members||[]).filter(function(u){return u!==me.uid;});
+    members.forEach(function(uid){ sendNotification(uid,'message',me,shareText.slice(0,60)); });
+    toast('Shared to '+esc(group.name||'group')+' 💌');
+  }catch(e){ toast('Could not share to group'); }
 }
 function closeShareDmModal(){
   var m = document.getElementById('shareDmModal');
@@ -7059,18 +7137,27 @@ async function votePoll(postId, optionIdx){
 
   try {
     await updatePostField(postId,{pollOptions:p.pollOptions,pollVotes:p.pollVotes});
-    // Re-render all poll cards
+    // Re-render ALL representations of this poll in the DOM
     document.querySelectorAll('#pc-'+postId).forEach(function(card){
+      // Rebuild poll-card elements
       var pc=card.querySelector('.poll-card');
       if(pc){ pc.outerHTML=buildPollCard(p,true); }
+      // Also rebuild inline poll buttons (buildCard poll system)
+      var pollBtns = card.querySelectorAll('[onclick^="votePoll"]');
+      pollBtns.forEach(function(btn){
+        btn.style.borderColor = 'var(--pink)';
+        btn.disabled = true;
+      });
     });
+    // Full re-render to pick up all changes
+    setTimeout(function(){ renderFeed(); renderExploreFeed(); }, 200);
     toast('Vote cast! 🗳️');
-    // Notify poll creator
     if(p.uid && p.uid!==me.uid){
       sendNotification(p.uid,'like',me,'voted on your poll',postId);
     }
   } catch(e){
     toast('Could not save vote — try again');
+    console.error('votePoll error:', e);
   }
 }
 
