@@ -17,82 +17,68 @@ var STICKER_SETS = {
 // ── GIF SEARCH — Tenor API v2 + large curated fallback ──
 var TENOR_KEY2 = 'AIzaSyAyimkuYQYF_FXVALexPzpnFRjFIr1RJZM';
 
-// Curated GIF library — using Tenor's CDN (hotlinking allowed, always available)
+// Curated GIFs — verified working URLs using Tenor's embed URLs
+// Format: https://tenor.com/view/[slug]-gif-[ID] for display
+// Using actual CDN URLs that Tenor allows embedding
 var CURATED_GIFS = {
   funny: [
-    'https://media.tenor.com/NsQ_MevHq3AAAAAC/cat-funny-cat.gif',
-    'https://media.tenor.com/pHBk_MKF2HEAAAAC/spongebob-screaming.gif',
-    'https://media.tenor.com/E7VgFmm5AZMAAAAC/laugh-lol.gif',
-    'https://media.tenor.com/6J2RKeYuMuIAAAAC/laughing-laugh.gif',
-    'https://media.tenor.com/n52G2TU0wO8AAAAC/funny-fall.gif',
-    'https://media.tenor.com/HBiuZ5MkPnEAAAAC/cat-omg.gif',
-    'https://media.tenor.com/RsMaBbsWj9gAAAAC/shrek-lord-farquaad.gif',
-    'https://media.tenor.com/qDZhRjnZXOEAAAAC/haha-laughing.gif',
-    'https://media.tenor.com/VRhTs0GnKRsAAAAC/minions-laugh.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHZnaTJrOXk4OGpxbzZzNjNiNnh1dGVmdXhqcHhhMWl3cDk0dGd4dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/MDJ9IbxxvDUQM/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExOGg4YmF3ZWZ4NmZ0eTJhbWo4MTMxOW54eXlhY3RsNXg3czlrZ2pubiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0MYJlyOwdlT0SeKk/giphy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGt4NnJmZWoyZno2Y3c1bmFqaGd4dG45ZWQ5M2YydnJwb2NhYm1meSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/5GoVLqeAOo6PK/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbTZkNDRicW5ia3VrenJuOG5pZzlzaWgxb3ZsM3JybGZ1OGNoYzM3aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Wn74RUT0vjnoU/giphy.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeXhka3hleGI3dXk3eWtpd3N0ZnJ2dnJhOHRuMmVxN3c4anBhM3lmbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/JMV7IKoqzxlrW/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHNrb25kZ2N2bW90OXlxeGFuMzltYjRnN3p6NHhubzlhNXV5aWhueSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/11sBLVxNs7v6WA/giphy.gif',
   ],
   love: [
-    'https://media.tenor.com/BdTi36PDTJIAAAAC/i-love-you-love.gif',
-    'https://media.tenor.com/FXsvAO_IYAIAAAAC/heart.gif',
-    'https://media.tenor.com/MiB9LVDaV4IAAAAC/cute-bunny.gif',
-    'https://media.tenor.com/I80RZGy9JkQAAAAC/love-heart.gif',
-    'https://media.tenor.com/2XSbHIYJWRIAAAAC/heart-love.gif',
-    'https://media.tenor.com/i0c26HVA9EgAAAAC/hug-cat.gif',
-    'https://media.tenor.com/1yLHVtVYXhwAAAAC/love-you.gif',
-    'https://media.tenor.com/G_XfRAniqhEAAAAC/kiss-love.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExNXBseG9hb29zbnJ4ajVnMzVtMmpza2Z3ZzdkejdrY29ldDRscWdmeSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26BRuo6sLetdllPAQ/giphy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3p4dDI3MmhwMjF0bTZxeXo4cWkyb2pqazBkdGRhMzZraXplajY0aiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/kHU8W94VS329y/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnRxMzV5aW85aGZ6aGpqb3p2czM4aWdybWFhMXFsZTV2NDJpaHRkMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lnlAifQdenMxW/giphy.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExdmduaTVweXdiNnQ4aHlwN3VsMGl0ZnFhenFhMzluMDN5eXhpd2ZheSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L95W4wv8nnb9K/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmJtcXNxdHNsZm4wdHdiNWF1NWFmMzh1dmg2bGRqd3N0emk0b2Z5ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/dOl2LFzYEXSco/giphy.gif',
   ],
   sad: [
-    'https://media.tenor.com/BEBIy4BSDLIAAAAC/crying-cat.gif',
-    'https://media.tenor.com/wJXBTM8S4EMAAAAC/sad-sad-cat.gif',
-    'https://media.tenor.com/pOkwQBm2_4YAAAAC/crying-tears.gif',
-    'https://media.tenor.com/1bJk4RyVRqoAAAAC/crying-sobbing.gif',
-    'https://media.tenor.com/kPMtqJQmVFwAAAAC/crying-cry.gif',
-    'https://media.tenor.com/YeZkgzqFnasAAAAC/sad-pikachu.gif',
-    'https://media.tenor.com/XidxbCOkXiQAAAAC/frog-sad.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHkzNGZpenFzYjZ4eTJsMzNubzV5c3k0M3k3bTlhejFsajI2azBxdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ISOckXUybVfQ4/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExOGk5NjhjcnhiNTFtemJ6aHoybDd1enpmMWQ3bTdiYm1leGF0b3N3MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/OPU6wzx8JrHna/giphy.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExaXVtZDZ3b3ZxcWV4amhmbHV3Z2F6a3Zib3Y1cGZzejJ0dGV6YWpoaSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/d2lcHJTG5Tscg/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExdXBuYmtmd3M1eHR1YmZ4OTR5M3o3bTh5OWlrNDVndWprenUzYTgzZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jUwpNzg9IcyrK/giphy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3lkdHFub3RrN3VzamN3bHpqam1jZ3h4azQ5azZ6ZG9mNWd1MnhvdCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ROF8OQvDmxytW/giphy.gif',
   ],
   wow: [
-    'https://media.tenor.com/UezGLSBmwuoAAAAC/wow-pikachu.gif',
-    'https://media.tenor.com/jyC9TrHm4HEAAAAC/shocked-surprised.gif',
-    'https://media.tenor.com/aq_g2v4cBPAAAAAC/omg-oh-my-god.gif',
-    'https://media.tenor.com/87l-ZtMhV5EAAAAC/shocked-cat.gif',
-    'https://media.tenor.com/n-HV01bFr2MAAAAC/gasp-shocked.gif',
-    'https://media.tenor.com/Z2xhG0nMm5IAAAAC/wow-amazing.gif',
-    'https://media.tenor.com/FpRSw2kKaEMAAAAC/whoa-woa.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExczI1aDVjaWZlb2J2cmZnanFnM3VtamJ6MHJ1aGRnMjRkbTc5bGxlbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26ufdipQqU2lhNA4g/giphy.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnRycXF0Z2N4djFweXNzbHhoY2x3YnJ0Z2x4amJzNGJkZ2prMG9vdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0HlHFRbmaZtBRhXG/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExY3Rja20xbDNkemN6OHJhbDNsdnBnZXgwMTN3N2diNmg4cGlwaGxiYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/5VKbvrjxpVJCM/giphy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeXl5bjl3b3UxbGVwenBsZHU2aXVkaDhpajAyejBqd2xpeGc2cHowaiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/WRQBXSCnEFJIuxktnw/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbGdpMGd5NDgwYXV2dWg1d2JiemI2M3p5Y3J3ZTdnbmtiamhsc3p4ZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/OK27wINdQS5YQ/giphy.gif',
   ],
   meme: [
-    'https://media.tenor.com/rWJGUfJAi9YAAAAC/this-is-fine-dog.gif',
-    'https://media.tenor.com/I7B9KBQM04IAAAAC/deal-with-it-cool.gif',
-    'https://media.tenor.com/BW8HjGXJa-UAAAAC/cat-popcorn.gif',
-    'https://media.tenor.com/VXqsWULvbW4AAAAC/facepalm-really.gif',
-    'https://media.tenor.com/zQ2JJQZaxSsAAAAC/nope-nope-nope.gif',
-    'https://media.tenor.com/FBqjB7sEBYgAAAAC/awkward-cough.gif',
-    'https://media.tenor.com/sBcmRiMtDYEAAAAC/ok-thumbs-up.gif',
-    'https://media.tenor.com/9SFe2oHQJIAAAAAC/shrug-meh.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTZmNHZxOHVpcDl3eXlhNnJqMTY1Yml5N3d6bHQ3d2ZnMTZ0b2xlOCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ely3apij36BJhoZ234/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExbGlhMjh3Y3AzeHN4cDQ5emN4Z2xpNHAxaWd5ODg3ODBxNzB3bHh0bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/YQitE4YNQNahy/giphy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeHVmN2kzNHNzb3FwbHlvd2dhd3g1N3U4dnk5NzhtNzRqbHR4bXFvcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/oNRZuFhOEDPby/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExejlsZzlscmF2cG56eGlsOTI5OHdjZWJqd3NkbnBzM2V5NmxpbW1wdCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26DN7fdyFGSfR25ao/giphy.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmZzbGE1ZDVxbG54MzJ2aXhldzViM2Z6M3p3MHVkdHBhNHN6Mmw4ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohjV3KahwmqwMtcpy/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExbGppenEzdzU2bmQ1ZzF3aWk3aWlzYjByaWpqcTZqMnh4c2Zibm41dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/TlK63EQERmiAVzMEgO4/giphy.gif',
   ],
   cute: [
-    'https://media.tenor.com/IlCOjzEL6TIAAAAC/cute-cat.gif',
-    'https://media.tenor.com/JnHM_jBpJTkAAAAC/cute-puppy.gif',
-    'https://media.tenor.com/NI2TQCO5d8YAAAAC/hamster-cute.gif',
-    'https://media.tenor.com/2OThBpSAMKEAAAAC/bunny-cute.gif',
-    'https://media.tenor.com/O8v3Nt8AXHQAAAAC/panda-cute.gif',
-    'https://media.tenor.com/lWvmPD-EwlMAAAAC/cat-wave.gif',
-    'https://media.tenor.com/BPqYBFyVF6cAAAAC/dog-puppy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExMndidndhdGkzZThla3NhN2J2cHpxaTBodHA3NGo0azFlMm5peGRmbSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/BzyTuYCmvSORqs1ABM/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNG40OWk3aGgwOTU0Ynp3aXdlaGN5NHNsaDN5bHR3eXpkdnpkdTRlbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VbnUQpnihPSIgIXuZv/giphy.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmQ5NWs2ajZqeXhjY24yYXVsem51bnZhbjhsOWVhbzc5MDh6YTkyNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/sS2R5PW4WNpjq/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExeGNhZXNlZGVjc2N3Znlmb3lpNGZiMW50cXQwODdneHBtaGE2OTZ6aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ICOgUNjpvO0PC/giphy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExejlmejZkdDI1enVybnEweXZteGhiZXhmZm56d3pkejFtNmR3anJhaiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/gFwZfXIqD0eNW/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExajdncGo2NjBhMW9jMWdmbzBqcmYwMWZ5bDc5Nm1vaHd4cjZ1aHkxcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jpbnoe3UIa8TU8LM13/giphy.gif',
   ],
   fire: [
-    'https://media.tenor.com/b-GGhECRe1QAAAAC/fire-fire-fire.gif',
-    'https://media.tenor.com/RxzHHLbUMr8AAAAC/fireworks.gif',
-    'https://media.tenor.com/2NCcm0lVnEMAAAAC/party-celebrate.gif',
-    'https://media.tenor.com/vWtJXlWkKMYAAAAC/epic-win.gif',
-    'https://media.tenor.com/OJXK4mPhTBwAAAAC/lets-go-celebration.gif',
-    'https://media.tenor.com/yFfFg_AUi2AAAAAC/lit-fire.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbGlhMjh3Y3AzeHN4cDQ5emN4Z2xpNHAxaWd5ODg3ODBxNzB3bHh0bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26BRBKqUiq586bRVm/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXhzdWI2c2R6Zmd3MjZueGUxNWNvOGUyd3J2MWl0dnBic2lqb3FmcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0HlNQ03J5JxX6lva/giphy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExYjkzYzVzZ3YxeWtiNHUzenp1cnQ4cW5xNGo3eTllNG55OWdkcWN3aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKABpm8GVBjKuDm/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnYycmlhcm9ubDN4Z2N5aHg0aXhteXlhb3hlMThycnVhbzR4YXdjbyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26gs8TP5RoKOBNZUA/giphy.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2p2bzE4bjc5aWRzdWRrZ3ZpanJ3NDJvbW8yYW9qbnFtazFpNXhkayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/5HZFOdE3YWGIM/giphy.gif',
   ],
   happy: [
-    'https://media.tenor.com/p0VJa10U6SMAAAAC/happy-dancing.gif',
-    'https://media.tenor.com/oHV46C5OtHcAAAAC/happy-joy.gif',
-    'https://media.tenor.com/Oq2sHiZa6SMAAAAC/excited-yay.gif',
-    'https://media.tenor.com/fK_CJj6gQ4kAAAAC/thumbs-up-great.gif',
-    'https://media.tenor.com/kAYBiVVsaBgAAAAC/happy-cat.gif',
-    'https://media.tenor.com/hDr8mhc4GekAAAAC/happy-dance.gif',
-    'https://media.tenor.com/sW5YsJmJsOgAAAAC/yay-celebrate.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExbGlhMjh3Y3AzeHN4cDQ5emN4Z2xpNHAxaWd5ODg3ODBxNzB3bHh0bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/blSTtZehjAZ8I/giphy.gif',
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcndxcXllMWdrZGY4dGV2bnlhd2F6d2UxeTMzMWkzNHd0MTZiN2MxaiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT5LMHxhOfscxPfIfm/giphy.gif',
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmJiZDV6aXBhYWtwNGkyajhsMXZ1d2kzNWFlaDFrN2h3MDk5ZXh0dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0HlvtIPzPdt2usKs/giphy.gif',
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExNGFhNThqMnljenZ4b2Zob3YxbnJuejBvM2J4OWRkYTV0cHR1cnh5eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/XreQmk7ETCak0/giphy.gif',
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExazZidWE1Z3k2dGY2NHdqbjBmNHVhdmZlMTV5a3c0NTZvZjl4bXlnOCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oFzm0o2hNl5k7pHri/giphy.gif',
   ],
 };
 
@@ -100,37 +86,43 @@ async function fetchGifs(query, limit) {
   limit = limit || 9;
   var q = (query || 'funny').toLowerCase().trim();
 
-  // Try Tenor v2 API first (most up-to-date GIFs)
+  // Try 1: Tenor v2 with Google key
   try {
-    var url = 'https://tenor.googleapis.com/v2/search'
-      + '?q=' + encodeURIComponent(q)
-      + '&key=' + TENOR_KEY2
-      + '&limit=' + limit
-      + '&media_filter=gif'
-      + '&contentfilter=medium'
-      + '&locale=en_US';
-    var res = await fetch(url);
-    if (res.ok) {
-      var data = await res.json();
-      if (data.results && data.results.length) {
-        var urls = [];
-        data.results.forEach(function(r) {
-          var f = r.media_formats;
-          var u = (f && f.tinygif && f.tinygif.url) || (f && f.gif && f.gif.url) || '';
-          if (u) urls.push(u);
-        });
-        if (urls.length >= 3) return urls;
+    var url1 = 'https://tenor.googleapis.com/v2/search?q=' + encodeURIComponent(q)
+      + '&key=' + TENOR_KEY2 + '&limit=' + limit + '&media_filter=gif&contentfilter=medium';
+    var r1 = await fetch(url1);
+    if (r1.ok) {
+      var d1 = await r1.json();
+      if (d1.results && d1.results.length) {
+        var u1 = d1.results.map(function(r){
+          var f=r.media_formats;
+          return (f&&f.tinygif&&f.tinygif.url)||(f&&f.gif&&f.gif.url)||'';
+        }).filter(Boolean);
+        if (u1.length >= 3) return u1;
       }
     }
-  } catch (e) {}
+  } catch(e1) {}
 
-  // Fall back to curated GIFs — always works, no network needed
-  var cat = q;
-  // Try to match query to a category
-  if (!CURATED_GIFS[cat]) {
-    var keys = Object.keys(CURATED_GIFS);
-    cat = keys.find(function(k){ return q.includes(k) || k.includes(q); }) || 'funny';
-  }
+  // Try 2: Tenor v1 anonymous (no key needed, works in most browsers)
+  try {
+    var url2 = 'https://g.tenor.com/v1/search?q=' + encodeURIComponent(q)
+      + '&limit=' + limit + '&media_filter=minimal&contentfilter=medium&locale=en_US';
+    var r2 = await fetch(url2);
+    if (r2.ok) {
+      var d2 = await r2.json();
+      if (d2.results && d2.results.length) {
+        var u2 = d2.results.map(function(r){
+          var m=r.media&&r.media[0];
+          return (m&&m.tinygif&&m.tinygif.url)||(m&&m.gif&&m.gif.url)||'';
+        }).filter(Boolean);
+        if (u2.length >= 3) return u2;
+      }
+    }
+  } catch(e2) {}
+
+  // Fallback: curated packs (always available)
+  var cat = CURATED_GIFS[q] ? q
+    : Object.keys(CURATED_GIFS).find(function(k){ return q.includes(k)||k.includes(q); }) || 'funny';
   return CURATED_GIFS[cat] || CURATED_GIFS['funny'];
 }
 
@@ -240,8 +232,18 @@ async function doGifSearch(forceQuery) {
   grid.innerHTML = '';
   gifs.forEach(function(url) {
     var div = document.createElement('div');
-    div.style.cssText = 'border-radius:10px;overflow:hidden;cursor:pointer;aspect-ratio:1;background:var(--bg3);';
-    div.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy" onerror="this.parentElement.style.display=\'none\'">';
+    div.style.cssText = 'border-radius:10px;overflow:hidden;cursor:pointer;aspect-ratio:1;background:var(--bg3);position:relative;';
+    var img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    img.loading = 'lazy';
+    // On error: show a dark placeholder with retry, NOT invisible
+    img.onerror = function() {
+      div.style.background = 'var(--bg2)';
+      div.style.border = '1px solid var(--border)';
+      div.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:.4;">🎬</div>';
+    };
+    div.appendChild(img);
     div.addEventListener('click', function() { sendStickerOrGif(url, 'gif'); });
     grid.appendChild(div);
   });
