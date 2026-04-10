@@ -22,6 +22,60 @@ const firebaseConfig = {
   appId: "1:307892917050:web:5b318f4039affaa26b3603"
 };
 
+// ── DELETE COMMENT ────────────────────────────────────
+async function deleteComment(postId, commentIdx){
+  postId = String(postId);
+  var p = posts.find(function(x){ return String(x.id)===postId; });
+  if(!p || !p.comments[commentIdx]) return;
+  var c = p.comments[commentIdx];
+  // Only allow owner of comment or admin
+  if(c.user && c.user.uid !== me.uid && !isAdmin()){ toast('You can only delete your own comments'); return; }
+  if(!confirm('Delete this comment?')) return;
+
+  // Save to deletedComments collection for admin audit
+  db.collection('deletedComments').add({
+    postId: postId,
+    commentIdx: commentIdx,
+    text: c.text||'',
+    uid: c.user&&c.user.uid||'',
+    handle: c.user&&c.user.handle||'',
+    deletedBy: me.uid,
+    deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(){});
+
+  // Remove from local array
+  p.comments.splice(commentIdx, 1);
+  // Update Firestore
+  await updatePostField(postId, {comments: p.comments}).catch(function(){});
+  // Re-render all comment lists for this post
+  document.querySelectorAll('[id^="cl-'+postId+'"]').forEach(function(cl){
+    cl.innerHTML = p.comments.map(function(c2,i){ return commentHTML(c2,postId,i); }).join('');
+  });
+  // Update comment count on all cards
+  document.querySelectorAll('#pc-'+postId).forEach(function(card){
+    var cc = card.querySelectorAll('.act')[1];
+    if(cc && cc.querySelector('.cc')) cc.querySelector('.cc').textContent = p.comments.length;
+  });
+  toast('Comment deleted');
+}
+
+async function deleteReply(postId, commentIdx, replyIdx){
+  postId = String(postId);
+  var p = posts.find(function(x){ return String(x.id)===postId; });
+  if(!p || !p.comments[commentIdx]) return;
+  var c = p.comments[commentIdx];
+  if(!c.replies || !c.replies[replyIdx]) return;
+  var r = c.replies[replyIdx];
+  if(r.uid !== me.uid && !isAdmin()){ toast('You can only delete your own replies'); return; }
+  if(!confirm('Delete this reply?')) return;
+
+  c.replies.splice(replyIdx, 1);
+  await updatePostField(postId, {comments: p.comments}).catch(function(){});
+  var commentEl = document.getElementById('comment-'+postId+'-'+commentIdx);
+  if(commentEl){ var tmp=document.createElement('div'); tmp.innerHTML=commentHTML(c,postId,commentIdx); commentEl.replaceWith(tmp.firstChild); }
+  toast('Reply deleted');
+}
+
 // ── COMMENT REACTION LONG PRESS ─────────────────────────────────────
 // Delegated touch handler for long-press on like buttons
 (function(){
@@ -1153,7 +1207,8 @@ function commentHTML(c, postId, commentIdx){
     +'<div style="flex:1;">'
       +'<div class="c-bubble">'
         +'<div class="c-user"'+(uid?' onclick="viewProfile(_g('+iU+'))" style="cursor:pointer;color:var(--pink);"':'')+'>@'+esc(handle)+'</div>'
-        +'<div class="c-text">'+linkifyCaption(c.text||'')+'</div>'
+        +(c.gifUrl?'<div style="margin-top:6px;"><img src="'+esc(c.gifUrl)+'" style="max-width:200px;max-height:180px;border-radius:10px;display:block;cursor:pointer;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}" alt="GIF"></div>':'')
+        +(!c.gifUrl?'<div class="c-text">'+linkifyCaption(c.text||'')+'</div>':'')
         +(c.imageUrl?'<div style="margin-top:6px;"><img src="'+esc(c.imageUrl)+'" style="max-width:200px;max-height:200px;border-radius:10px;object-fit:cover;cursor:pointer;display:block;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}" alt="comment photo"></div>':'')
         +(c.edited?'<div style="font-size:10px;color:var(--text3);margin-top:2px;">Edited</div>':'')
       +'</div>'
@@ -1169,6 +1224,7 @@ function commentHTML(c, postId, commentIdx){
         +'</button>'
         +(postId?'<button onclick="showCommentReactions(event,\''+String(postId)+'\','+commentIdx+')" style="background:none;border:none;cursor:pointer;font-size:13px;line-height:1;padding:0;display:flex;align-items:center;color:var(--text3);" title="React">😊</button>':'')
         +(postId?'<button onclick="showReplyInput(\''+String(postId)+'\','+commentIdx+')" style="background:none;border:none;cursor:pointer;font-size:11.5px;color:var(--text3);font-family:Jost,sans-serif;padding:0;">Reply</button>':'')
+        +((postId&&uid&&(uid===me.uid||isAdmin()))?'<button onclick="deleteComment(\''+String(postId)+'\','+commentIdx+')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);font-family:Jost,sans-serif;padding:0 0 0 4px;opacity:.55;" title="Delete">🗑</button>':'')
       +'</div>'
       // Reply thread
       +(c.replies&&c.replies.length?'<div class="c-replies" style="margin-top:8px;padding-left:10px;border-left:2px solid var(--border);">'+c.replies.map(function(r,ri){return commentHTML(r,null,ri);}).join('')+'</div>':'')
@@ -1461,21 +1517,37 @@ function renderPostGrid(){
   const grid=document.getElementById('grid');grid.innerHTML='';
   grid.className='post-grid' + (_profileLayout&&_profileLayout!=='grid'?' layout-'+_profileLayout:'');
   var myPosts=posts.filter(p=>p.uid===me.uid && !p.isStatus);
+  // Sort: pinned first, then newest first
   myPosts.sort(function(a,b){
     if(a.pinned&&!b.pinned) return -1;
     if(!a.pinned&&b.pinned) return 1;
-    return 0;
+    // Sort by createdAt descending (newest first)
+    var ta = a.createdAt?(a.createdAt.toMillis?a.createdAt.toMillis():typeof a.createdAt==='number'?a.createdAt:a.createdAt.seconds?a.createdAt.seconds*1000:0):0;
+    var tb = b.createdAt?(b.createdAt.toMillis?b.createdAt.toMillis():typeof b.createdAt==='number'?b.createdAt:b.createdAt.seconds?b.createdAt.seconds*1000:0):0;
+    return tb - ta;
   });
   if(!myPosts.length){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;grid-column:1/-1;">No posts yet. Share your first photo!</div>';return;}
-  myPosts.slice().reverse().forEach(p=>{
+  myPosts.forEach(p=>{
     const imgs=p.images||(p.image?[p.image]:[]);
     const firstImg=imgs[0]||null;
     const item=document.createElement('div');item.className='grid-item';
     const multiIcon=imgs.length>1?`<div class="grid-multi-icon"><svg width="12" height="12" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2H22V17"/></svg></div>`:'';
     // Edit pencil button — always visible top-right of grid item
     const editBtn=`<div class="grid-edit-btn" title="Edit Post"><svg width="11" height="11" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>`;
+    // Poll post — show question as thumbnail
+    if(p.isPoll){
+      var pollImgs = p.pollImages||(p.pollPhotoA?[p.pollPhotoA]:[]);
+      if(pollImgs.length && pollImgs[0]){
+        item.innerHTML='<img src="'+esc(pollImgs[0])+'" alt="" style="width:100%;height:100%;object-fit:cover;"><div class="grid-overlay" style="background:rgba(0,0,0,.35);"><span style="font-size:16px;">📊</span></div>'+editBtn;
+      } else {
+        item.innerHTML='<div style="width:100%;height:100%;background:linear-gradient(135deg,var(--pink-pale),var(--bg3));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:4px;">'
+          +'<span style="font-size:20px;">📊</span>'
+          +'<span style="font-size:11px;font-weight:600;color:var(--pink);text-align:center;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">'+esc(p.pollQuestion||'Poll')+'</span>'
+        +'</div>'+editBtn;
+      }
+    }
     // YouTube post
-    if(p.isYoutube && p.ytThumb){
+    else if(p.isYoutube && p.ytThumb){
       item.innerHTML=`<img src="${p.ytThumb}" alt=""><div class="grid-overlay"><svg width="18" height="18" viewBox="0 0 68 48" style="display:block"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg></div>${editBtn}`;
     } else if(p.isVideo && p.videoUrl){
       // Use video element directly as thumbnail — no canvas CORS issues
@@ -3016,8 +3088,21 @@ function renderOtherProfileGrid(feedPosts){
     const editBtn = isOwn
       ? '<div class="grid-edit-btn" title="Edit Post"><svg width="11" height="11" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>'
       : '';
+    // Poll
+    if(p.isPoll){
+      var pollImgsOpu = p.pollImages||(p.pollPhotoA?[p.pollPhotoA]:[]);
+      if(pollImgsOpu.length && pollImgsOpu[0]){
+        item.innerHTML = '<img src="'+esc(pollImgsOpu[0])+'" alt="" style="width:100%;height:100%;object-fit:cover;">'
+          +'<div class="opu-grid-overlay" style="background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;"><span style="font-size:20px;">📊</span></div>'+editBtn;
+      } else {
+        item.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,var(--pink-pale),var(--bg3));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:4px;">'
+          +'<span style="font-size:20px;">📊</span>'
+          +'<span style="font-size:10px;font-weight:600;color:var(--pink);text-align:center;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">'+esc(p.pollQuestion||'Poll')+'</span>'
+        +'</div>'+editBtn;
+      }
+    }
     // YouTube
-    if(p.isYoutube && p.ytThumb){
+    else if(p.isYoutube && p.ytThumb){
       item.innerHTML = '<img src="'+esc(p.ytThumb)+'" alt="" style="width:100%;height:100%;object-fit:cover;">'
         +'<div class="opu-grid-overlay" style="background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;">'
         +'<svg width="28" height="20" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
@@ -3046,6 +3131,12 @@ function renderOtherProfileGrid(feedPosts){
     // Photo
     else if(img){
       item.innerHTML = '<img src="'+esc(img)+'" alt=""><div class="opu-grid-overlay"><span>❤ '+p.likes+'</span><span>💬 '+p.comments.length+'</span></div>'+editBtn;
+    }
+    // YouTube no thumb fallback
+    else if(p.isYoutube){
+      item.innerHTML = '<div style="width:100%;height:100%;background:#ff0000;display:flex;align-items:center;justify-content:center;">'
+        +'<svg width="28" height="20" viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#FF0000"/><path d="M45 24L27 14v20" fill="white"/></svg>'
+        +'</div>'+editBtn;
     }
     // Status/no media
     else {
@@ -6950,20 +7041,37 @@ function buildPollCard(p, inFeed){
 async function votePoll(postId, optionIdx){
   postId=String(postId);
   var p=posts.find(function(x){return String(x.id)===postId;});
-  if(!p||!p.isPoll)return;
-  if(p.pollVotes&&p.pollVotes[me.uid]!==undefined){ toast('You already voted!'); return; }
-  if(p.pollEnds&&Date.now()>p.pollEnds){ toast('This poll has ended'); return; }
-  if(!p.pollVotes)p.pollVotes={};
-  p.pollVotes[me.uid]=optionIdx;
-  if(!p.pollOptions[optionIdx].votes)p.pollOptions[optionIdx].votes=0;
-  p.pollOptions[optionIdx].votes++;
-  await updatePostField(postId,{pollOptions:p.pollOptions,pollVotes:p.pollVotes});
-  // Re-render cards
-  document.querySelectorAll('#pc-'+postId).forEach(function(card){
-    var pc=card.querySelector('.poll-card');
-    if(pc){ pc.outerHTML=buildPollCard(p,true); }
-  });
-  toast('Vote cast!');
+  if(!p||!p.isPoll){ toast('Poll not found'); return; }
+  if(p.pollEnds&&Date.now()>p.pollEnds){ toast('This poll has ended ⏰'); return; }
+  if(p.pollVotes&&p.pollVotes[me.uid]!==undefined){ toast('You already voted! ✓'); return; }
+
+  if(!p.pollVotes) p.pollVotes={};
+  if(!p.pollOptions) p.pollOptions=[];
+
+  // Support both array-of-objects (text+votes) and array-of-strings
+  if(typeof optionIdx === 'number' && p.pollOptions[optionIdx]!==undefined){
+    p.pollVotes[me.uid] = optionIdx;
+    if(typeof p.pollOptions[optionIdx] === 'object'){
+      if(!p.pollOptions[optionIdx].votes) p.pollOptions[optionIdx].votes=0;
+      p.pollOptions[optionIdx].votes++;
+    }
+  }
+
+  try {
+    await updatePostField(postId,{pollOptions:p.pollOptions,pollVotes:p.pollVotes});
+    // Re-render all poll cards
+    document.querySelectorAll('#pc-'+postId).forEach(function(card){
+      var pc=card.querySelector('.poll-card');
+      if(pc){ pc.outerHTML=buildPollCard(p,true); }
+    });
+    toast('Vote cast! 🗳️');
+    // Notify poll creator
+    if(p.uid && p.uid!==me.uid){
+      sendNotification(p.uid,'like',me,'voted on your poll',postId);
+    }
+  } catch(e){
+    toast('Could not save vote — try again');
+  }
 }
 
 // Wire poll into switchPostType
