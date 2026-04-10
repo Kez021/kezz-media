@@ -17,82 +17,82 @@ var STICKER_SETS = {
 // ── GIF SEARCH — Tenor API v2 + large curated fallback ──
 var TENOR_KEY2 = 'AIzaSyAyimkuYQYF_FXVALexPzpnFRjFIr1RJZM';
 
-// Large curated GIF library (always works regardless of API)
+// Curated GIF library — using Tenor's CDN (hotlinking allowed, always available)
 var CURATED_GIFS = {
   funny: [
-    'https://i.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
-    'https://i.giphy.com/media/l41lISqMeRSQUQ2aY/giphy.gif',
-    'https://i.giphy.com/media/4PT6v3PQKG6Yg/giphy.gif',
-    'https://i.giphy.com/media/lszAB3TzFtRaU/giphy.gif',
-    'https://i.giphy.com/media/Wn74RUT0vjnoU/giphy.gif',
-    'https://i.giphy.com/media/11sBLVxNs7v6WA/giphy.gif',
-    'https://i.giphy.com/media/JMV7IKoqzxlrW/giphy.gif',
-    'https://i.giphy.com/media/5GoVLqeAOo6PK/giphy.gif',
-    'https://i.giphy.com/media/zcVOyJBHYZvX2/giphy.gif',
+    'https://media.tenor.com/NsQ_MevHq3AAAAAC/cat-funny-cat.gif',
+    'https://media.tenor.com/pHBk_MKF2HEAAAAC/spongebob-screaming.gif',
+    'https://media.tenor.com/E7VgFmm5AZMAAAAC/laugh-lol.gif',
+    'https://media.tenor.com/6J2RKeYuMuIAAAAC/laughing-laugh.gif',
+    'https://media.tenor.com/n52G2TU0wO8AAAAC/funny-fall.gif',
+    'https://media.tenor.com/HBiuZ5MkPnEAAAAC/cat-omg.gif',
+    'https://media.tenor.com/RsMaBbsWj9gAAAAC/shrek-lord-farquaad.gif',
+    'https://media.tenor.com/qDZhRjnZXOEAAAAC/haha-laughing.gif',
+    'https://media.tenor.com/VRhTs0GnKRsAAAAC/minions-laugh.gif',
   ],
   love: [
-    'https://i.giphy.com/media/3ohzdIuqJoo8QdKlnW/giphy.gif',
-    'https://i.giphy.com/media/l0MYJlyOwdlT0SeKk/giphy.gif',
-    'https://i.giphy.com/media/3o7TKoXx6b4c9bTa9y/giphy.gif',
-    'https://i.giphy.com/media/26BRuo6sLetdllPAQ/giphy.gif',
-    'https://i.giphy.com/media/kHU8W94VS329y/giphy.gif',
-    'https://i.giphy.com/media/L95W4wv8nnb9K/giphy.gif',
-    'https://i.giphy.com/media/lnlAifQdenMxW/giphy.gif',
-    'https://i.giphy.com/media/dOl2LFzYEXSco/giphy.gif',
+    'https://media.tenor.com/BdTi36PDTJIAAAAC/i-love-you-love.gif',
+    'https://media.tenor.com/FXsvAO_IYAIAAAAC/heart.gif',
+    'https://media.tenor.com/MiB9LVDaV4IAAAAC/cute-bunny.gif',
+    'https://media.tenor.com/I80RZGy9JkQAAAAC/love-heart.gif',
+    'https://media.tenor.com/2XSbHIYJWRIAAAAC/heart-love.gif',
+    'https://media.tenor.com/i0c26HVA9EgAAAAC/hug-cat.gif',
+    'https://media.tenor.com/1yLHVtVYXhwAAAAC/love-you.gif',
+    'https://media.tenor.com/G_XfRAniqhEAAAAC/kiss-love.gif',
   ],
   sad: [
-    'https://i.giphy.com/media/ISOckXUybVfQ4/giphy.gif',
-    'https://i.giphy.com/media/OPU6wzx8JrHna/giphy.gif',
-    'https://i.giphy.com/media/7SF5scGB2AFrgsXxt0/giphy.gif',
-    'https://i.giphy.com/media/d2lcHJTG5Tscg/giphy.gif',
-    'https://i.giphy.com/media/jUwpNzg9IcyrK/giphy.gif',
-    'https://i.giphy.com/media/L95W4wv8nnb9K/giphy.gif',
-    'https://i.giphy.com/media/ROF8OQvDmxytW/giphy.gif',
+    'https://media.tenor.com/BEBIy4BSDLIAAAAC/crying-cat.gif',
+    'https://media.tenor.com/wJXBTM8S4EMAAAAC/sad-sad-cat.gif',
+    'https://media.tenor.com/pOkwQBm2_4YAAAAC/crying-tears.gif',
+    'https://media.tenor.com/1bJk4RyVRqoAAAAC/crying-sobbing.gif',
+    'https://media.tenor.com/kPMtqJQmVFwAAAAC/crying-cry.gif',
+    'https://media.tenor.com/YeZkgzqFnasAAAAC/sad-pikachu.gif',
+    'https://media.tenor.com/XidxbCOkXiQAAAAC/frog-sad.gif',
   ],
   wow: [
-    'https://i.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://i.giphy.com/media/l0HlHFRbmaZtBRhXG/giphy.gif',
-    'https://i.giphy.com/media/5VKbvrjxpVJCM/giphy.gif',
-    'https://i.giphy.com/media/OK27wINdQS5YQ/giphy.gif',
-    'https://i.giphy.com/media/3ohzdZMDMPVWGMaDNe/giphy.gif',
-    'https://i.giphy.com/media/WRQBXSCnEFJIuxktnw/giphy.gif',
-    'https://i.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif',
+    'https://media.tenor.com/UezGLSBmwuoAAAAC/wow-pikachu.gif',
+    'https://media.tenor.com/jyC9TrHm4HEAAAAC/shocked-surprised.gif',
+    'https://media.tenor.com/aq_g2v4cBPAAAAAC/omg-oh-my-god.gif',
+    'https://media.tenor.com/87l-ZtMhV5EAAAAC/shocked-cat.gif',
+    'https://media.tenor.com/n-HV01bFr2MAAAAC/gasp-shocked.gif',
+    'https://media.tenor.com/Z2xhG0nMm5IAAAAC/wow-amazing.gif',
+    'https://media.tenor.com/FpRSw2kKaEMAAAAC/whoa-woa.gif',
   ],
   meme: [
-    'https://i.giphy.com/media/ely3apij36BJhoZ234/giphy.gif',
-    'https://i.giphy.com/media/YQitE4YNQNahy/giphy.gif',
-    'https://i.giphy.com/media/oNRZuFhOEDPby/giphy.gif',
-    'https://i.giphy.com/media/26DN7fdyFGSfR25ao/giphy.gif',
-    'https://i.giphy.com/media/3ohjV3KahwmqwMtcpy/giphy.gif',
-    'https://i.giphy.com/media/26ufjV4fOXCjwblrC/giphy.gif',
-    'https://i.giphy.com/media/TlK63EQERmiAVzMEgO4/giphy.gif',
-    'https://i.giphy.com/media/l2JecLAolPDhm7f44/giphy.gif',
+    'https://media.tenor.com/rWJGUfJAi9YAAAAC/this-is-fine-dog.gif',
+    'https://media.tenor.com/I7B9KBQM04IAAAAC/deal-with-it-cool.gif',
+    'https://media.tenor.com/BW8HjGXJa-UAAAAC/cat-popcorn.gif',
+    'https://media.tenor.com/VXqsWULvbW4AAAAC/facepalm-really.gif',
+    'https://media.tenor.com/zQ2JJQZaxSsAAAAC/nope-nope-nope.gif',
+    'https://media.tenor.com/FBqjB7sEBYgAAAAC/awkward-cough.gif',
+    'https://media.tenor.com/sBcmRiMtDYEAAAAC/ok-thumbs-up.gif',
+    'https://media.tenor.com/9SFe2oHQJIAAAAAC/shrug-meh.gif',
   ],
   cute: [
-    'https://i.giphy.com/media/BzyTuYCmvSORqs1ABM/giphy.gif',
-    'https://i.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif',
-    'https://i.giphy.com/media/l2JdZoJQOjAkMEThu/giphy.gif',
-    'https://i.giphy.com/media/sS2R5PW4WNpjq/giphy.gif',
-    'https://i.giphy.com/media/ICOgUNjpvO0PC/giphy.gif',
-    'https://i.giphy.com/media/gFwZfXIqD0eNW/giphy.gif',
-    'https://i.giphy.com/media/jpbnoe3UIa8TU8LM13/giphy.gif',
+    'https://media.tenor.com/IlCOjzEL6TIAAAAC/cute-cat.gif',
+    'https://media.tenor.com/JnHM_jBpJTkAAAAC/cute-puppy.gif',
+    'https://media.tenor.com/NI2TQCO5d8YAAAAC/hamster-cute.gif',
+    'https://media.tenor.com/2OThBpSAMKEAAAAC/bunny-cute.gif',
+    'https://media.tenor.com/O8v3Nt8AXHQAAAAC/panda-cute.gif',
+    'https://media.tenor.com/lWvmPD-EwlMAAAAC/cat-wave.gif',
+    'https://media.tenor.com/BPqYBFyVF6cAAAAC/dog-puppy.gif',
   ],
   fire: [
-    'https://i.giphy.com/media/26BRBKqUiq586bRVm/giphy.gif',
-    'https://i.giphy.com/media/l0HlNQ03J5JxX6lva/giphy.gif',
-    'https://i.giphy.com/media/3o7TKABpm8GVBjKuDm/giphy.gif',
-    'https://i.giphy.com/media/26gs8TP5RoKOBNZUA/giphy.gif',
-    'https://i.giphy.com/media/5GoVLqeAOo6PK/giphy.gif',
-    'https://i.giphy.com/media/5HZFOdE3YWGIM/giphy.gif',
+    'https://media.tenor.com/b-GGhECRe1QAAAAC/fire-fire-fire.gif',
+    'https://media.tenor.com/RxzHHLbUMr8AAAAC/fireworks.gif',
+    'https://media.tenor.com/2NCcm0lVnEMAAAAC/party-celebrate.gif',
+    'https://media.tenor.com/vWtJXlWkKMYAAAAC/epic-win.gif',
+    'https://media.tenor.com/OJXK4mPhTBwAAAAC/lets-go-celebration.gif',
+    'https://media.tenor.com/yFfFg_AUi2AAAAAC/lit-fire.gif',
   ],
   happy: [
-    'https://i.giphy.com/media/blSTtZehjAZ8I/giphy.gif',
-    'https://i.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif',
-    'https://i.giphy.com/media/QBC5foQmoit33bFfkL/giphy.gif',
-    'https://i.giphy.com/media/l0HlvtIPzPdt2usKs/giphy.gif',
-    'https://i.giphy.com/media/3oFzm0o2hNl5k7pHri/giphy.gif',
-    'https://i.giphy.com/media/26gsvRLqhJpAFuLgQ/giphy.gif',
-    'https://i.giphy.com/media/XreQmk7ETCak0/giphy.gif',
+    'https://media.tenor.com/p0VJa10U6SMAAAAC/happy-dancing.gif',
+    'https://media.tenor.com/oHV46C5OtHcAAAAC/happy-joy.gif',
+    'https://media.tenor.com/Oq2sHiZa6SMAAAAC/excited-yay.gif',
+    'https://media.tenor.com/fK_CJj6gQ4kAAAAC/thumbs-up-great.gif',
+    'https://media.tenor.com/kAYBiVVsaBgAAAAC/happy-cat.gif',
+    'https://media.tenor.com/hDr8mhc4GekAAAAC/happy-dance.gif',
+    'https://media.tenor.com/sW5YsJmJsOgAAAAC/yay-celebrate.gif',
   ],
 };
 
@@ -296,6 +296,32 @@ async function sendGCSticker(content, isEmoji, gcId) {
 
 // ── EMOJI STICKER IN COMMENT ──────────────────────────
 function appendEmojiToComment(content, postId) {
+  // If it's a GIF URL, send as a comment with an embedded image
+  if(content && (content.startsWith('http') || content.includes('.gif'))){
+    closeStickerPicker();
+    // Add the comment with a special gifUrl field
+    var pid = String(postId);
+    var p = posts.find(function(x){ return String(x.id)===pid; });
+    if(!p) return;
+    var gifComment = {
+      user: {uid:me.uid, name:me.name, handle:me.handle, color:me.color, initial:me.initial, avatar:me.avatar||null},
+      text: '', gifUrl: content,
+      likes:0, likedBy:[], reactions:{}, replies:[], ts:Date.now()
+    };
+    p.comments.push(gifComment);
+    p.showComments = true;
+    var cl = document.getElementById('cl-'+pid);
+    if(cl){
+      var d = document.createElement('div');
+      d.innerHTML = commentHTML(gifComment, pid, p.comments.length-1);
+      cl.appendChild(d.firstChild);
+    }
+    updatePostField(pid, {comments:p.comments, showComments:true}).catch(function(){});
+    if(p.uid && p.uid!==me.uid) sendNotification(p.uid,'comment',me,'sent a GIF',pid);
+    toast('GIF sent! 🎬');
+    return;
+  }
+  // Emoji sticker — append to input text
   var inp = document.getElementById('ci-' + postId);
   if (inp) { inp.value = (inp.value + ' ' + content).trim(); inp.focus(); }
 }
