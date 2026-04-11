@@ -3372,14 +3372,27 @@ async function openDMWith(otherUid,otherName){
 
         var div = document.createElement('div');
         div.className = 'chat-msg ' + (mine ? 'mine' : 'theirs');
-        div.innerHTML = (function(){
-            var bc=''; var bs='';
-            if(m.mediaUrl){ var iv=/\.mp4|\.mov|\.webm/i.test(m.mediaUrl||''); bc=iv?'<video src="'+esc(m.mediaUrl)+'" controls playsinline muted style="max-width:220px;border-radius:10px;display:block;"></video>':'<img src="'+esc(m.mediaUrl)+'" style="max-width:220px;border-radius:10px;display:block;cursor:pointer;" onclick="var e=document.getElementById('imgExp');var s=document.getElementById('imgExpSrc');if(e&&s){s.src=this.src;e.classList.add('open')}">'; bs='background:transparent;padding:0;border:none;box-shadow:none;'; }
-            else if(m.stickerUrl){ bc='<img src="'+esc(m.stickerUrl)+'" style="max-width:180px;border-radius:12px;display:block;">'; bs='background:transparent;padding:0;border:none;'; }
-            else if(m.isEmoji&&m.text){ bc='<span style="font-size:38px;line-height:1.2;">'+esc(m.text)+'</span>'; bs='background:transparent;border:none;padding:4px;'; }
-            else{ bc=esc(m.text||''); }
-            return '<div class="chat-bubble" style="'+bs+'">'+bc+'</div>'+(timeStr?'<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;'+(mine?'text-align:right;':'')+'">'+timeStr+'</div>':'');
-          })();
+        // Build DM message bubble: supports media, sticker, gif, text
+        var _dmBc = '', _dmBs = '';
+        if(m.mediaUrl){
+          var _isVid = /\.mp4|\.mov|\.webm/i.test(m.mediaUrl||'');
+          if(_isVid){
+            _dmBc = '<video src="'+esc(m.mediaUrl)+'" controls playsinline muted style="max-width:220px;border-radius:10px;display:block;"></video>';
+          } else {
+            _dmBc = '<img src="'+esc(m.mediaUrl)+'" style="max-width:220px;border-radius:10px;display:block;cursor:pointer;" onclick="var e=document.getElementById(\'imgExp\');var s=document.getElementById(\'imgExpSrc\');if(e&&s){s.src=this.src;e.classList.add(\'open\')}">';
+          }
+          _dmBs = 'background:transparent;padding:0;border:none;box-shadow:none;';
+        } else if(m.stickerUrl){
+          _dmBc = '<img src="'+esc(m.stickerUrl)+'" style="max-width:180px;border-radius:12px;display:block;">';
+          _dmBs = 'background:transparent;padding:0;border:none;';
+        } else if(m.isEmoji && m.text){
+          _dmBc = '<span style="font-size:38px;line-height:1.2;">'+esc(m.text)+'</span>';
+          _dmBs = 'background:transparent;border:none;padding:4px;';
+        } else {
+          _dmBc = esc(m.text||'');
+        }
+        div.innerHTML = '<div class="chat-bubble" style="'+_dmBs+'">'+_dmBc+'</div>'
+          + (timeStr ? '<div class="chat-time" style="font-size:10px;color:var(--text3);margin-top:2px;'+(mine?'text-align:right;':'')+'">'+timeStr+'</div>' : '');
         msgs.appendChild(div);
       });
 
