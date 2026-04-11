@@ -1098,12 +1098,17 @@
       <div class="sv-time" id="svTime"></div>
     </div>
     <button class="sv-close" onclick="closeStoryViewer()">×</button>
+    <button id="svDeleteBtn" onclick="deleteCurrentStoryFromViewer()" style="display:none;background:rgba(255,50,50,.25);border:1px solid rgba(255,80,80,.4);color:white;border-radius:8px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:Jost,sans-serif;">🗑</button>
   </div>
   <div class="sv-media" id="svMedia">
     <div class="sv-tap-prev" onclick="storyNav(-1)"></div>
     <div class="sv-tap-next" onclick="storyNav(1)"></div>
   </div>
   <div class="sv-caption" id="svCaption" style="display:none;"></div>
+  <div id="svReplyBar" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:12px 14px 24px;background:linear-gradient(transparent,rgba(0,0,0,.6));display:flex;gap:8px;align-items:center;">
+    <input id="svReplyInput" placeholder="Reply to story..." style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:8px 14px;color:white;font-size:13px;font-family:Jost,sans-serif;outline:none;" onkeydown="if(event.key==='Enter'&&_svStories[_svIdx]){replyToStoryViaDM(_svStories[_svIdx].id,this.value);this.value='';}">
+    <button onclick="if(_svStories[_svIdx]){replyToStoryViaDM(_svStories[_svIdx].id,document.getElementById('svReplyInput').value);document.getElementById('svReplyInput').value='';}" style="background:var(--pink);border:none;border-radius:20px;padding:8px 14px;color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:Jost,sans-serif;">Send</button>
+  </div>
 </div>
 
 <!-- ── STORY ARCHIVE ──────────────────────────────── -->
