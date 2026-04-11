@@ -329,9 +329,10 @@ function appendEmojiToComment(content, postId) {
 }
 
 // ── INJECT STICKER BUTTON INTO DM INPUT ───────────────
-var _origOpenDMWith = openDMWith;
-openDMWith = async function(otherUid, otherName) {
-  await _origOpenDMWith(otherUid, otherName);
+if (typeof openDMWith === 'function' && !openDMWith._patchWrapped) {
+  var _origOpenDMWith = openDMWith;
+  openDMWith = async function(otherUid, otherName) {
+    await _origOpenDMWith(otherUid, otherName);
   setTimeout(function() {
     var row = document.querySelector('#chatArea .chat-input-row');
     if (!row || row.querySelector('.dm-sticker-btn')) return;
@@ -365,7 +366,9 @@ openDMWith = async function(otherUid, otherName) {
     var saved = parseInt(localStorage.getItem('dmTheme_' + otherUid) || '0');
     if (saved > 0) setTimeout(function() { applyDMTheme(otherUid, saved); }, 400);
   }, 300);
-};
+  };
+  openDMWith._patchWrapped = true;
+}
 
 // ── DM SETTINGS MODAL (theme + nickname) ─────────────
 var DM_THEMES = [
@@ -456,47 +459,50 @@ function saveDMNickname(convoId, otherUid) {
 }
 
 // ── GC: INJECT STICKER + @ALL + THEME BUTTON ─────────
-var _origOpenGroupConvo = openGroupConvo;
-openGroupConvo = async function(gcId, gcData) {
-  await _origOpenGroupConvo(gcId, gcData);
-  window._activeGCId = gcId;
+if (typeof openGroupConvo === 'function' && !openGroupConvo._patchWrapped) {
+  var _origOpenGroupConvo = openGroupConvo;
+  openGroupConvo = async function(gcId, gcData) {
+    await _origOpenGroupConvo(gcId, gcData);
+    window._activeGCId = gcId;
 
-  setTimeout(function() {
-    var row = document.querySelector('#chatArea .chat-input-row');
-    if (!row || row.querySelector('.gc-sticker-btn')) return;
+    setTimeout(function() {
+      var row = document.querySelector('#chatArea .chat-input-row');
+      if (!row || row.querySelector('.gc-sticker-btn')) return;
 
-    // Sticker button
-    var sBtn = document.createElement('button');
-    sBtn.className = 'gc-sticker-btn';
-    sBtn.title = 'Stickers & GIFs';
-    sBtn.style.cssText = 'background:none;border:none;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);transition:color .15s;';
-    sBtn.innerHTML = STICKER_ICON;
-    sBtn.onmouseenter = function() { this.style.color = 'var(--pink)'; };
-    sBtn.onmouseleave = function() { this.style.color = 'var(--text2)'; };
-    sBtn.onclick = function() { openStickerPicker('gc', gcId); };
+      // Sticker button
+      var sBtn = document.createElement('button');
+      sBtn.className = 'gc-sticker-btn';
+      sBtn.title = 'Stickers & GIFs';
+      sBtn.style.cssText = 'background:none;border:none;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);transition:color .15s;';
+      sBtn.innerHTML = STICKER_ICON;
+      sBtn.onmouseenter = function() { this.style.color = 'var(--pink)'; };
+      sBtn.onmouseleave = function() { this.style.color = 'var(--text2)'; };
+      sBtn.onclick = function() { openStickerPicker('gc', gcId); };
 
-    // @everyone button
-    var evBtn = document.createElement('button');
-    evBtn.className = 'gc-everyone-btn';
-    evBtn.title = 'Mention everyone';
-    evBtn.style.cssText = 'background:var(--pink-pale);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;color:var(--pink);padding:4px 7px;flex-shrink:0;font-family:Jost,sans-serif;transition:background .15s;';
-    evBtn.textContent = '@all';
-    evBtn.onmouseenter = function() { this.style.background = 'var(--pink)'; this.style.color = 'white'; };
-    evBtn.onmouseleave = function() { this.style.background = 'var(--pink-pale)'; this.style.color = 'var(--pink)'; };
-    evBtn.onclick = function() {
-      var inp = document.getElementById('gcInput');
-      if (inp) { inp.value = (inp.value + ' @everyone ').trim(); inp.focus(); }
-    };
+      // @everyone button
+      var evBtn = document.createElement('button');
+      evBtn.className = 'gc-everyone-btn';
+      evBtn.title = 'Mention everyone';
+      evBtn.style.cssText = 'background:var(--pink-pale);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;color:var(--pink);padding:4px 7px;flex-shrink:0;font-family:Jost,sans-serif;transition:background .15s;';
+      evBtn.textContent = '@all';
+      evBtn.onmouseenter = function() { this.style.background = 'var(--pink)'; this.style.color = 'white'; };
+      evBtn.onmouseleave = function() { this.style.background = 'var(--pink-pale)'; this.style.color = 'var(--pink)'; };
+      evBtn.onclick = function() {
+        var inp = document.getElementById('gcInput');
+        if (inp) { inp.value = (inp.value + ' @everyone ').trim(); inp.focus(); }
+      };
 
-    var sendBtn = row.querySelector('.chat-send');
-    if (sendBtn) { row.insertBefore(sBtn, sendBtn); row.insertBefore(evBtn, sBtn); }
-    else { row.appendChild(evBtn); row.appendChild(sBtn); }
+      var sendBtn = row.querySelector('.chat-send');
+      if (sendBtn) { row.insertBefore(sBtn, sendBtn); row.insertBefore(evBtn, sBtn); }
+      else { row.appendChild(evBtn); row.appendChild(sBtn); }
 
-    // Restore saved GC theme
-    var saved = parseInt(localStorage.getItem('gcTheme_' + gcId) || '0');
-    if (saved > 0) applyGCTheme(gcId, saved);
-  }, 300);
-};
+      // Restore saved GC theme
+      var saved = parseInt(localStorage.getItem('gcTheme_' + gcId) || '0');
+      if (saved > 0) applyGCTheme(gcId, saved);
+    }, 300);
+  };
+  openGroupConvo._patchWrapped = true;
+}
 
 // ── GC THEME SYSTEM ───────────────────────────────────
 var GC_THEMES = [
@@ -520,8 +526,9 @@ function applyGCTheme(gcId, idx) {
 }
 
 // ── INJECT THEME GRID INTO GC SETTINGS MODAL ─────────
-var _origOpenGCSettings = openGCSettings;
-openGCSettings = function(gcId) {
+if (typeof openGCSettings === 'function' && !openGCSettings._patchWrapped) {
+  var _origOpenGCSettings = openGCSettings;
+  openGCSettings = function(gcId) {
   _origOpenGCSettings(gcId);
   setTimeout(function() {
     var box = document.getElementById('gcSettingsBox');
@@ -552,7 +559,9 @@ openGCSettings = function(gcId) {
     if (inner) inner.insertBefore(section, inner.firstChild);
     else box.appendChild(section);
   }, 250);
-};
+  };
+  openGCSettings._patchWrapped = true;
+}
 
 // ── GC REPLY-TO SYSTEM ────────────────────────────────
 function addGCReplyPreview(gcId, fromHandle, text) {
@@ -593,28 +602,31 @@ document.addEventListener('click', function(e) {
 });
 
 // Patch sendGroupMsg to prepend reply context and handle @everyone
-var _origSendGroupMsg = sendGroupMsg;
-sendGroupMsg = async function(gcId) {
-  var inp = document.getElementById('gcInput');
-  var bar = document.getElementById('gcReplyPreview');
-  if (bar && bar.dataset.replyFrom && inp) {
-    inp.value = '[↩ @' + bar.dataset.replyFrom + '] ' + inp.value;
-    bar.remove();
-  }
-  // Handle @everyone — notify all members
-  var txt = inp ? inp.value : '';
-  await _origSendGroupMsg(gcId);
-  if (txt.includes('@everyone')) {
-    try {
-      var gcDoc = await db.collection('groups').doc(gcId).get();
-      if (gcDoc.exists) {
-        (gcDoc.data().members || []).filter(function(u) { return u !== me.uid; }).forEach(function(uid) {
-          sendNotification(uid, 'mention', me, me.handle + ' mentioned everyone: ' + txt.slice(0, 40));
-        });
-      }
-    } catch(e) {}
-  }
-};
+if (typeof sendGroupMsg === 'function' && !sendGroupMsg._patchWrapped) {
+  var _origSendGroupMsg = sendGroupMsg;
+  sendGroupMsg = async function(gcId) {
+    var inp = document.getElementById('gcInput');
+    var bar = document.getElementById('gcReplyPreview');
+    if (bar && bar.dataset.replyFrom && inp) {
+      inp.value = '[↩ @' + bar.dataset.replyFrom + '] ' + inp.value;
+      bar.remove();
+    }
+    // Handle @everyone — notify all members
+    var txt = inp ? inp.value : '';
+    await _origSendGroupMsg(gcId);
+    if (txt.includes('@everyone')) {
+      try {
+        var gcDoc = await db.collection('groups').doc(gcId).get();
+        if (gcDoc.exists) {
+          (gcDoc.data().members || []).filter(function(u) { return u !== me.uid; }).forEach(function(uid) {
+            sendNotification(uid, 'mention', me, me.handle + ' mentioned everyone: ' + txt.slice(0, 40));
+          });
+        }
+      } catch(e) {}
+    }
+  };
+  sendGroupMsg._patchWrapped = true;
+}
 
 // ── STICKER BUTTON INJECTION INTO COMMENT INPUTS ──────
 function injectCommentStickerBtns() {
@@ -633,12 +645,15 @@ function injectCommentStickerBtns() {
   });
 }
 
-// Run after every feed render
-var _origRenderFeed = renderFeed;
-renderFeed = function() {
-  _origRenderFeed();
-  setTimeout(injectCommentStickerBtns, 300);
-};
+// Run after every feed render — safely wrap renderFeed if available
+if (typeof renderFeed === 'function' && !renderFeed._patchWrapped) {
+  var _origRenderFeed = renderFeed;
+  renderFeed = function() {
+    _origRenderFeed.apply(this, arguments);
+    setTimeout(injectCommentStickerBtns, 300);
+  };
+  renderFeed._patchWrapped = true;
+}
 
 // ── PUSH NOTIFICATIONS ────────────────────────────────
 function requestPushPermission() {
@@ -653,20 +668,24 @@ function showBrowserNotif(title, body, tag) {
   setTimeout(function() { n.close(); }, 6000);
 }
 
-var _origShowNotifPopup = showNotifPopup;
-showNotifPopup = function(nid, n) {
-  _origShowNotifPopup(nid, n);
-  var titles = {like:'❤️ New Like', comment:'💬 New Comment', follow:'👤 New Follower', message:'✉️ New Message', mention:'@ Mentioned you', repost:'🔁 Repost'};
-  var bodies  = {
-    like:    (n.fromName || 'Someone') + ' liked your post',
-    comment: (n.fromName || 'Someone') + ' commented' + (n.extra ? ': ' + n.extra.slice(0,50) : ''),
-    follow:  (n.fromName || 'Someone') + ' started following you',
-    message: (n.fromName || 'Someone') + ': ' + (n.extra || 'Sent you a message').slice(0,60),
-    mention: (n.fromName || 'Someone') + ' mentioned you',
-    repost:  (n.fromName || 'Someone') + ' reposted your post',
+// Wrap showNotifPopup safely
+if (typeof showNotifPopup === 'function' && !showNotifPopup._patchWrapped) {
+  var _origShowNotifPopup = showNotifPopup;
+  showNotifPopup = function(nid, n) {
+    _origShowNotifPopup(nid, n);
+    var titles = {like:'❤️ New Like', comment:'💬 New Comment', follow:'👤 New Follower', message:'✉️ New Message', mention:'@ Mentioned you', repost:'🔁 Repost'};
+    var bodies  = {
+      like:    (n.fromName || 'Someone') + ' liked your post',
+      comment: (n.fromName || 'Someone') + ' commented' + (n.extra ? ': ' + n.extra.slice(0,50) : ''),
+      follow:  (n.fromName || 'Someone') + ' started following you',
+      message: (n.fromName || 'Someone') + ': ' + (n.extra || 'Sent you a message').slice(0,60),
+      mention: (n.fromName || 'Someone') + ' mentioned you',
+      repost:  (n.fromName || 'Someone') + ' reposted your post',
+    };
+    showBrowserNotif(titles[n.type] || 'Kez Media 🌸', bodies[n.type] || n.type, nid);
   };
-  showBrowserNotif(titles[n.type] || 'Kez Media 🌸', bodies[n.type] || n.type, nid);
-};
+  showNotifPopup._patchWrapped = true;
+}
 
 // ── REAL-TIME NEW POST BANNER ─────────────────────────
 function watchForNewPosts() {
@@ -723,11 +742,22 @@ function watchForNewPosts() {
 })();
 
 // ── STARTUP ───────────────────────────────────────────
-var _origInit = init;
-init = async function() {
-  await _origInit();
-  setTimeout(requestPushPermission, 3000);
-  setTimeout(watchForNewPosts, 2500);
-};
+// Safely wrap init() — only if it exists and hasn't been wrapped yet
+if (typeof init === 'function' && !init._patchWrapped) {
+  var _origInit = init;
+  init = async function() {
+    await _origInit.apply(this, arguments);
+    setTimeout(requestPushPermission, 3000);
+    setTimeout(watchForNewPosts, 2500);
+  };
+  init._patchWrapped = true;
+} else {
+  // init not ready yet — hook will fire when app calls it via runAppInit
+  // Push/NewPost watchers will be bootstrapped from the patched renderFeed instead
+  setTimeout(function() {
+    requestPushPermission();
+    setTimeout(watchForNewPosts, 1000);
+  }, 5000);
+}
 
 console.log('[Kez Patch] All features loaded ✓');
