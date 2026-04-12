@@ -229,8 +229,8 @@ async function updatePostField(id, updates) {
   try {
     await postsCol().doc(String(id)).update(updates);
   } catch(e) {
-    console.error('updatePostField failed for', id, ':', e.code || e.message, updates);
-    throw e; // re-throw so callers like votePoll can handle rollback
+    console.error('updatePostField failed ['+id+']', e.code||e.message);
+    throw e;
   }
 }
 async function deletePostFromFirestore(id) {
@@ -382,8 +382,7 @@ function showNotifPopup(nid, n){
   const icons  = {like:'❤️', comment:'💬', follow:'👤', message:'✉️', mention:'@', repost:'🔁', share:'📤', vote:'🗳️'};
   const texts  = {like:'liked your post', comment:'commented on your post',
                   follow:'started following you', message:'sent you a message', mention:'mentioned you',
-                  repost:'reposted your post', share:'shared your post',
-                  vote: n.extra ? n.extra : 'voted on your poll'};
+                  repost:'reposted your post', share:'shared your post', vote:'voted on your poll'};
   const container = document.getElementById('notifPopup');
   if(!container) return;
 
@@ -475,16 +474,20 @@ function renderNotifs(docs){
     const div=document.createElement('div');
     div.className='notif-item'+(n.read?'':' unread');
     div.style.cursor='pointer';
-    // For vote notifications, show the choice name inline instead of in extra
-    var notifBodyText = n.type==='vote' && n.extra
-      ? n.extra   // e.g. 'voted for "oppa reggb" on your poll'
-      : (texts[n.type]||n.type) + (n.extra && n.type!=='vote' ? ' — <em>'+esc(n.extra.slice(0,40))+'</em>' : '');
+    // For vote type: n.extra is already the full phrase e.g. 'voted for "oppa reggb" on your poll'
+    // For other types: append extra as a preview snippet
+    var bodyText;
+    if(n.type==='vote' && n.extra){
+      bodyText = n.extra; // full descriptive text already set by sendNotification
+    } else {
+      bodyText = (texts[n.type]||n.type) + (n.extra?' — <em>'+esc(n.extra.slice(0,40))+'</em>':'');
+    }
     div.innerHTML=
       '<div class="notif-av" style="background:'+(n.fromColor||'var(--pink)')+';color:white;">'
         +(n.fromAvatar?'<img src="'+n.fromAvatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(n.fromInitial||'?'))
       +'</div>'
       +'<div class="notif-icon">'+(icons[n.type]||'🔔')+'</div>'
-      +'<div class="notif-text"><strong>'+esc(n.fromName||n.fromHandle||'Someone')+'</strong> '+notifBodyText+'</div>'
+      +'<div class="notif-text"><strong>'+esc(n.fromName||n.fromHandle||'Someone')+'</strong> '+bodyText+'</div>'
       +'<div class="notif-time" title="'+fullDate(n.ts)+'">'+timeAgo(n.ts)+'</div>';
     div.addEventListener('click',function(){
       if(!n.read) db.collection('notifications').doc(nid).update({read:true}).catch(()=>{});
@@ -943,101 +946,7 @@ function buildCard(p,i){
   if(p.isStatus){
     mediaHTML='<div class="status-body"><p class="status-text">'+esc(p.caption||'')+'</p>'+(p.mood?'<div class="status-mood-tag">'+esc(p.mood)+'</div>':'')+'</div>';
   } else if(p.isPoll){
-    // Poll post rendering
-    var pollDeadline = p.pollEnds || p.pollEndsAt || 0;
-    var pollEnded = pollDeadline > 0 && Date.now() > pollDeadline;
-
-    // Normalise pollOptions to always be [{text, votes}] objects
-    var normOpts = (p.pollOptions||[]).map(function(o){
-      if(typeof o === 'string') return {text:o, votes:0};
-      return {text:o.text||'', votes:o.votes||0};
-    });
-
-    // Detect which vote format this post uses
-    var _pvNew = p.pollVotes && p.pollVotes[me.uid] !== undefined && typeof p.pollVotes[me.uid] === 'number';
-    var myVoteIdx = _pvNew ? p.pollVotes[me.uid] : -1;
-
-    // Count total votes — always from normOpts.votes (updated by votePoll) OR old array format
-    var totalVotes = 0;
-    if(_pvNew){
-      totalVotes = normOpts.reduce(function(s,o){ return s+(o.votes||0); }, 0);
-      // Fallback: if votes are all zero but pollVotes has entries, count from pollVotes
-      if(totalVotes === 0 && p.pollVotes){
-        totalVotes = Object.keys(p.pollVotes).filter(function(k){ return typeof p.pollVotes[k]==='number'; }).length;
-      }
-    } else {
-      // Old format: pollVotes[optionText] = [uid, ...]
-      totalVotes = Object.values(p.pollVotes||{}).reduce(function(a,v){ return a+(Array.isArray(v)?v.length:0); }, 0);
-    }
-
-    var myVote = _pvNew
-      ? (normOpts[myVoteIdx] ? normOpts[myVoteIdx].text : null)
-      : Object.keys(p.pollVotes||{}).find(function(o){ return Array.isArray(p.pollVotes[o]) && p.pollVotes[o].includes(me.uid); });
-
-    var iP = _r(pid);
-
-    // Optional head-to-head photos — up to 3
-    var photosHTML='';
-    var hasPhotos = p.pollPhotoA || p.pollPhotoB || p.pollPhotoC;
-    if(hasPhotos){
-      var labels = ['A','B','C'];
-      var pollPhotos = [p.pollPhotoA, p.pollPhotoB, p.pollPhotoC].filter(Boolean);
-      photosHTML='<div style="display:grid;grid-template-columns:'+Array(pollPhotos.length).fill('1fr').join(' ')+';gap:6px;margin-bottom:12px;">';
-      pollPhotos.forEach(function(photoUrl, pi){
-        var optLabel = normOpts[pi] ? normOpts[pi].text : labels[pi];
-        var isVotedThis = myVote === optLabel;
-        photosHTML+='<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;border:2.5px solid '+(isVotedThis?'var(--pink)':'transparent')+';transition:border-color .2s;">'
-          +'<img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;">'
-          +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:8px 6px 5px;display:flex;justify-content:space-between;align-items:flex-end;">'
-            +'<span style="color:white;font-size:11px;font-weight:800;background:rgba(0,0,0,.4);padding:1px 6px;border-radius:5px;">'+esc(labels[pi])+'</span>'
-            +(isVotedThis?'<span style="color:var(--pink);font-size:11px;font-weight:700;">✓</span>':'')
-          +'</div>'
-        +'</div>';
-      });
-      photosHTML+='</div>';
-    }
-
-    var optionsHTML=normOpts.map(function(opt,_oi){
-      var optText = opt.text || ('Option '+(String.fromCharCode(65+_oi)));
-      var votes = _pvNew ? (opt.votes||0) : (Array.isArray((p.pollVotes||{})[optText]) ? p.pollVotes[optText].length : 0);
-      var pct = totalVotes>0 ? Math.round(votes/totalVotes*100) : 0;
-      var isMyVote = _pvNew ? (myVoteIdx===_oi) : (myVote===optText);
-      var showResults = !!myVote || myVoteIdx>=0 || pollEnded;
-      if(showResults){
-        return '<div style="margin-bottom:8px;">'
-          +'<div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:'+(isMyVote?'700':'500')+';color:'+(isMyVote?'var(--pink)':'var(--text)')+';margin-bottom:4px;"><span>'+(isMyVote?'✓ ':'')+esc(optText)+'</span><span>'+votes+' vote'+(votes!==1?'s':'')+' ('+pct+'%)</span></div>'
-          +'<div style="background:var(--bg3);border-radius:8px;height:8px;overflow:hidden;">'
-            +'<div style="background:'+(isMyVote?'var(--pink)':'var(--border)')+';height:100%;border-radius:8px;width:'+pct+'%;transition:width .5s;"></div>'
-          +'</div>'
-        +'</div>';
-      } else {
-        return '<button onclick="votePoll(\''+pid+'\','+_oi+')" style="display:block;width:100%;text-align:left;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:Jost,sans-serif;font-size:13.5px;cursor:pointer;margin-bottom:8px;transition:border-color .2s;" onmouseover="this.style.borderColor=\'var(--pink)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'+esc(optText)+'</button>';
-      }
-    }).join('');
-
-    // Time remaining display
-    var timeStr = '';
-    if(pollEnded){
-      timeStr = ' · Poll ended';
-    } else if(pollDeadline){
-      var diff = pollDeadline - Date.now();
-      var days = Math.floor(diff/86400000);
-      var hrs  = Math.floor((diff%86400000)/3600000);
-      var mins = Math.floor((diff%3600000)/60000);
-      if(days>0)      timeStr = ' · '+days+'d '+hrs+'h left';
-      else if(hrs>0)  timeStr = ' · '+hrs+'h '+mins+'m left';
-      else if(mins>0) timeStr = ' · '+mins+'m left';
-      else            timeStr = ' · Ending soon';
-    }
-
-    mediaHTML='<div style="padding:12px 14px 4px;">'
-      +'<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">📊 '+esc(p.pollQuestion||'')+'</div>'
-      +photosHTML
-      +optionsHTML
-      +'<div style="font-size:11.5px;color:var(--text3);margin-top:4px;">'
-        +totalVotes+' vote'+(totalVotes!==1?'s':'')+timeStr
-      +'</div>'
-    +'</div>';
+    mediaHTML = _buildPollHTML(pid, p);
   } else if(p.isVideo && p.videoUrl){
     mediaHTML='<div class="carousel-wrap">'
       +'<video class="video-preview" src="'+esc(p.videoUrl)+'" controls playsinline style="width:100%;max-height:500px;display:block;background:#000;border-radius:12px;"></video>'
@@ -1576,8 +1485,8 @@ function closeMenus(){document.querySelectorAll('.post-menu.open').forEach(m=>m.
 document.addEventListener('click',closeMenus);
 
 // ── POLL VOTE ─────────────────────────────────────────
-// votePoll is defined later in this file (search for "async function votePoll")
-// No stub here — the real implementation handles all cases.
+// Real votePoll implementation is below (search "async function votePoll")
+// No stub here — stub was removed because it blocked the real implementation
 
 // ── PROFILE PAGE ──────────────────────────────────────
 function refreshProfile(){
@@ -2234,16 +2143,16 @@ async function submitPost(){
     if(pollPhotoA) try{ pollPhotoAUrl=await uploadToStorage(pollPhotoA,'poll_photos/'+uid+'/A_'+Date.now()); }catch(e){}
     if(pollPhotoB) try{ pollPhotoBUrl=await uploadToStorage(pollPhotoB,'poll_photos/'+uid+'/B_'+Date.now()); }catch(e){}
     if(pollPhotoC) try{ pollPhotoCUrl=await uploadToStorage(pollPhotoC,'poll_photos/'+uid+'/C_'+Date.now()); }catch(e){}
-    // pollEnds (NOT pollEndsAt) — must match what votePoll and buildCard check
     var endsAt=Date.now()+dur*24*60*60*1000;
-    // pollOptions as array of {text, votes} objects — required by votePoll
-    var pollOptionsObj=opts.map(function(o){return {text:o, votes:0};});
+    // pollOptions MUST be [{text,votes}] objects — plain strings break votePoll counting
+    var pollOptionsObj=opts.map(function(o){return {text:o,votes:0};});
+    // pollVotes MUST be {} (uid→index map) — old string-keyed format breaks counting
     const p={id:postId, uid, user:{...me}, images:[], image:null, isPoll:true,
       caption:pcap||q, pollQuestion:q,
-      pollOptions:pollOptionsObj,   // [{text, votes}] format
-      pollVotes:{},                 // {uid: optionIndex} format
-      pollEnds:endsAt,              // single field, not pollEndsAt
-      pollEndsAt:endsAt,            // kept for backward-compat rendering
+      pollOptions:pollOptionsObj,
+      pollVotes:{},
+      pollEnds:endsAt,
+      pollEndsAt:endsAt,
       pollPhotoA:pollPhotoAUrl||null, pollPhotoB:pollPhotoBUrl||null, pollPhotoC:pollPhotoCUrl||null,
       likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
     await savePostToFirestore(p);
@@ -7326,66 +7235,175 @@ function buildPollCard(p, inFeed){
 }
 
 async function votePoll(postId, optionIdx){
-  postId=String(postId);
-  var p=posts.find(function(x){return String(x.id)===postId;});
-  if(!p||!p.isPoll){ toast('Poll not found'); return; }
+  postId = String(postId);
+  var p = posts.find(function(x){ return String(x.id)===postId; });
+  if(!p || !p.isPoll){ toast('Poll not found'); return; }
 
-  // Check expiry — support both pollEnds and pollEndsAt field names
-  var pollDeadline = p.pollEnds || p.pollEndsAt || 0;
-  if(pollDeadline && Date.now() > pollDeadline){ toast('This poll has ended ⏰'); return; }
+  // Check expiry — support BOTH field names
+  var deadline = p.pollEnds || p.pollEndsAt || 0;
+  if(deadline && Date.now() > deadline){ toast('This poll has ended ⏰'); return; }
 
-  // Already voted check — new format: pollVotes[uid] = number
-  if(p.pollVotes && p.pollVotes[me.uid] !== undefined && typeof p.pollVotes[me.uid] === 'number'){
-    toast('You already voted! ✓'); return;
-  }
-  // Already voted check — old format: pollVotes[optionText] = [uid, ...]
-  if(p.pollVotes){
-    var alreadyOld = Object.values(p.pollVotes).some(function(v){ return Array.isArray(v) && v.includes(me.uid); });
-    if(alreadyOld){ toast('You already voted! ✓'); return; }
-  }
+  if(!p.pollVotes) p.pollVotes = {};
+  if(!p.pollOptions || !p.pollOptions.length){ toast('Poll has no options'); return; }
 
-  if(!p.pollVotes) p.pollVotes={};
-  if(!p.pollOptions || !p.pollOptions.length){ toast('Poll options missing'); return; }
-
-  // Normalise pollOptions to [{text, votes}] if they came in as strings (old format)
+  // Normalise ALL options to {text, votes} objects (handles old string-only format)
   p.pollOptions = p.pollOptions.map(function(o){
-    if(typeof o === 'string') return {text:o, votes:0};
-    return {text: o.text||'', votes: o.votes||0};
+    if(typeof o === 'string') return {text: o, votes: 0};
+    return {text: o.text||'', votes: Number(o.votes)||0};
   });
 
-  if(optionIdx < 0 || optionIdx >= p.pollOptions.length){ toast('Invalid option'); return; }
+  var prevVoteIdx = (p.pollVotes[me.uid] !== undefined && typeof p.pollVotes[me.uid] === 'number')
+    ? p.pollVotes[me.uid] : -1;
 
-  // Record the vote
-  p.pollVotes[me.uid] = optionIdx;
+  // Same option clicked again → no-op
+  if(prevVoteIdx === optionIdx){ toast('Already voted for this! ✓'); return; }
+
+  // Undo previous vote if changing
+  if(prevVoteIdx >= 0 && p.pollOptions[prevVoteIdx]){
+    p.pollOptions[prevVoteIdx].votes = Math.max(0, p.pollOptions[prevVoteIdx].votes - 1);
+  }
+
+  // Cast new vote
   p.pollOptions[optionIdx].votes = (p.pollOptions[optionIdx].votes || 0) + 1;
+  p.pollVotes[me.uid] = optionIdx;
 
-  // Get the exact choice text for the notification
-  var choiceText = p.pollOptions[optionIdx].text || 'an option';
+  var choiceText = p.pollOptions[optionIdx].text || ('Option '+(optionIdx+1));
+
+  // Optimistically update UI immediately (realtime feel)
+  _rerenderPollCard(postId, p);
 
   try {
-    // Save both fields — always write pollEnds so future checks work
-    await updatePostField(postId, {
+    await postsCol().doc(postId).update({
       pollOptions: p.pollOptions,
       pollVotes:   p.pollVotes,
-      pollEnds:    pollDeadline || null  // ensure pollEnds is always set
+      pollEnds:    deadline || null
     });
 
-    toast('Vote cast! 🗳️');
+    toast(prevVoteIdx >= 0 ? 'Vote changed to "'+choiceText+'"! 🗳️' : 'Vote cast for "'+choiceText+'"! 🗳️');
 
-    // Re-render feed immediately so vote count updates in UI
-    setTimeout(function(){ renderFeed(); renderExploreFeed(); }, 150);
-
-    // Send notification with exact choice — show "voted for 'oppa reggb' on your poll"
-    if(p.uid && p.uid !== me.uid){
-      sendNotification(p.uid, 'vote', me, 'voted for "' + choiceText + '" on your poll', postId);
+    // Send notification only on first vote (not on change)
+    if(prevVoteIdx < 0 && p.uid && p.uid !== me.uid){
+      sendNotification(p.uid, 'vote', me, 'voted for "'+choiceText+'" on your poll', postId);
     }
   } catch(e){
-    // Rollback local state on failure
-    delete p.pollVotes[me.uid];
-    p.pollOptions[optionIdx].votes = Math.max(0, (p.pollOptions[optionIdx].votes||1) - 1);
-    toast('Could not save vote — try again');
-    console.error('votePoll error:', e);
+    // Rollback on failure
+    p.pollOptions[optionIdx].votes = Math.max(0, p.pollOptions[optionIdx].votes - 1);
+    if(prevVoteIdx >= 0 && p.pollOptions[prevVoteIdx]){
+      p.pollOptions[prevVoteIdx].votes = (p.pollOptions[prevVoteIdx].votes || 0) + 1;
+    }
+    if(prevVoteIdx >= 0) p.pollVotes[me.uid] = prevVoteIdx;
+    else delete p.pollVotes[me.uid];
+    _rerenderPollCard(postId, p);
+    toast('Could not save vote — check connection');
+    console.error('votePoll error:', e.code || e.message, e);
   }
+}
+
+// Rerender just the poll section of a post card without full feed re-render
+function _rerenderPollCard(postId, p){
+  var card = document.getElementById('pc-'+postId);
+  if(!card) return;
+  var pollWrap = card.querySelector('[data-poll-wrap]');
+  if(pollWrap){
+    pollWrap.outerHTML = _buildPollHTML(postId, p);
+  } else {
+    // fallback — full feed re-render
+    setTimeout(function(){ renderFeed(); }, 100);
+  }
+}
+
+// Build just the poll HTML fragment (used by buildCard + _rerenderPollCard)
+function _buildPollHTML(pid, p){
+  var deadline = p.pollEnds || p.pollEndsAt || 0;
+  var pollEnded = deadline > 0 && Date.now() > deadline;
+
+  // Normalise options
+  var opts = (p.pollOptions||[]).map(function(o){
+    if(typeof o==='string') return {text:o, votes:0};
+    return {text: o.text||'', votes: Number(o.votes)||0};
+  });
+
+  var myVoteIdx = (p.pollVotes && p.pollVotes[me.uid] !== undefined && typeof p.pollVotes[me.uid]==='number')
+    ? p.pollVotes[me.uid] : -1;
+
+  // For OLD string-keyed format fallback
+  if(myVoteIdx < 0 && p.pollVotes){
+    opts.forEach(function(o,i){
+      if(Array.isArray(p.pollVotes[o.text]) && p.pollVotes[o.text].includes(me.uid)) myVoteIdx = i;
+    });
+  }
+
+  var totalVotes = opts.reduce(function(s,o){ return s + (Number(o.votes)||0); }, 0);
+  // Fallback count from pollVotes keys if opts.votes all zero (migration scenario)
+  if(totalVotes === 0 && p.pollVotes){
+    totalVotes = Object.values(p.pollVotes).filter(function(v){ return typeof v==='number'; }).length;
+  }
+
+  var voted = myVoteIdx >= 0;
+  var showResults = voted || pollEnded;
+
+  // Photos row
+  var photosHTML = '';
+  var photos = [p.pollPhotoA, p.pollPhotoB, p.pollPhotoC].filter(Boolean);
+  if(photos.length){
+    photosHTML = '<div style="display:grid;grid-template-columns:'+Array(photos.length).fill('1fr').join(' ')+';gap:6px;margin-bottom:12px;">';
+    photos.forEach(function(url, pi){
+      var isVoted = myVoteIdx === pi;
+      photosHTML += '<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;border:2.5px solid '+(isVoted?'var(--pink)':'transparent')+';transition:border-color .2s;">'
+        +'<img src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;display:block;">'
+        +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.65));padding:8px 6px 5px;display:flex;justify-content:space-between;align-items:flex-end;">'
+          +'<span style="color:white;font-size:11px;font-weight:800;background:rgba(0,0,0,.35);padding:1px 6px;border-radius:5px;">'+String.fromCharCode(65+pi)+'</span>'
+          +(isVoted?'<span style="color:var(--pink);font-size:12px;font-weight:900;">✓</span>':'')
+        +'</div>'
+      +'</div>';
+    });
+    photosHTML += '</div>';
+  }
+
+  // Options
+  var optsHTML = opts.map(function(opt, i){
+    var votes = Number(opt.votes)||0;
+    var pct = totalVotes > 0 ? Math.round(votes/totalVotes*100) : 0;
+    var isMyVote = myVoteIdx === i;
+
+    if(showResults){
+      return '<div style="margin-bottom:8px;">'
+        +'<div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:'+(isMyVote?'700':'500')+';color:'+(isMyVote?'var(--pink)':'var(--text)')+';margin-bottom:4px;">'
+          +'<span>'+(isMyVote?'✓ ':'')+esc(opt.text)+'</span>'
+          +'<span>'+votes+' vote'+(votes!==1?'s':'')+' ('+pct+'%)</span>'
+        +'</div>'
+        +'<div style="background:var(--bg3);border-radius:8px;height:8px;overflow:hidden;">'
+          +'<div style="background:'+(isMyVote?'var(--pink)':'var(--border)')+';height:100%;border-radius:8px;width:'+pct+'%;transition:width .6s ease;"></div>'
+        +'</div>'
+        // Allow vote change if not ended
+        +(!pollEnded?'<div style="text-align:right;margin-top:3px;"><button onclick="votePoll(\''+pid+'\','+i+')" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;font-family:Jost,sans-serif;padding:0;transition:color .15s;" onmouseover="this.style.color=\'var(--pink)\'" onmouseout="this.style.color=\'var(--text3)\'">'+(isMyVote?'voted':'change vote')+'</button></div>':'')
+      +'</div>';
+    } else {
+      return '<button onclick="votePoll(\''+pid+'\','+i+')" style="display:block;width:100%;text-align:left;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:Jost,sans-serif;font-size:13.5px;cursor:pointer;margin-bottom:8px;transition:border-color .2s,background .2s;" onmouseover="this.style.borderColor=\'var(--pink)\';this.style.background=\'var(--pink-pale)\';" onmouseout="this.style.borderColor=\'var(--border)\';this.style.background=\'var(--bg2)\';">'+esc(opt.text)+'</button>';
+    }
+  }).join('');
+
+  // Time remaining
+  var timeStr = '';
+  if(pollEnded){
+    timeStr = ' · Poll ended';
+  } else if(deadline){
+    var diff = deadline - Date.now();
+    var days = Math.floor(diff/86400000);
+    var hrs  = Math.floor((diff%86400000)/3600000);
+    var mins = Math.floor((diff%3600000)/60000);
+    if(days>0)      timeStr = ' · '+days+'d '+hrs+'h left';
+    else if(hrs>0)  timeStr = ' · '+hrs+'h '+mins+'m left';
+    else if(mins>0) timeStr = ' · '+mins+'m left';
+    else            timeStr = ' · Ending soon';
+  }
+
+  return '<div data-poll-wrap="'+pid+'" style="padding:12px 14px 4px;">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">📊 '+esc(p.pollQuestion||'')+'</div>'
+    +photosHTML
+    +optsHTML
+    +'<div style="font-size:11.5px;color:var(--text3);margin-top:6px;">'+totalVotes+' vote'+(totalVotes!==1?'s':'')+timeStr+'</div>'
+  +'</div>';
 }
 
 // Wire poll into switchPostType
