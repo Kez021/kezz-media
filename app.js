@@ -226,7 +226,12 @@ async function savePostToFirestore(p) {
   });
 }
 async function updatePostField(id, updates) {
-  try { await postsCol().doc(String(id)).update(updates); } catch(e) {}
+  try {
+    await postsCol().doc(String(id)).update(updates);
+  } catch(e) {
+    console.error('updatePostField failed for', id, ':', e.code || e.message, updates);
+    throw e; // re-throw so callers like votePoll can handle rollback
+  }
 }
 async function deletePostFromFirestore(id) {
   await postsCol().doc(String(id)).delete();
@@ -377,7 +382,8 @@ function showNotifPopup(nid, n){
   const icons  = {like:'❤️', comment:'💬', follow:'👤', message:'✉️', mention:'@', repost:'🔁', share:'📤', vote:'🗳️'};
   const texts  = {like:'liked your post', comment:'commented on your post',
                   follow:'started following you', message:'sent you a message', mention:'mentioned you',
-                  repost:'reposted your post', share:'shared your post', vote:'voted on your poll'};
+                  repost:'reposted your post', share:'shared your post',
+                  vote: n.extra ? n.extra : 'voted on your poll'};
   const container = document.getElementById('notifPopup');
   if(!container) return;
 
@@ -469,12 +475,16 @@ function renderNotifs(docs){
     const div=document.createElement('div');
     div.className='notif-item'+(n.read?'':' unread');
     div.style.cursor='pointer';
+    // For vote notifications, show the choice name inline instead of in extra
+    var notifBodyText = n.type==='vote' && n.extra
+      ? n.extra   // e.g. 'voted for "oppa reggb" on your poll'
+      : (texts[n.type]||n.type) + (n.extra && n.type!=='vote' ? ' — <em>'+esc(n.extra.slice(0,40))+'</em>' : '');
     div.innerHTML=
       '<div class="notif-av" style="background:'+(n.fromColor||'var(--pink)')+';color:white;">'
         +(n.fromAvatar?'<img src="'+n.fromAvatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">':esc(n.fromInitial||'?'))
       +'</div>'
       +'<div class="notif-icon">'+(icons[n.type]||'🔔')+'</div>'
-      +'<div class="notif-text"><strong>'+esc(n.fromName||n.fromHandle||'Someone')+'</strong> '+(texts[n.type]||n.type)+(n.extra?' — <em>'+esc(n.extra.slice(0,40))+'</em>':'')+'</div>'
+      +'<div class="notif-text"><strong>'+esc(n.fromName||n.fromHandle||'Someone')+'</strong> '+notifBodyText+'</div>'
       +'<div class="notif-time" title="'+fullDate(n.ts)+'">'+timeAgo(n.ts)+'</div>';
     div.addEventListener('click',function(){
       if(!n.read) db.collection('notifications').doc(nid).update({read:true}).catch(()=>{});
@@ -934,33 +944,48 @@ function buildCard(p,i){
     mediaHTML='<div class="status-body"><p class="status-text">'+esc(p.caption||'')+'</p>'+(p.mood?'<div class="status-mood-tag">'+esc(p.mood)+'</div>':'')+'</div>';
   } else if(p.isPoll){
     // Poll post rendering
-    var pollEnded = (p.pollEnds && Date.now() > p.pollEnds) || (p.pollEndsAt && Date.now() > p.pollEndsAt);
-    // Support both vote formats:
-    // NEW: pollVotes[uid]=optionIndex + pollOptions[i].votes counter
-    // OLD: pollVotes[optionText]=array-of-UIDs
+    var pollDeadline = p.pollEnds || p.pollEndsAt || 0;
+    var pollEnded = pollDeadline > 0 && Date.now() > pollDeadline;
+
+    // Normalise pollOptions to always be [{text, votes}] objects
+    var normOpts = (p.pollOptions||[]).map(function(o){
+      if(typeof o === 'string') return {text:o, votes:0};
+      return {text:o.text||'', votes:o.votes||0};
+    });
+
+    // Detect which vote format this post uses
     var _pvNew = p.pollVotes && p.pollVotes[me.uid] !== undefined && typeof p.pollVotes[me.uid] === 'number';
     var myVoteIdx = _pvNew ? p.pollVotes[me.uid] : -1;
+
+    // Count total votes — always from normOpts.votes (updated by votePoll) OR old array format
     var totalVotes = 0;
     if(_pvNew){
-      totalVotes = (p.pollOptions||[]).reduce(function(s,o){ return s+(o.votes||0); }, 0);
+      totalVotes = normOpts.reduce(function(s,o){ return s+(o.votes||0); }, 0);
+      // Fallback: if votes are all zero but pollVotes has entries, count from pollVotes
+      if(totalVotes === 0 && p.pollVotes){
+        totalVotes = Object.keys(p.pollVotes).filter(function(k){ return typeof p.pollVotes[k]==='number'; }).length;
+      }
     } else {
+      // Old format: pollVotes[optionText] = [uid, ...]
       totalVotes = Object.values(p.pollVotes||{}).reduce(function(a,v){ return a+(Array.isArray(v)?v.length:0); }, 0);
     }
-    var myVote = _pvNew ? (p.pollOptions&&p.pollOptions[myVoteIdx]?p.pollOptions[myVoteIdx].text:null) : Object.keys(p.pollVotes||{}).find(function(o){return Array.isArray(p.pollVotes[o])&&p.pollVotes[o].includes(me.uid);});
+
+    var myVote = _pvNew
+      ? (normOpts[myVoteIdx] ? normOpts[myVoteIdx].text : null)
+      : Object.keys(p.pollVotes||{}).find(function(o){ return Array.isArray(p.pollVotes[o]) && p.pollVotes[o].includes(me.uid); });
+
     var iP = _r(pid);
 
     // Optional head-to-head photos — up to 3
     var photosHTML='';
     var hasPhotos = p.pollPhotoA || p.pollPhotoB || p.pollPhotoC;
     if(hasPhotos){
-      var photoCount = (p.pollPhotoA?1:0)+(p.pollPhotoB?1:0)+(p.pollPhotoC?1:0);
       var labels = ['A','B','C'];
       var pollPhotos = [p.pollPhotoA, p.pollPhotoB, p.pollPhotoC].filter(Boolean);
-      var pollOptsList = p.pollOptions||[];
       photosHTML='<div style="display:grid;grid-template-columns:'+Array(pollPhotos.length).fill('1fr').join(' ')+';gap:6px;margin-bottom:12px;">';
       pollPhotos.forEach(function(photoUrl, pi){
-        var optLabel = pollOptsList[pi]||labels[pi];
-        var isVotedThis = myVote===optLabel;
+        var optLabel = normOpts[pi] ? normOpts[pi].text : labels[pi];
+        var isVotedThis = myVote === optLabel;
         photosHTML+='<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;border:2.5px solid '+(isVotedThis?'var(--pink)':'transparent')+';transition:border-color .2s;">'
           +'<img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;">'
           +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:8px 6px 5px;display:flex;justify-content:space-between;align-items:flex-end;">'
@@ -972,21 +997,15 @@ function buildCard(p,i){
       photosHTML+='</div>';
     }
 
-    var optionsHTML=(p.pollOptions||[]).map(function(opt,_oi){
-      // Support both string options (old) and object options with .text/.votes (new)
-      var optText = (typeof opt==='object'&&opt!==null) ? (opt.text||'Option') : String(opt);
-      var votes;
-      if(_pvNew){
-        votes = (typeof opt==='object'&&opt!==null) ? (opt.votes||0) : 0;
-      } else {
-        votes = Array.isArray((p.pollVotes||{})[optText]) ? p.pollVotes[optText].length : 0;
-      }
-      var pct=totalVotes>0?Math.round(votes/totalVotes*100):0;
+    var optionsHTML=normOpts.map(function(opt,_oi){
+      var optText = opt.text || ('Option '+(String.fromCharCode(65+_oi)));
+      var votes = _pvNew ? (opt.votes||0) : (Array.isArray((p.pollVotes||{})[optText]) ? p.pollVotes[optText].length : 0);
+      var pct = totalVotes>0 ? Math.round(votes/totalVotes*100) : 0;
       var isMyVote = _pvNew ? (myVoteIdx===_oi) : (myVote===optText);
-      var showResults=!!myVote||myVoteIdx>=0||pollEnded;
+      var showResults = !!myVote || myVoteIdx>=0 || pollEnded;
       if(showResults){
         return '<div style="margin-bottom:8px;">'
-          +'<div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:'+(isMyVote?'700':'500')+';color:'+(isMyVote?'var(--pink)':'var(--text)')+';margin-bottom:4px;"><span>'+(isMyVote?'✓ ':'')+esc(optText)+'</span><span>'+pct+'%</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:'+(isMyVote?'700':'500')+';color:'+(isMyVote?'var(--pink)':'var(--text)')+';margin-bottom:4px;"><span>'+(isMyVote?'✓ ':'')+esc(optText)+'</span><span>'+votes+' vote'+(votes!==1?'s':'')+' ('+pct+'%)</span></div>'
           +'<div style="background:var(--bg3);border-radius:8px;height:8px;overflow:hidden;">'
             +'<div style="background:'+(isMyVote?'var(--pink)':'var(--border)')+';height:100%;border-radius:8px;width:'+pct+'%;transition:width .5s;"></div>'
           +'</div>'
@@ -996,14 +1015,27 @@ function buildCard(p,i){
       }
     }).join('');
 
+    // Time remaining display
+    var timeStr = '';
+    if(pollEnded){
+      timeStr = ' · Poll ended';
+    } else if(pollDeadline){
+      var diff = pollDeadline - Date.now();
+      var days = Math.floor(diff/86400000);
+      var hrs  = Math.floor((diff%86400000)/3600000);
+      var mins = Math.floor((diff%3600000)/60000);
+      if(days>0)      timeStr = ' · '+days+'d '+hrs+'h left';
+      else if(hrs>0)  timeStr = ' · '+hrs+'h '+mins+'m left';
+      else if(mins>0) timeStr = ' · '+mins+'m left';
+      else            timeStr = ' · Ending soon';
+    }
+
     mediaHTML='<div style="padding:12px 14px 4px;">'
-      +(p.caption&&!p.isPoll?'':'') // caption handled separately
       +'<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">📊 '+esc(p.pollQuestion||'')+'</div>'
       +photosHTML
       +optionsHTML
       +'<div style="font-size:11.5px;color:var(--text3);margin-top:4px;">'
-        +totalVotes+' vote'+(totalVotes!==1?'s':'')
-        +(pollEnded?' · Poll ended':(p.pollEnds||p.pollEndsAt)?' · Ends '+timeAgo(p.pollEnds||p.pollEndsAt):'')
+        +totalVotes+' vote'+(totalVotes!==1?'s':'')+timeStr
       +'</div>'
     +'</div>';
   } else if(p.isVideo && p.videoUrl){
@@ -1544,11 +1576,8 @@ function closeMenus(){document.querySelectorAll('.post-menu.open').forEach(m=>m.
 document.addEventListener('click',closeMenus);
 
 // ── POLL VOTE ─────────────────────────────────────────
-// votePoll is fully implemented in features_patch.js — this stub is intentionally empty
-// to prevent the old conflicting format from running
-async function votePoll(postId, option){
-  // Delegated to features_patch.js override — do nothing here
-}
+// votePoll is defined later in this file (search for "async function votePoll")
+// No stub here — the real implementation handles all cases.
 
 // ── PROFILE PAGE ──────────────────────────────────────
 function refreshProfile(){
@@ -2205,11 +2234,16 @@ async function submitPost(){
     if(pollPhotoA) try{ pollPhotoAUrl=await uploadToStorage(pollPhotoA,'poll_photos/'+uid+'/A_'+Date.now()); }catch(e){}
     if(pollPhotoB) try{ pollPhotoBUrl=await uploadToStorage(pollPhotoB,'poll_photos/'+uid+'/B_'+Date.now()); }catch(e){}
     if(pollPhotoC) try{ pollPhotoCUrl=await uploadToStorage(pollPhotoC,'poll_photos/'+uid+'/C_'+Date.now()); }catch(e){}
+    // pollEnds (NOT pollEndsAt) — must match what votePoll and buildCard check
     var endsAt=Date.now()+dur*24*60*60*1000;
-    var pollVotes={};
-    opts.forEach(function(o){pollVotes[o]=[];});
+    // pollOptions as array of {text, votes} objects — required by votePoll
+    var pollOptionsObj=opts.map(function(o){return {text:o, votes:0};});
     const p={id:postId, uid, user:{...me}, images:[], image:null, isPoll:true,
-      caption:pcap||q, pollQuestion:q, pollOptions:opts, pollVotes:pollVotes, pollEndsAt:endsAt,
+      caption:pcap||q, pollQuestion:q,
+      pollOptions:pollOptionsObj,   // [{text, votes}] format
+      pollVotes:{},                 // {uid: optionIndex} format
+      pollEnds:endsAt,              // single field, not pollEndsAt
+      pollEndsAt:endsAt,            // kept for backward-compat rendering
       pollPhotoA:pollPhotoAUrl||null, pollPhotoB:pollPhotoBUrl||null, pollPhotoC:pollPhotoCUrl||null,
       likes:0, liked:false, comments:[], saved:false, time:'Just now', createdAt:Date.now(), showComments:false};
     await savePostToFirestore(p);
@@ -7295,43 +7329,60 @@ async function votePoll(postId, optionIdx){
   postId=String(postId);
   var p=posts.find(function(x){return String(x.id)===postId;});
   if(!p||!p.isPoll){ toast('Poll not found'); return; }
-  if(p.pollEnds&&Date.now()>p.pollEnds){ toast('This poll has ended ⏰'); return; }
-  if(p.pollVotes&&p.pollVotes[me.uid]!==undefined&&typeof p.pollVotes[me.uid]==='number'){ toast('You already voted! ✓'); return; }
 
-  if(!p.pollVotes) p.pollVotes={};
-  if(!p.pollOptions) p.pollOptions=[];
+  // Check expiry — support both pollEnds and pollEndsAt field names
+  var pollDeadline = p.pollEnds || p.pollEndsAt || 0;
+  if(pollDeadline && Date.now() > pollDeadline){ toast('This poll has ended ⏰'); return; }
 
-  // Support both array-of-objects (text+votes) and array-of-strings
-  if(typeof optionIdx === 'number' && p.pollOptions[optionIdx]!==undefined){
-    p.pollVotes[me.uid] = optionIdx;
-    if(typeof p.pollOptions[optionIdx] === 'object'){
-      if(!p.pollOptions[optionIdx].votes) p.pollOptions[optionIdx].votes=0;
-      p.pollOptions[optionIdx].votes++;
-    }
+  // Already voted check — new format: pollVotes[uid] = number
+  if(p.pollVotes && p.pollVotes[me.uid] !== undefined && typeof p.pollVotes[me.uid] === 'number'){
+    toast('You already voted! ✓'); return;
+  }
+  // Already voted check — old format: pollVotes[optionText] = [uid, ...]
+  if(p.pollVotes){
+    var alreadyOld = Object.values(p.pollVotes).some(function(v){ return Array.isArray(v) && v.includes(me.uid); });
+    if(alreadyOld){ toast('You already voted! ✓'); return; }
   }
 
+  if(!p.pollVotes) p.pollVotes={};
+  if(!p.pollOptions || !p.pollOptions.length){ toast('Poll options missing'); return; }
+
+  // Normalise pollOptions to [{text, votes}] if they came in as strings (old format)
+  p.pollOptions = p.pollOptions.map(function(o){
+    if(typeof o === 'string') return {text:o, votes:0};
+    return {text: o.text||'', votes: o.votes||0};
+  });
+
+  if(optionIdx < 0 || optionIdx >= p.pollOptions.length){ toast('Invalid option'); return; }
+
+  // Record the vote
+  p.pollVotes[me.uid] = optionIdx;
+  p.pollOptions[optionIdx].votes = (p.pollOptions[optionIdx].votes || 0) + 1;
+
+  // Get the exact choice text for the notification
+  var choiceText = p.pollOptions[optionIdx].text || 'an option';
+
   try {
-    await updatePostField(postId,{pollOptions:p.pollOptions,pollVotes:p.pollVotes});
-    // Re-render ALL representations of this poll in the DOM
-    document.querySelectorAll('#pc-'+postId).forEach(function(card){
-      // Rebuild poll-card elements
-      var pc=card.querySelector('.poll-card');
-      if(pc){ pc.outerHTML=buildPollCard(p,true); }
-      // Also rebuild inline poll buttons (buildCard poll system)
-      var pollBtns = card.querySelectorAll('[onclick^="votePoll"]');
-      pollBtns.forEach(function(btn){
-        btn.style.borderColor = 'var(--pink)';
-        btn.disabled = true;
-      });
+    // Save both fields — always write pollEnds so future checks work
+    await updatePostField(postId, {
+      pollOptions: p.pollOptions,
+      pollVotes:   p.pollVotes,
+      pollEnds:    pollDeadline || null  // ensure pollEnds is always set
     });
-    // Full re-render to pick up all changes
-    setTimeout(function(){ renderFeed(); renderExploreFeed(); }, 200);
+
     toast('Vote cast! 🗳️');
-    if(p.uid && p.uid!==me.uid){
-      var _choiceText = (p.pollOptions[optionIdx] && p.pollOptions[optionIdx].text) ? p.pollOptions[optionIdx].text : 'an option';
-      sendNotification(p.uid,'vote',me,'voted "​'+_choiceText+'" on your poll',postId);
+
+    // Re-render feed immediately so vote count updates in UI
+    setTimeout(function(){ renderFeed(); renderExploreFeed(); }, 150);
+
+    // Send notification with exact choice — show "voted for 'oppa reggb' on your poll"
+    if(p.uid && p.uid !== me.uid){
+      sendNotification(p.uid, 'vote', me, 'voted for "' + choiceText + '" on your poll', postId);
     }
   } catch(e){
+    // Rollback local state on failure
+    delete p.pollVotes[me.uid];
+    p.pollOptions[optionIdx].votes = Math.max(0, (p.pollOptions[optionIdx].votes||1) - 1);
     toast('Could not save vote — try again');
     console.error('votePoll error:', e);
   }
